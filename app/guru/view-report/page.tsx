@@ -1,310 +1,634 @@
 import React, { useEffect, useState } from 'react';
-import { Report } from '../../../types';
-import { subscribeToReportsByTeacher } from '../../../services/firestoreService';
-import { calculateFromRangeString } from '../../../services/quranMapping';
-import { Search, Filter, Download } from 'lucide-react';
+import { Student } from '../../../types';
+import { getStudentsByTeacher, addReport } from '../../../services/firestoreService';
+import { SURAH_LIST } from '../../../services/mockBackend';
+import { calculateHafalan } from '../../../services/quranMapping';
 import { Button } from '../../../components/Button';
+import { BookOpen, Book, Plus, Minus, Database } from 'lucide-react';
 
-interface GuruViewReportPageProps {
-  teacherId?: string;
+interface GuruLaporanPageProps {
+  teacherId: string;
 }
 
-// Helper: Format Total Hafalan Adaptif (Juz > Halaman > Baris)
-const formatTotalHafalan = (total: { juz: number; pages: number; lines: number } | undefined) => {
-  if (!total) return '-';
+const IQRA_VOLUMES = ["Iqra' 1", "Iqra' 2", "Iqra' 3", "Iqra' 4", "Iqra' 5", "Iqra' 6"];
+
+// Helper Component for Counter Input (Editable & Can be Empty)
+const CounterInput = ({ 
+  label, 
+  value, 
+  onChange, 
+  min = 1 
+}: { 
+  label?: string, 
+  value: number | string, 
+  onChange: (v: number | string) => void, 
+  min?: number 
+}) => {
   
-  const j = Number(total.juz || 0);
-  const p = Number(total.pages || 0);
-  const l = Number(total.lines || 0);
-
-  if (j > 0) return `${j} Juz`;
-  if (p > 0) return `${p} Halaman`;
-  if (l > 0) return `${l} Baris`;
-  
-  return '-'; 
-};
-
-export default function GuruViewReportPage({ teacherId = '1' }: GuruViewReportPageProps) {
-  const [reports, setReports] = useState<Report[]>([]);
-  const [filteredReports, setFilteredReports] = useState<Report[]>([]);
-  const [search, setSearch] = useState('');
-  const [filterMonth, setFilterMonth] = useState('Semua');
-  const [filterType, setFilterType] = useState('Semua');
-  const [isLoading, setIsLoading] = useState(true);
-
-  // USE REALTIME LISTENER HERE
-  useEffect(() => {
-    if (!teacherId) return;
-    setIsLoading(true);
-
-    const unsubscribe = subscribeToReportsByTeacher(teacherId, (data) => {
-      setReports(data);
-      setIsLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [teacherId]);
-
-  useEffect(() => {
-    let result = reports;
-
-    if (search) {
-      result = result.filter(r => 
-        r.studentName.toLowerCase().includes(search.toLowerCase()) ||
-        (r.className || '').toLowerCase().includes(search.toLowerCase())
-      );
-    }
-
-    if (filterMonth !== 'Semua') {
-      result = result.filter(r => r.month === filterMonth);
-    }
-
-    if (filterType !== 'Semua') {
-      result = result.filter(r => r.type === filterType);
-    }
-
-    setFilteredReports(result);
-  }, [search, filterMonth, filterType, reports]);
-
-  // Helper to format range string nicely
-  const formatRangeDisplay = (rangeStr: string | undefined) => {
-    if (!rangeStr || rangeStr === '-' || rangeStr.trim() === '') return "-";
-
-    const parts = rangeStr.split(' - ');
-    if (parts.length !== 2) return rangeStr;
-
-    const startPart = parts[0].trim();
-    const endPart = parts[1].trim();
-
-    const parse = (s: string) => {
-      const match = s.match(/^(.*)[:\s]+(\d+)$/);
-      if (match) return { surah: match[1].trim(), ayat: match[2] };
-      return null;
-    };
-
-    const startObj = parse(startPart);
-    const endObj = parse(endPart);
-
-    if (startObj && endObj) {
-      if (startObj.surah === endObj.surah) {
-        return `${startObj.surah}: ${startObj.ayat}-${endObj.ayat}`;
-      } else {
-        return `${startPart} - ${endPart}`;
-      }
-    }
-
-    return rangeStr;
-  };
-
-  const getCalculationDisplay = (rangeStr: string | undefined) => {
-    if (!rangeStr || rangeStr === '-' || rangeStr === '') return "-";
-    const result = calculateFromRangeString(rangeStr);
-    if (result.pages > 0) return `${result.pages} Halaman`;
-    if (result.lines > 0) return `${result.lines} Baris`;
-    return "0 Baris";
-  };
-
-  const getStatusBadge = (rangeStr: string | undefined) => {
-    if (!rangeStr || rangeStr === '-') {
-      return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-orange-100 text-orange-700 border border-orange-200">
-          Belum Tercapai
-        </span>
-      );
-    }
-
-    const result = calculateFromRangeString(rangeStr);
-    const targetPages = 1; 
-
-    if (result.pages >= targetPages) {
-      return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">
-          Tercapai
-        </span>
-      );
+  const handleDecrement = () => {
+    if (typeof value === 'string') {
+      onChange(min);
     } else {
-      return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-orange-100 text-orange-700 border border-orange-200">
-          Belum Tercapai
-        </span>
-      );
+      onChange(Math.max(min, value - 1));
     }
   };
 
-  const handleExportExcel = () => {
-    if (filteredReports.length === 0) return;
-
-    // Header CSV
-    const headers = [
-      "No",
-      "Nama Siswa",
-      "Kelas",
-      "Jumlah Hafalan", 
-      "Tilawah (Klasikal)",
-      "Tilawah (Individual)",
-      "Hasil Tilawah",
-      "Tahfizh (Klasikal)",
-      "Tahfizh (Individual)",
-      "Hasil Tahfizh",
-      "Catatan"
-    ];
-
-    // Data Rows
-    const rows = filteredReports.map((report, idx) => {
-      const tilawahSource = (report.tilawah.individual && report.tilawah.individual !== '-' && report.tilawah.individual.trim() !== '') 
-        ? report.tilawah.individual 
-        : report.tilawah.classical;
-      const tahfizhSource = (report.tahfizh.individual && report.tahfizh.individual !== '-' && report.tahfizh.individual.trim() !== '')
-        ? report.tahfizh.individual
-        : report.tahfizh.classical;
-
-      return [
-        idx + 1,
-        `"${report.studentName}"`, 
-        `"${report.className || ''}"`,
-        `"${formatTotalHafalan(report.totalHafalan)}"`,
-        `"${report.tilawah.classical || '-'}"`,
-        `"${report.tilawah.individual || '-'}"`,
-        `"${getCalculationDisplay(tilawahSource)}"`,
-        `"${report.tahfizh.classical || '-'}"`,
-        `"${report.tahfizh.individual || '-'}"`,
-        `"${getCalculationDisplay(tahfizhSource)}"`,
-        `"${report.notes || ''}"`
-      ].join(",");
-    });
-
-    const csvContent = [headers.join(","), ...rows].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.body.appendChild(document.createElement("a"));
-    link.href = url;
-    link.download = `Laporan_Halaqah_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  const handleIncrement = () => {
+    if (typeof value === 'string') {
+      onChange(min);
+    } else {
+      onChange(value + 1);
+    }
   };
 
   return (
-    <div className="space-y-6 max-w-[95%] mx-auto pb-12">
-      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Lihat Laporan</h2>
-          <p className="text-gray-500 mt-1">Arsip laporan perkembangan siswa.</p>
-        </div>
+    <div className="flex items-center gap-2">
+      <button 
+        onClick={handleDecrement}
+        className="w-8 h-8 rounded border border-gray-300 flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:border-gray-400 transition-colors"
+        type="button"
+      >
+        <Minus size={14} />
+      </button>
+      <div className="relative">
+        <input
+          type="number"
+          min={min}
+          value={value}
+          placeholder="-"
+          onChange={(e) => {
+            const val = e.target.value;
+            if (val === '') {
+              onChange('');
+            } else {
+              const num = parseInt(val);
+              if (!isNaN(num)) onChange(num);
+            }
+          }}
+          className="w-16 text-center font-medium border border-gray-200 py-1.5 rounded bg-white focus:ring-2 focus:ring-primary-500 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-gray-300"
+        />
+      </div>
+      <button 
+        onClick={handleIncrement}
+        className="w-8 h-8 rounded border border-gray-300 flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:border-gray-400 transition-colors"
+        type="button"
+      >
+        <Plus size={14} />
+      </button>
+      {label && <span className="text-sm text-gray-500 ml-1">{label}</span>}
+    </div>
+  );
+};
+
+// Helper for Surah/Volume Selector
+const SourceSelect = ({ 
+  value, 
+  onChange, 
+  label, 
+  method 
+}: { 
+  value: string, 
+  onChange: (v: string) => void, 
+  label: string,
+  method: 'Al-Quran' | 'Iqra'
+}) => (
+  <div className="flex-1">
+    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{label}</p>
+    <select 
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none bg-white text-sm"
+    >
+      <option value="">{method === 'Al-Quran' ? 'Pilih Surah...' : 'Pilih Jilid...'}</option>
+      {method === 'Al-Quran' ? (
+        SURAH_LIST.map((s, index) => (
+          <option key={s} value={s}>{index + 1}. {s}</option>
+        ))
+      ) : (
+        IQRA_VOLUMES.map((v) => (
+          <option key={v} value={v}>{v}</option>
+        ))
+      )}
+    </select>
+  </div>
+);
+
+export default function GuruLaporanPage({ teacherId }: GuruLaporanPageProps) {
+  const [students, setStudents] = useState<Student[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Form State
+  const [reportType, setReportType] = useState('Laporan Bulanan');
+  const [studentId, setStudentId] = useState('');
+  const [month, setMonth] = useState('Desember'); // Also acts as "Period"
+  
+  // Tilawah State (Individual) - Defaults are now empty strings
+  const [tilawahMethod, setTilawahMethod] = useState<'Al-Quran' | 'Iqra'>('Al-Quran');
+  const [tilawahFromSurah, setTilawahFromSurah] = useState(''); 
+  const [tilawahFromVerse, setTilawahFromVerse] = useState<number | string>(''); 
+  const [tilawahToSurah, setTilawahToSurah] = useState('');
+  const [tilawahToVerse, setTilawahToVerse] = useState<number | string>(''); 
+  const [tilawahTotal, setTilawahTotal] = useState({ pages: 0, lines: 0 });
+  
+  // Tilawah State (Klasikal) - Defaults are now empty strings
+  const [tilawahKlasikalMethod, setTilawahKlasikalMethod] = useState<'Al-Quran' | 'Iqra'>('Al-Quran');
+  const [tilawahKlasikalFromSurah, setTilawahKlasikalFromSurah] = useState('');
+  const [tilawahKlasikalFromVerse, setTilawahKlasikalFromVerse] = useState<number | string>(''); 
+  const [tilawahKlasikalToSurah, setTilawahKlasikalToSurah] = useState('');
+  const [tilawahKlasikalToVerse, setTilawahKlasikalToVerse] = useState<number | string>(''); 
+  const [tilawahKlasikalTotal, setTilawahKlasikalTotal] = useState({ pages: 0, lines: 0 });
+
+  // Tahfizh State - Defaults are now empty strings
+  const [tahfizhFromSurah, setTahfizhFromSurah] = useState(''); 
+  const [tahfizhFromVerse, setTahfizhFromVerse] = useState<number | string>(''); 
+  const [tahfizhToSurah, setTahfizhToSurah] = useState('');
+  const [tahfizhToVerse, setTahfizhToVerse] = useState<number | string>(''); 
+  const [tahfizhTotal, setTahfizhTotal] = useState({ pages: 0, lines: 0 });
+
+  const [tahfizhKlasikalFromSurah, setTahfizhKlasikalFromSurah] = useState('');
+  const [tahfizhKlasikalFromVerse, setTahfizhKlasikalFromVerse] = useState<number | string>(''); 
+  const [tahfizhKlasikalToSurah, setTahfizhKlasikalToSurah] = useState('');
+  const [tahfizhKlasikalToVerse, setTahfizhKlasikalToVerse] = useState<number | string>(''); 
+  const [tahfizhKlasikalTotal, setTahfizhKlasikalTotal] = useState({ pages: 0, lines: 0 });
+
+  // Baseline Data (Total Accumulation for Semester Report)
+  const [baselineJuz, setBaselineJuz] = useState<number | string>(0);
+  const [baselinePages, setBaselinePages] = useState<number | string>(0);
+  const [baselineLines, setBaselineLines] = useState<number | string>(0);
+
+  const [notes, setNotes] = useState('');
+
+  useEffect(() => {
+    const loadData = async () => {
+      if (!teacherId) return;
+      setIsLoading(true);
+      const data = await getStudentsByTeacher(teacherId);
+      setStudents(data);
+      setIsLoading(false);
+    };
+    loadData();
+  }, [teacherId]);
+
+  // Handle Report Type Change -> Reset Period
+  useEffect(() => {
+    if (reportType === 'Laporan Semester') {
+      setMonth('Ganjil');
+    } else {
+      setMonth('Desember');
+    }
+  }, [reportType]);
+
+  // Handle Tilawah Individual Method Change - Reset to Empty
+  useEffect(() => {
+    setTilawahFromSurah('');
+    setTilawahToSurah('');
+    setTilawahFromVerse('');
+    setTilawahToVerse('');
+  }, [tilawahMethod]);
+
+  // Handle Tilawah Klasikal Method Change - Reset to Empty
+  useEffect(() => {
+    setTilawahKlasikalFromSurah('');
+    setTilawahKlasikalToSurah('');
+    setTilawahKlasikalFromVerse('');
+    setTilawahKlasikalToVerse('');
+  }, [tilawahKlasikalMethod]);
+
+  // Utility to safe convert string|number to number for calculation
+  const safeNum = (val: string | number) => (typeof val === 'number' ? val : 0);
+
+  // Calculations
+  useEffect(() => {
+    const result = calculateHafalan(
+      tilawahFromSurah, safeNum(tilawahFromVerse), 
+      tilawahToSurah, safeNum(tilawahToVerse)
+    );
+    setTilawahTotal(result);
+  }, [tilawahMethod, tilawahFromSurah, tilawahFromVerse, tilawahToSurah, tilawahToVerse]);
+
+  useEffect(() => {
+    const result = calculateHafalan(
+      tilawahKlasikalFromSurah, safeNum(tilawahKlasikalFromVerse), 
+      tilawahKlasikalToSurah, safeNum(tilawahKlasikalToVerse)
+    );
+    setTilawahKlasikalTotal(result);
+  }, [tilawahKlasikalFromSurah, tilawahKlasikalFromVerse, tilawahKlasikalToSurah, tilawahKlasikalToVerse]);
+
+  useEffect(() => {
+    const result = calculateHafalan(
+      tahfizhFromSurah, safeNum(tahfizhFromVerse), 
+      tahfizhToSurah, safeNum(tahfizhToVerse)
+    );
+    setTahfizhTotal(result);
+  }, [tahfizhFromSurah, tahfizhFromVerse, tahfizhToSurah, tahfizhToVerse]);
+
+  useEffect(() => {
+    const result = calculateHafalan(
+      tahfizhKlasikalFromSurah, safeNum(tahfizhKlasikalFromVerse), 
+      tahfizhKlasikalToSurah, safeNum(tahfizhKlasikalToVerse)
+    );
+    setTahfizhKlasikalTotal(result);
+  }, [tahfizhKlasikalFromSurah, tahfizhKlasikalFromVerse, tahfizhKlasikalToSurah, tahfizhKlasikalToVerse]);
+
+  // --- HANDLERS FOR SYNCING FROM -> TO ---
+
+  const handleTilawahFromSurahChange = (val: string) => {
+    setTilawahFromSurah(val);
+    setTilawahToSurah(val);
+  };
+  const handleTilawahFromVerseChange = (val: number | string) => {
+    setTilawahFromVerse(val);
+    setTilawahToVerse(val);
+  };
+
+  const handleTilawahKlasikalFromSurahChange = (val: string) => {
+    setTilawahKlasikalFromSurah(val);
+    setTilawahKlasikalToSurah(val);
+  };
+  const handleTilawahKlasikalFromVerseChange = (val: number | string) => {
+    setTilawahKlasikalFromVerse(val);
+    setTilawahKlasikalToVerse(val);
+  };
+
+  const handleTahfizhFromSurahChange = (val: string) => {
+    setTahfizhFromSurah(val);
+    setTahfizhToSurah(val);
+  };
+  const handleTahfizhFromVerseChange = (val: number | string) => {
+    setTahfizhFromVerse(val);
+    setTahfizhToVerse(val);
+  };
+
+  const handleTahfizhKlasikalFromSurahChange = (val: string) => {
+    setTahfizhKlasikalFromSurah(val);
+    setTahfizhKlasikalToSurah(val);
+  };
+  const handleTahfizhKlasikalFromVerseChange = (val: number | string) => {
+    setTahfizhKlasikalFromVerse(val);
+    setTahfizhKlasikalToVerse(val);
+  };
+
+  const handleSave = async () => {
+    if (!studentId) {
+      alert("Mohon pilih siswa terlebih dahulu.");
+      return;
+    }
+
+    const selectedStudent = students.find(s => s.id === studentId);
+    if (!selectedStudent) return;
+
+    // Helper to formatting string range safely
+    const fmt = (surah: string, verse: number | string) => {
+        if (!surah) return '-';
+        return `${surah}: ${(typeof verse === 'string' && verse === '') ? '-' : verse}`;
+    };
+
+    // Helper to construct the full range string, ensuring if both sides are empty we return "-"
+    const makeRange = (fromSurah: string, fromVerse: number | string, toSurah: string, toVerse: number | string) => {
+        if (!fromSurah && !toSurah) return '-';
+        return `${fmt(fromSurah, fromVerse)} - ${fmt(toSurah, toVerse)}`;
+    };
+
+    setIsSaving(true);
+    try {
+      await addReport({
+        studentId,
+        studentName: selectedStudent.name,
+        teacherId,
+        className: selectedStudent.className,
+        type: reportType,
+        month,
+        academicYear: '2025/2026', // Can be dynamic
+        tilawah: {
+          method: tilawahMethod,
+          individual: makeRange(tilawahFromSurah, tilawahFromVerse, tilawahToSurah, tilawahToVerse),
+          classical: makeRange(tilawahKlasikalFromSurah, tilawahKlasikalFromVerse, tilawahKlasikalToSurah, tilawahKlasikalToVerse)
+        },
+        tahfizh: {
+          individual: makeRange(tahfizhFromSurah, tahfizhFromVerse, tahfizhToSurah, tahfizhToVerse),
+          classical: makeRange(tahfizhKlasikalFromSurah, tahfizhKlasikalFromVerse, tahfizhKlasikalToSurah, tahfizhKlasikalToVerse)
+        },
+        totalHafalan: reportType === 'Laporan Semester' ? {
+          juz: safeNum(baselineJuz),
+          pages: safeNum(baselinePages),
+          lines: safeNum(baselineLines)
+        } : undefined, 
+        notes
+      });
+      
+      alert("Laporan berhasil disimpan ke database!");
+      // Reset fields here if needed
+    } catch (error) {
+      console.error(error);
+      alert("Gagal menyimpan laporan.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const getLabel = (method: string) => method === 'Al-Quran' ? 'Ayat' : 'Hal';
+  
+  const formatTotal = (total: { pages: number, lines: number }) => {
+    return `Total: ${total.pages} Halaman ${total.lines} Baris`;
+  };
+
+  return (
+    <div className="space-y-8 max-w-7xl mx-auto pb-12">
+      {/* Header - Tombol Simpan Laporan dihapus */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-gray-900">Input Laporan</h2>
       </div>
 
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col lg:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-          <input 
-            type="text" 
-            placeholder="Cari nama siswa..." 
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
-          />
-        </div>
-
-        <div className="flex gap-4 overflow-x-auto pb-2 lg:pb-0">
-          <select 
-            value={filterMonth}
-            onChange={(e) => setFilterMonth(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 outline-none focus:ring-2 focus:ring-primary-500 min-w-[140px]"
-          >
-            <option value="Semua">Semua Bulan</option>
-            <option value="Desember">Desember</option>
-            <option value="November">November</option>
-            <option value="Oktober">Oktober</option>
-            <option value="September">September</option>
-            <option value="Agustus">Agustus</option>
-            <option value="Juli">Juli</option>
-          </select>
-
-          <select 
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 outline-none focus:ring-2 focus:ring-primary-500 min-w-[160px]"
-          >
-            <option value="Semua">Semua Tipe</option>
-            <option value="Laporan Bulanan">Bulanan</option>
-            <option value="Laporan Semester">Semester</option>
-          </select>
-
-          <Button variant="secondary" className="whitespace-nowrap" onClick={handleExportExcel}>
-            <Download size={18} className="mr-2" /> Export CSV
-          </Button>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse whitespace-nowrap">
-            <thead>
-              <tr className="bg-[#0e7490] text-white text-xs uppercase font-bold tracking-wider text-center">
-                <th rowSpan={2} className="px-4 py-3 w-10 border-r border-white/20">No</th>
-                <th rowSpan={2} className="px-4 py-3 border-r border-white/20 text-left min-w-[200px]">Nama Siswa</th>
-                <th rowSpan={2} className="px-4 py-3 border-r border-white/20 w-32">Jml Hafalan</th>
-                <th colSpan={3} className="px-4 py-3 border-r border-white/20 border-b">Tilawah</th>
-                <th colSpan={3} className="px-4 py-3 border-r border-white/20 border-b">Tahfizh</th>
-                <th rowSpan={2} className="px-4 py-3 border-r border-white/20">Keterangan</th>
-                <th rowSpan={2} className="px-4 py-3 min-w-[200px]">Catatan</th>
-              </tr>
-              <tr className="bg-[#0e7490] text-white text-[10px] uppercase font-bold tracking-wider text-center">
-                <th className="px-3 py-2 border-r border-white/10 bg-[#155e75]">Klasikal</th>
-                <th className="px-3 py-2 border-r border-white/10 bg-[#155e75]">Individual</th>
-                <th className="px-3 py-2 border-r border-white/20 bg-[#155e75]">Hasil</th>
-                <th className="px-3 py-2 border-r border-white/10 bg-[#155e75]">Klasikal</th>
-                <th className="px-3 py-2 border-r border-white/10 bg-[#155e75]">Individual</th>
-                <th className="px-3 py-2 border-r border-white/20 bg-[#155e75]">Hasil</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 text-sm">
-              {isLoading ? (
-                <tr><td colSpan={12} className="px-6 py-12 text-center text-gray-500">Memuat laporan...</td></tr>
-              ) : filteredReports.length > 0 ? (
-                filteredReports.map((report, idx) => {
-                  const tilawahSource = (report.tilawah.individual && report.tilawah.individual !== '-' && report.tilawah.individual.trim() !== '') 
-                    ? report.tilawah.individual 
-                    : report.tilawah.classical;
-
-                  const tahfizhSource = (report.tahfizh.individual && report.tahfizh.individual !== '-' && report.tahfizh.individual.trim() !== '')
-                    ? report.tahfizh.individual
-                    : report.tahfizh.classical;
-
-                  return (
-                    <tr key={report.id} className={`hover:bg-gray-50/50 transition-colors group ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}>
-                      <td className="px-4 py-3 text-center text-gray-500 font-medium">{idx + 1}</td>
-                      <td className="px-4 py-3 align-middle"><span className="font-bold text-gray-900">{report.studentName}</span></td>
-                      <td className="px-4 py-3 text-center align-middle font-bold text-teal-700 bg-teal-50/30">{formatTotalHafalan(report.totalHafalan)}</td>
-                      <td className="px-3 py-3 text-center align-middle text-xs text-gray-600">{formatRangeDisplay(report.tilawah.classical)}</td>
-                      <td className="px-3 py-3 text-center align-middle text-xs text-gray-600 font-medium">{formatRangeDisplay(report.tilawah.individual)}</td>
-                      <td className="px-3 py-3 text-center align-middle font-bold text-gray-800 text-xs bg-gray-50">{getCalculationDisplay(tilawahSource)}</td>
-                      <td className="px-3 py-3 text-center align-middle text-xs text-gray-600">{formatRangeDisplay(report.tahfizh.classical)}</td>
-                      <td className="px-3 py-3 text-center align-middle text-xs text-gray-600 font-medium">{formatRangeDisplay(report.tahfizh.individual)}</td>
-                      <td className="px-3 py-3 text-center align-middle font-bold text-gray-800 text-xs bg-gray-50">{getCalculationDisplay(tahfizhSource)}</td>
-                      <td className="px-4 py-3 text-center align-middle">{getStatusBadge(tahfizhSource)}</td>
-                      <td className="px-4 py-3 align-middle max-w-[250px] overflow-hidden text-ellipsis" title={report.notes}>
-                        <div className="text-xs text-gray-500 italic truncate">{report.notes || "-"}</div>
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr><td colSpan={12} className="px-6 py-16 text-center text-gray-400">Belum ada laporan ditemukan.</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-        
-        {filteredReports.length > 0 && (
-          <div className="px-6 py-3 border-t border-gray-200 bg-gray-50 flex justify-between items-center text-xs text-gray-500">
-             <span>Menampilkan {filteredReports.length} dari {reports.length} laporan</span>
-             <div className="flex gap-2">
-               <button disabled className="px-3 py-1 border border-gray-200 rounded bg-white text-gray-400 cursor-not-allowed">Previous</button>
-               <button disabled className="px-3 py-1 border border-gray-200 rounded bg-white text-gray-400 cursor-not-allowed">Next</button>
-             </div>
+      {/* Top Filters */}
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Tipe Laporan</label>
+            <select 
+              value={reportType} 
+              onChange={(e) => setReportType(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none bg-white"
+            >
+              <option value="Laporan Bulanan">Laporan Bulanan</option>
+              <option value="Laporan Semester">Laporan Semester</option>
+            </select>
           </div>
-        )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Nama Siswa (Untuk Data Individual)</label>
+            <select 
+              value={studentId} 
+              onChange={(e) => setStudentId(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none bg-white"
+            >
+              <option value="">-- Pilih Siswa --</option>
+              {students.map(s => (
+                <option key={s.id} value={s.id}>{s.name} - {s.className}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Periode</label>
+            <select 
+              value={month} 
+              onChange={(e) => setMonth(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none bg-white"
+            >
+              {reportType === 'Laporan Semester' ? (
+                <>
+                  <option value="Ganjil">Semester Ganjil</option>
+                  <option value="Genap">Semester Genap</option>
+                </>
+              ) : (
+                <>
+                  <option value="Juli">Juli</option>
+                  <option value="Agustus">Agustus</option>
+                  <option value="September">September</option>
+                  <option value="Oktober">Oktober</option>
+                  <option value="November">November</option>
+                  <option value="Desember">Desember</option>
+                  <option value="Januari">Januari</option>
+                  <option value="Februari">Februari</option>
+                  <option value="Maret">Maret</option>
+                  <option value="April">April</option>
+                  <option value="Mei">Mei</option>
+                  <option value="Juni">Juni</option>
+                </>
+              )}
+            </select>
+          </div>
+        </div>
+        <div className="pt-4 border-t border-gray-100 text-sm text-gray-500">
+          Tahun Ajaran: 2025/2026 <span className="mx-2 text-gray-300">|</span> Periode: <span className="text-gray-900 font-medium">{month}</span>
+        </div>
+      </div>
+
+      {/* Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        {/* LEFT COLUMN: CAPAIAN TAHFIZH */}
+        <div className="bg-white rounded-xl shadow-sm border border-teal-100 overflow-hidden">
+          <div className="bg-teal-50 px-6 py-4 border-b border-teal-100 flex items-center gap-2">
+            <Book className="text-teal-600" size={20} />
+            <h3 className="font-bold text-teal-700">Capaian Tahfizh</h3>
+          </div>
+
+          <div className="p-6 space-y-8">
+            
+            {/* BASELINE DATA SECTION (Only for Semester Report) */}
+            {reportType === 'Laporan Semester' && (
+              <div className="bg-teal-50/60 p-5 rounded-lg border border-teal-200 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="p-2 bg-teal-100 text-teal-700 rounded-lg">
+                    <Database size={18} />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-teal-800 text-sm">Data Awal / Total Hafalan</h4>
+                    <p className="text-xs text-teal-600 mt-1">
+                      Masukkan total jumlah hafalan siswa saat ini (akumulasi) sebagai data awal semester.
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-3 gap-4 mt-4">
+                   <div className="flex flex-col items-center">
+                      <span className="text-xs font-semibold text-teal-700 mb-2 uppercase">Juz</span>
+                      <CounterInput value={baselineJuz} onChange={setBaselineJuz} min={0} />
+                   </div>
+                   <div className="flex flex-col items-center">
+                      <span className="text-xs font-semibold text-teal-700 mb-2 uppercase">Halaman</span>
+                      <CounterInput value={baselinePages} onChange={setBaselinePages} min={0} />
+                   </div>
+                   <div className="flex flex-col items-center">
+                      <span className="text-xs font-semibold text-teal-700 mb-2 uppercase">Baris</span>
+                      <CounterInput value={baselineLines} onChange={setBaselineLines} min={0} />
+                   </div>
+                </div>
+                <div className="mt-3 pt-3 border-t border-teal-200/50">
+                   <p className="text-[10px] text-teal-600 italic text-center">
+                     *Jumlah ini akan otomatis bertambah saat input laporan bulanan berikutnya.
+                   </p>
+                </div>
+              </div>
+            )}
+
+            {/* Metode Individual */}
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center gap-2 border-l-4 border-teal-600 pl-3">
+                  <h4 className="font-bold text-gray-800">Capaian Periode Ini</h4>
+                </div>
+                <span className="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-md font-medium">
+                  {formatTotal(tahfizhTotal)}
+                </span>
+              </div>
+
+              {/* Inputs */}
+              <div className="space-y-4">
+                <div className="flex gap-4 items-end">
+                   <SourceSelect label="DARI" value={tahfizhFromSurah} onChange={handleTahfizhFromSurahChange} method="Al-Quran" />
+                   <div className="mb-0.5">
+                     <CounterInput label="Ayat" value={tahfizhFromVerse} onChange={handleTahfizhFromVerseChange} />
+                   </div>
+                </div>
+                <div className="flex gap-4 items-end">
+                   <SourceSelect label="SAMPAI" value={tahfizhToSurah} onChange={setTahfizhToSurah} method="Al-Quran" />
+                   <div className="mb-0.5">
+                     <CounterInput label="Ayat" value={tahfizhToVerse} onChange={setTahfizhToVerse} />
+                   </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="h-px bg-gray-100"></div>
+
+            {/* Metode Klasikal */}
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center gap-2 border-l-4 border-teal-600 pl-3">
+                  <h4 className="font-bold text-gray-800">Metode Klasikal</h4>
+                  <span className="bg-gray-100 text-gray-500 text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wide">Semua Siswa</span>
+                </div>
+                <span className="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-md font-medium">
+                   {formatTotal(tahfizhKlasikalTotal)}
+                </span>
+              </div>
+
+              {/* Inputs */}
+              <div className="space-y-4">
+                <div className="flex gap-4 items-end">
+                   <SourceSelect label="DARI" value={tahfizhKlasikalFromSurah} onChange={handleTahfizhKlasikalFromSurahChange} method="Al-Quran" />
+                   <div className="mb-0.5">
+                     <CounterInput label="Ayat" value={tahfizhKlasikalFromVerse} onChange={handleTahfizhKlasikalFromVerseChange} />
+                   </div>
+                </div>
+                <div className="flex gap-4 items-end">
+                   <SourceSelect label="SAMPAI" value={tahfizhKlasikalToSurah} onChange={setTahfizhKlasikalToSurah} method="Al-Quran" />
+                   <div className="mb-0.5">
+                     <CounterInput label="Ayat" value={tahfizhKlasikalToVerse} onChange={setTahfizhKlasikalToVerse} />
+                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN: CAPAIAN TILAWAH */}
+        <div className="bg-white rounded-xl shadow-sm border border-orange-100 overflow-hidden">
+          <div className="bg-orange-50 px-6 py-4 border-b border-orange-100 flex items-center gap-2">
+            <BookOpen className="text-orange-500" size={20} />
+            <h3 className="font-bold text-orange-600">Capaian Tilawah</h3>
+          </div>
+
+          <div className="p-6 space-y-8">
+            {/* Metode Individual */}
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-2 border-l-4 border-primary-600 pl-3">
+                  <h4 className="font-bold text-gray-800">Metode Individual</h4>
+                </div>
+                <span className="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-md font-medium">
+                  {formatTotal(tilawahTotal)}
+                </span>
+              </div>
+
+              {/* Toggle Individual */}
+              <div className="flex gap-2 mb-6">
+                 <button 
+                   onClick={() => setTilawahMethod('Al-Quran')}
+                   className={`px-4 py-1.5 text-sm rounded transition-colors font-medium ${tilawahMethod === 'Al-Quran' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                 >
+                   Al-Qur'an
+                 </button>
+                 <button 
+                   onClick={() => setTilawahMethod('Iqra')}
+                   className={`px-4 py-1.5 text-sm rounded transition-colors font-medium ${tilawahMethod === 'Iqra' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                 >
+                   Iqra' (1-6)
+                 </button>
+              </div>
+
+              {/* Inputs */}
+              <div className="space-y-4">
+                <div className="flex gap-4 items-end">
+                   <SourceSelect label="DARI" value={tilawahFromSurah} onChange={handleTilawahFromSurahChange} method={tilawahMethod} />
+                   <div className="mb-0.5">
+                     <CounterInput label={getLabel(tilawahMethod)} value={tilawahFromVerse} onChange={handleTilawahFromVerseChange} />
+                   </div>
+                </div>
+                <div className="flex gap-4 items-end">
+                   <SourceSelect label="SAMPAI" value={tilawahToSurah} onChange={setTilawahToSurah} method={tilawahMethod} />
+                   <div className="mb-0.5">
+                     <CounterInput label={getLabel(tilawahMethod)} value={tilawahToVerse} onChange={setTilawahToVerse} />
+                   </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="h-px bg-gray-100"></div>
+
+            {/* Metode Klasikal */}
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-2 border-l-4 border-primary-600 pl-3">
+                  <h4 className="font-bold text-gray-800">Metode Klasikal</h4>
+                  <span className="bg-gray-100 text-gray-500 text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wide">Semua Siswa</span>
+                </div>
+                <span className="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-md font-medium">
+                  {formatTotal(tilawahKlasikalTotal)}
+                </span>
+              </div>
+
+              {/* Toggle Klasikal */}
+              <div className="flex gap-2 mb-6">
+                 <button 
+                   onClick={() => setTilawahKlasikalMethod('Al-Quran')}
+                   className={`px-4 py-1.5 text-sm rounded transition-colors font-medium ${tilawahKlasikalMethod === 'Al-Quran' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                 >
+                   Al-Qur'an
+                 </button>
+                 <button 
+                   onClick={() => setTilawahKlasikalMethod('Iqra')}
+                   className={`px-4 py-1.5 text-sm rounded transition-colors font-medium ${tilawahKlasikalMethod === 'Iqra' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                 >
+                   Iqra' (1-6)
+                 </button>
+              </div>
+
+              {/* Inputs */}
+              <div className="space-y-4">
+                <div className="flex gap-4 items-end">
+                   <SourceSelect label="DARI" value={tilawahKlasikalFromSurah} onChange={handleTilawahKlasikalFromSurahChange} method={tilawahKlasikalMethod} />
+                   <div className="mb-0.5">
+                     <CounterInput label={getLabel(tilawahKlasikalMethod)} value={tilawahKlasikalFromVerse} onChange={handleTilawahKlasikalFromVerseChange} />
+                   </div>
+                </div>
+                <div className="flex gap-4 items-end">
+                   <SourceSelect label="SAMPAI" value={tilawahKlasikalToSurah} onChange={setTilawahKlasikalToSurah} method={tilawahKlasikalMethod} />
+                   <div className="mb-0.5">
+                     <CounterInput label={getLabel(tilawahKlasikalMethod)} value={tilawahKlasikalToVerse} onChange={setTilawahKlasikalToVerse} />
+                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      {/* Notes Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 className="font-bold text-gray-800 mb-4">Catatan Tambahan</h3>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Tuliskan catatan perkembangan siswa atau kendala yang dihadapi..."
+          className="w-full h-32 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none resize-none"
+        ></textarea>
+      </div>
+
+      <div className="flex justify-end">
+        <Button onClick={handleSave} className="px-8 py-3" isLoading={isSaving}>Simpan Laporan</Button>
       </div>
     </div>
   );
