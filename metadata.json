@@ -1,0 +1,5 @@
+{
+  "name": "SDQ Management System",
+  "description": "A comprehensive management system for Islamic schools (SDQ) featuring coordinator and teacher dashboards, student progress tracking, and AI-driven evaluation.",
+  "requestFramePermissions": []
+}
