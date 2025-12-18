@@ -60,10 +60,10 @@ export default function CoordinatorGuruPage() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Data Guru & Staf</h2>
-          <p className="text-gray-500 mt-1">Daftar semua guru halaqah and koordinator.</p>
+          <p className="text-gray-500 mt-1">Daftar semua guru halaqah dan koordinator.</p>
         </div>
         <Button onClick={() => setIsModalOpen(true)}>
-          <Plus size={18} className="mr-2" /> Tambah Guru
+          <Plus size={18} /> Tambah Guru
         </Button>
       </div>
 
@@ -189,7 +189,6 @@ export default function CoordinatorGuruPage() {
                 <input 
                   type="email" 
                   value={newEmail}
-                  // Fixed: Changed target.value to e.target.value
                   onChange={(e) => setNewEmail(e.target.value)}
                   placeholder="email@sekolah.com"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
