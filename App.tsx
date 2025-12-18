@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { auth, db, isFirebaseEnabled } from './lib/firebase';
 import { Layout } from './app/layout';
 import LoginPage from './app/(auth)/login/page';
@@ -32,26 +32,68 @@ function App() {
       if (firebaseUser) {
         try {
           if (!db) return;
-          const docRef = doc(db, 'users', firebaseUser.uid);
-          const docSnap = await getDoc(docRef);
           
-          let userData: any = docSnap.exists() ? docSnap.data() : null;
+          const uid = firebaseUser.uid;
+          const userDocRef = doc(db, 'users', uid);
+          const docSnap = await getDoc(userDocRef);
           
-          if (!userData && firebaseUser.email) {
+          let finalUserData: any = null;
+
+          if (docSnap.exists()) {
+            finalUserData = docSnap.data();
+          } else {
+            // JIKA UID TIDAK DITEMUKAN: Cari berdasarkan email (Data yang diinput koordinator)
             const q = query(collection(db, 'users'), where('email', '==', firebaseUser.email));
             const querySnapshot = await getDocs(q);
-            if (!querySnapshot.empty) userData = querySnapshot.docs[0].data();
+            
+            if (!querySnapshot.empty) {
+              const oldDoc = querySnapshot.docs[0];
+              const oldData = oldDoc.data();
+              const oldId = oldDoc.id;
+
+              // --- PROSES MIGRASI OTOMATIS ---
+              // 1. Pindahkan data profil ke ID baru (UID)
+              await setDoc(userDocRef, { ...oldData, id: uid });
+              
+              // 2. Jika ID lama berbeda dengan UID, update semua siswa & hapus doc lama
+              if (oldId !== uid) {
+                const batch = writeBatch(db);
+                
+                // Cari semua siswa yang terikat ke ID lama
+                const siswaQuery = query(collection(db, 'siswa'), where('teacherId', '==', oldId));
+                const siswaSnap = await getDocs(siswaQuery);
+                siswaSnap.forEach((sDoc) => {
+                  batch.update(doc(db, 'siswa', sDoc.id), { teacherId: uid });
+                });
+
+                // Cari semua laporan yang terikat ke ID lama
+                const laporanQuery = query(collection(db, 'laporan'), where('teacherId', '==', oldId));
+                const laporanSnap = await getDocs(laporanQuery);
+                laporanSnap.forEach((lDoc) => {
+                  batch.update(doc(db, 'laporan', lDoc.id), { teacherId: uid });
+                });
+
+                // Hapus dokumen user dengan ID lama (docID acak)
+                batch.delete(doc(db, 'users', oldId));
+                
+                await batch.commit();
+                console.log(`[Migration] Migrated data from ${oldId} to ${uid}`);
+              }
+              finalUserData = oldData;
+            }
           }
 
-          setUser({
-            id: firebaseUser.uid,
-            name: userData?.name || firebaseUser.displayName || 'User',
-            email: firebaseUser.email || '',
-            role: (userData?.role as Role) || 'GURU',
-            nickname: userData?.nickname || '',
-          });
+          if (finalUserData) {
+            setUser({
+              id: uid, // Selalu gunakan UID Auth sebagai ID di aplikasi
+              name: finalUserData.name || 'User',
+              email: firebaseUser.email || '',
+              role: (finalUserData.role as Role) || 'GURU',
+              nickname: finalUserData.nickname || '',
+            });
+          }
         } catch (error) {
-          console.error("Error fetching user profile:", error);
+          console.error("Error identifying user:", error);
         }
       } else {
         setUser(null);
@@ -82,24 +124,15 @@ function App() {
         } />
 
         <Route element={<Layout user={user} onLogout={handleLogout} onSwitchRole={handleSwitchRole} />}>
-          {/* Coordinator Routes */}
           <Route path="/coordinator/dashboard" element={user?.role === 'KOORDINATOR' ? <CoordinatorDashboard /> : <Navigate to="/login" />} />
           <Route path="/coordinator/guru" element={user?.role === 'KOORDINATOR' ? <CoordinatorGuruPage /> : <Navigate to="/login" />} />
           <Route path="/coordinator/guru/:id" element={user?.role === 'KOORDINATOR' ? <CoordinatorTeacherDetail /> : <Navigate to="/login" />} />
           <Route path="/coordinator/siswa" element={user?.role === 'KOORDINATOR' ? <CoordinatorSiswaPage /> : <Navigate to="/login" />} />
           <Route path="/coordinator/kelas" element={user?.role === 'KOORDINATOR' ? <CoordinatorKelasPage /> : <Navigate to="/login" />} />
-          {/* Placeholder untuk route yang belum ada agar tidak memicu fallback global */}
-          <Route path="/coordinator/reports" element={<div className="p-8">Fitur Pantau Laporan Segera Hadir</div>} />
-          <Route path="/coordinator/evaluations" element={<div className="p-8">Fitur Input Evaluasi Segera Hadir</div>} />
-
-          {/* Guru Routes */}
           <Route path="/guru/dashboard" element={user?.role === 'GURU' ? <GuruDashboard teacherId={user.id} /> : <Navigate to="/login" />} />
           <Route path="/guru/halaqah" element={user?.role === 'GURU' ? <GuruHalaqahPage teacherId={user.id} /> : <Navigate to="/login" />} />
           <Route path="/guru/laporan" element={user?.role === 'GURU' ? <GuruLaporanPage teacherId={user.id} /> : <Navigate to="/login" />} />
           <Route path="/guru/view-report" element={user?.role === 'GURU' ? <GuruViewReportPage teacherId={user.id} /> : <Navigate to="/login" />} />
-          <Route path="/guru/evaluation" element={<div className="p-8">Fitur Evaluasi Segera Hadir</div>} />
-          <Route path="/guru/grades" element={<div className="p-8">Fitur Nilai Rapor Segera Hadir</div>} />
-          <Route path="/guru/rapor" element={<div className="p-8">Fitur Rapor Segera Hadir</div>} />
         </Route>
 
         <Route path="*" element={<Navigate to={user?.role === 'KOORDINATOR' ? '/coordinator/dashboard' : '/guru/dashboard'} replace />} />
