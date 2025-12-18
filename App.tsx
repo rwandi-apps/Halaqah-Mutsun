@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -21,10 +22,7 @@ function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // 1. Firebase Auth Persistence Listener
   useEffect(() => {
-    // If Firebase isn't configured, we skip the listener and stop loading.
-    // The user will be directed to the Login page where they can use Demo mode.
     if (!isFirebaseEnabled || !auth) {
       setLoading(false);
       return;
@@ -33,57 +31,30 @@ function App() {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         try {
-          if (!db) {
-             console.error("Firestore DB not initialized");
-             return;
-          }
-
-          let currentUserId = firebaseUser.uid;
-          let currentUserRole: Role = 'GURU';
-          let currentUserName = firebaseUser.displayName || firebaseUser.email || 'User';
-
-          // 1. Check if user document exists with UID (Best practice: Auth UID = Doc ID)
+          if (!db) return;
           const docRef = doc(db, 'users', firebaseUser.uid);
           const docSnap = await getDoc(docRef);
           
-          if (docSnap.exists()) {
-            const userData = docSnap.data();
-            currentUserId = firebaseUser.uid;
-            currentUserRole = (userData.role as Role) || 'GURU';
-            currentUserName = userData.name || currentUserName;
-          } else {
-            // 2. Fallback: Check if user exists by Email (Created by Coordinator via addDoc)
-            // This links the Auth User (UID) to the Profile Document (Random ID)
-            if (firebaseUser.email) {
-              const q = query(collection(db, 'users'), where('email', '==', firebaseUser.email));
-              const querySnapshot = await getDocs(q);
-              
-              if (!querySnapshot.empty) {
-                const userDoc = querySnapshot.docs[0];
-                const userData = userDoc.data();
-                currentUserId = userDoc.id; // IMPORTANT: Use the Firestore Doc ID as the User ID
-                currentUserRole = (userData.role as Role) || 'GURU';
-                currentUserName = userData.name || currentUserName;
-              }
-            }
+          let userData: any = docSnap.exists() ? docSnap.data() : null;
+          
+          if (!userData && firebaseUser.email) {
+            const q = query(collection(db, 'users'), where('email', '==', firebaseUser.email));
+            const querySnapshot = await getDocs(q);
+            if (!querySnapshot.empty) userData = querySnapshot.docs[0].data();
           }
 
           setUser({
-            id: currentUserId,
-            name: currentUserName,
+            id: firebaseUser.uid,
+            name: userData?.name || firebaseUser.displayName || 'User',
             email: firebaseUser.email || '',
-            role: currentUserRole,
+            role: (userData?.role as Role) || 'GURU',
+            nickname: userData?.nickname || '',
           });
-
         } catch (error) {
           console.error("Error fetching user profile:", error);
-          // Optional: handle error state
         }
       } else {
-        // No user logged in (or just logged out)
-        if (isFirebaseEnabled) {
-          setUser(null);
-        }
+        setUser(null);
       }
       setLoading(false);
     });
@@ -91,21 +62,9 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  const handleLogin = (loggedInUser: User) => {
-    setUser(loggedInUser);
-  };
-
-  const handleLogout = async () => {
-    await logout(); // Firebase signout
-    setUser(null);
-  };
-
-  const handleSwitchRole = (role: Role) => {
-    // Development/Demo helper to quick switch
-    if (user) {
-       setUser({ ...user, role });
-    }
-  };
+  const handleLogin = (loggedInUser: User) => setUser(loggedInUser);
+  const handleLogout = async () => { await logout(); setUser(null); };
+  const handleSwitchRole = (role: Role) => user && setUser({ ...user, role });
 
   if (loading) {
     return (
@@ -124,63 +83,26 @@ function App() {
 
         <Route element={<Layout user={user} onLogout={handleLogout} onSwitchRole={handleSwitchRole} />}>
           {/* Coordinator Routes */}
-          <Route path="/coordinator" element={<Navigate to="/coordinator/dashboard" replace />} />
-          
-          <Route path="/coordinator/dashboard" element={
-            user?.role === 'KOORDINATOR' ? <CoordinatorDashboard /> : <Navigate to="/guru/dashboard" replace />
-          } />
-          
-          <Route path="/coordinator/guru" element={
-             user?.role === 'KOORDINATOR' ? <CoordinatorGuruPage /> : <Navigate to="/guru/dashboard" replace />
-          } />
-
-          <Route path="/coordinator/guru/:id" element={
-             user?.role === 'KOORDINATOR' ? <CoordinatorTeacherDetail /> : <Navigate to="/guru/dashboard" replace />
-          } />
-
-          <Route path="/coordinator/siswa" element={
-             user?.role === 'KOORDINATOR' ? <CoordinatorSiswaPage /> : <Navigate to="/guru/dashboard" replace />
-          } />
-
-          <Route path="/coordinator/kelas" element={
-             user?.role === 'KOORDINATOR' ? <CoordinatorKelasPage /> : <Navigate to="/guru/dashboard" replace />
-          } />
-
-          {/* Fallback for other coordinator routes placeholders */}
-           <Route path="/coordinator/*" element={
-             user?.role === 'KOORDINATOR' ? <CoordinatorDashboard /> : <Navigate to="/guru/dashboard" replace />
-          } />
-
+          <Route path="/coordinator/dashboard" element={user?.role === 'KOORDINATOR' ? <CoordinatorDashboard /> : <Navigate to="/login" />} />
+          <Route path="/coordinator/guru" element={user?.role === 'KOORDINATOR' ? <CoordinatorGuruPage /> : <Navigate to="/login" />} />
+          <Route path="/coordinator/guru/:id" element={user?.role === 'KOORDINATOR' ? <CoordinatorTeacherDetail /> : <Navigate to="/login" />} />
+          <Route path="/coordinator/siswa" element={user?.role === 'KOORDINATOR' ? <CoordinatorSiswaPage /> : <Navigate to="/login" />} />
+          <Route path="/coordinator/kelas" element={user?.role === 'KOORDINATOR' ? <CoordinatorKelasPage /> : <Navigate to="/login" />} />
+          {/* Placeholder untuk route yang belum ada agar tidak memicu fallback global */}
+          <Route path="/coordinator/reports" element={<div className="p-8">Fitur Pantau Laporan Segera Hadir</div>} />
+          <Route path="/coordinator/evaluations" element={<div className="p-8">Fitur Input Evaluasi Segera Hadir</div>} />
 
           {/* Guru Routes */}
-          <Route path="/guru" element={<Navigate to="/guru/dashboard" replace />} />
-
-          <Route path="/guru/dashboard" element={
-            user?.role === 'GURU' ? <GuruDashboard teacherId={user.id} /> : <Navigate to="/coordinator/dashboard" replace />
-          } />
-
-          <Route path="/guru/halaqah" element={
-            user?.role === 'GURU' ? <GuruHalaqahPage teacherId={user.id} /> : <Navigate to="/coordinator/dashboard" replace />
-          } />
-
-          <Route path="/guru/laporan" element={
-            user?.role === 'GURU' ? <GuruLaporanPage teacherId={user.id} /> : <Navigate to="/coordinator/dashboard" replace />
-          } />
-
-          <Route path="/guru/view-report" element={
-            user?.role === 'GURU' ? <GuruViewReportPage teacherId={user.id} /> : <Navigate to="/coordinator/dashboard" replace />
-          } />
-
-           {/* Fallback for other guru routes placeholders */}
-          <Route path="/guru/*" element={
-            user?.role === 'GURU' ? <GuruDashboard teacherId={user.id} /> : <Navigate to="/coordinator/dashboard" replace />
-          } />
+          <Route path="/guru/dashboard" element={user?.role === 'GURU' ? <GuruDashboard teacherId={user.id} /> : <Navigate to="/login" />} />
+          <Route path="/guru/halaqah" element={user?.role === 'GURU' ? <GuruHalaqahPage teacherId={user.id} /> : <Navigate to="/login" />} />
+          <Route path="/guru/laporan" element={user?.role === 'GURU' ? <GuruLaporanPage teacherId={user.id} /> : <Navigate to="/login" />} />
+          <Route path="/guru/view-report" element={user?.role === 'GURU' ? <GuruViewReportPage teacherId={user.id} /> : <Navigate to="/login" />} />
+          <Route path="/guru/evaluation" element={<div className="p-8">Fitur Evaluasi Segera Hadir</div>} />
+          <Route path="/guru/grades" element={<div className="p-8">Fitur Nilai Rapor Segera Hadir</div>} />
+          <Route path="/guru/rapor" element={<div className="p-8">Fitur Rapor Segera Hadir</div>} />
         </Route>
 
-        {/* Default Redirect based on Role */}
-        <Route path="*" element={
-          user ? <Navigate to={user.role === 'KOORDINATOR' ? '/coordinator/dashboard' : '/guru/dashboard'} replace /> : <Navigate to="/login" replace />
-        } />
+        <Route path="*" element={<Navigate to={user?.role === 'KOORDINATOR' ? '/coordinator/dashboard' : '/guru/dashboard'} replace />} />
       </Routes>
     </HashRouter>
   );
