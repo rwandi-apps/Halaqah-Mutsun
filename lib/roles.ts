@@ -1,6 +1,4 @@
+export type Role = 'KOORDINATOR' | 'GURU';
 
-// Fix: Corrected imported member name and logic based on Role type in types.ts
-import { Role } from '../types';
-
-export const canAccessCoordinator = (role: Role) => role === 'KOORDINATOR';
-export const canAccessGuru = (role: Role) => role === 'GURU';
+export const isKoordinator = (role: Role) => role === 'KOORDINATOR';
+export const isGuru = (role: Role) => role === 'GURU';
