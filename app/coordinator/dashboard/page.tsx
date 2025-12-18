@@ -1,197 +1,200 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { LogoSDQ } from '../../../components/LogoSDQ';
 import { Button } from '../../../components/Button';
-import { getAllTeachers, getAllStudents } from '../../../services/firestoreService';
-import { 
-  Users, 
-  GraduationCap, 
-  TrendingUp, 
-  Building2,
-  Clock,
-  BookOpen,
-  Settings,
-  CheckCircle,
-  AlertCircle
-} from 'lucide-react';
+import { login, mockLogin } from '../../../lib/auth';
+import { User, Role } from '../../../types';
+import { isFirebaseEnabled } from '../../../lib/firebase';
+import { AlertCircle, CheckCircle, User as UserIcon, Lock } from 'lucide-react';
 
-const DashboardStatCard: React.FC<{
-  title: string;
-  value: string;
-  icon: React.ElementType;
-  iconBg: string;
-  iconColor: string;
-}> = ({ title, value, icon: Icon, iconBg, iconColor }) => (
-  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-5">
-    <div className={`w-14 h-14 rounded-full ${iconBg} flex items-center justify-center ${iconColor}`}>
-      <Icon size={28} />
-    </div>
-    <div>
-      <p className="text-sm text-gray-500 mb-1">{title}</p>
-      <h3 className="text-2xl font-bold text-gray-800">{value}</h3>
-    </div>
-  </div>
-);
+interface LoginProps {
+  onLogin: (user: User) => void;
+}
 
-const AccountabilityCard: React.FC<{
-  label: string;
-  count: number;
-  icon: React.ElementType;
-  color: string;
-  bgColor: string;
-}> = ({ label, count, icon: Icon, color, bgColor }) => (
-  <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between min-w-[160px]">
-    <div className="flex items-center gap-3">
-      <div className={`p-2 rounded-lg ${bgColor} ${color}`}>
-        <Icon size={20} />
-      </div>
-      <div>
-        <p className={`text-xs font-semibold ${color}`}>{label}</p>
-        <p className="text-xl font-bold text-gray-800">{count}</p>
-      </div>
-    </div>
-  </div>
-);
+export default function LoginPage({ onLogin }: LoginProps) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-export default function CoordinatorDashboard() {
-  const [stats, setStats] = useState({
-    totalTeachers: 0,
-    totalStudents: 0,
-    totalHalaqah: 0,
-    averageAttendance: 0
-  });
+  // Jika Firebase Config ada, matikan Demo Mode secara default.
+  // Jika tidak ada config, paksa nyalakan Demo Mode.
+  const [isDemoMode, setIsDemoMode] = useState(!isFirebaseEnabled);
+  const [demoRole, setDemoRole] = useState<Role>('GURU');
 
-  useEffect(() => {
-    const loadStats = async () => {
-      const teachers = await getAllTeachers();
-      const students = await getAllStudents();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
+
+    try {
+      let user: User;
+
+      if (isDemoMode) {
+        // Login Simulasi (Demo)
+        user = await mockLogin(email || 'demo@sdq.com', demoRole);
+      } else {
+        // Login Asli (Firebase)
+        if (!email || !password) {
+          throw new Error("Mohon isi email dan password.");
+        }
+        user = await login(email, password);
+      }
+
+      onLogin(user);
+    } catch (err: any) {
+      console.error("Login Error:", err);
       
-      // Calculate stats
-      const totalTeachers = teachers.length;
-      const totalStudents = students.length;
-      const totalHalaqah = teachers.length; // Assuming 1 active halaqah per teacher for demo
+      // Terjemahkan Error Firebase ke Bahasa Indonesia
+      let msg = "Gagal masuk. Periksa koneksi atau hubungi admin.";
+      const code = err.code || '';
       
-      // Calculate average attendance
-      const averageAttendance = students.length > 0 
-        ? Math.round(students.reduce((acc, s) => acc + (s.attendance || 0), 0) / students.length)
-        : 0;
+      if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
+        msg = "Email atau password salah. Silakan coba lagi.";
+      } else if (code === 'auth/too-many-requests') {
+        msg = "Terlalu banyak percobaan gagal. Silakan tunggu beberapa saat.";
+      } else if (code === 'auth/network-request-failed') {
+        msg = "Gagal terhubung ke server. Periksa koneksi internet Anda.";
+      } else if (err.message) {
+        msg = err.message;
+      }
 
-      setStats({
-        totalTeachers,
-        totalStudents,
-        totalHalaqah,
-        averageAttendance
-      });
-    };
-    loadStats();
-  }, []);
+      setError(msg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Dashboard Koordinator</h2>
-          <p className="text-gray-500 mt-1">Pantau performa sekolah dan aktivitas guru secara global.</p>
-        </div>
-        <Button className="shadow-lg shadow-primary-500/30">
-          + Input Evaluasi Bulanan
-        </Button>
+    <div className="min-h-screen w-full relative flex items-center justify-center overflow-hidden bg-gray-900 font-sans">
+      {/* Background Image */}
+      <div className="absolute inset-0 z-0">
+        <img 
+          src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2670&auto=format&fit=crop" 
+          alt="Building Background" 
+          className="w-full h-full object-cover opacity-90"
+        />
+        {/* Gradient Overlay for better text visibility if needed */}
+        <div className="absolute inset-0 bg-gradient-to-b from-blue-900/20 to-gray-900/40" />
       </div>
 
-      {/* Statistics Cards */}
-      <div>
-        <h3 className="text-sm font-bold text-gray-800 mb-4">Statistik Sekolah</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <DashboardStatCard 
-            title="Total Guru Aktif"
-            value={`${stats.totalTeachers} Orang`}
-            icon={Users}
-            iconBg="bg-orange-50"
-            iconColor="text-orange-500"
-          />
-          <DashboardStatCard 
-            title="Total Siswa"
-            value={`${stats.totalStudents} Siswa`}
-            icon={GraduationCap}
-            iconBg="bg-green-50"
-            iconColor="text-green-500"
-          />
-          <DashboardStatCard 
-            title="Total Halaqah"
-            value={`${stats.totalHalaqah} Kelas`}
-            icon={Building2}
-            iconBg="bg-blue-50"
-            iconColor="text-blue-500"
-          />
-          <DashboardStatCard 
-            title="Rata-rata Kehadiran"
-            value={`${stats.averageAttendance}%`}
-            icon={TrendingUp}
-            iconBg="bg-pink-50"
-            iconColor="text-pink-500"
-          />
+      {/* Main Content */}
+      <div className="relative z-10 w-full max-w-[400px] px-6 flex flex-col items-center">
+        
+        {/* Logo Area - Wrapped for visibility */}
+        <div className="mb-10 scale-110 bg-white/90 backdrop-blur-sm px-6 py-3 rounded-full shadow-2xl">
+          <LogoSDQ />
         </div>
-      </div>
 
-      {/* Accountability Status (Mocked for Demo as not fully implemented in backend yet) */}
-      <div>
-        <h3 className="text-sm font-bold text-gray-800 mb-4">Status Akuntabilitas Guru</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          <AccountabilityCard label="Belum Dibaca" count={1} icon={Clock} color="text-gray-500" bgColor="bg-gray-100" />
-          <AccountabilityCard label="Sudah Dibaca" count={1} icon={BookOpen} color="text-yellow-600" bgColor="bg-yellow-50" />
-          <AccountabilityCard label="Sedang Berjalan" count={2} icon={Settings} color="text-blue-500" bgColor="bg-blue-50" />
-          <AccountabilityCard label="Selesai" count={1} icon={CheckCircle} color="text-green-500" bgColor="bg-green-50" />
-          <AccountabilityCard label="Butuh Diskusi" count={0} icon={AlertCircle} color="text-red-500" bgColor="bg-red-50" />
-        </div>
-      </div>
-
-      {/* Bottom Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="font-bold text-gray-800 mb-6">Performa Rata-rata Per Halaqah</h3>
-          <div className="h-64 flex items-center justify-center text-gray-400">
-             <div className="flex items-end gap-4 w-full h-full px-8 pb-4">
-               {/* Visual Mock Bars */}
-               <div className="w-1/4 bg-blue-100 h-[60%] rounded-t-lg relative group">
-                  <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold text-gray-600">60%</span>
-                  <div className="absolute bottom-2 left-0 right-0 text-center text-[10px] text-gray-500">Kelas 1</div>
-               </div>
-               <div className="w-1/4 bg-blue-200 h-[80%] rounded-t-lg relative group">
-                  <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold text-gray-600">80%</span>
-                  <div className="absolute bottom-2 left-0 right-0 text-center text-[10px] text-gray-500">Kelas 2</div>
-               </div>
-               <div className="w-1/4 bg-blue-300 h-[75%] rounded-t-lg relative group">
-                  <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold text-gray-600">75%</span>
-                  <div className="absolute bottom-2 left-0 right-0 text-center text-[10px] text-gray-500">Kelas 3</div>
-               </div>
-               <div className="w-1/4 bg-blue-400 h-[90%] rounded-t-lg relative group">
-                  <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold text-gray-600">90%</span>
-                  <div className="absolute bottom-2 left-0 right-0 text-center text-[10px] text-gray-500">Kelas 4</div>
-               </div>
-             </div>
+        {/* Error Notification */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-100/90 backdrop-blur-md border border-red-200 text-red-700 text-sm rounded-2xl flex items-start gap-3 w-full shadow-lg animate-in fade-in slide-in-from-top-4">
+            <AlertCircle size={20} className="shrink-0 mt-0.5" />
+            <span>{error}</span>
           </div>
-        </div>
+        )}
+        
+        {/* Connection Status Indicator */}
+        {!isDemoMode && isFirebaseEnabled && (
+           <div className="mb-6 p-2 bg-green-500/80 backdrop-blur text-white text-xs rounded-full px-4 flex gap-2 justify-center items-center shadow-lg">
+             <CheckCircle size={14} />
+             <span>Sistem Terhubung ke Server</span>
+           </div>
+        )}
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="font-bold text-gray-800 mb-6">Aktivitas Guru Terbaru</h3>
-          <div className="space-y-6">
-            <div className="flex gap-4">
-              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold shrink-0">UH</div>
-              <div>
-                <p className="text-sm font-semibold text-gray-900">Ustadz Hasan</p>
-                <p className="text-sm text-gray-500 mt-1">Menginput Laporan Bulanan - Ahmad Fulan</p>
-                <p className="text-xs text-gray-400 mt-1">2 jam yang lalu</p>
-              </div>
+        <form onSubmit={handleSubmit} className="w-full space-y-5">
+          {/* Email Input */}
+          <div className="relative group">
+            <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary-600 transition-colors pointer-events-none">
+                <UserIcon size={20} strokeWidth={1.5} />
             </div>
-            <div className="flex gap-4">
-              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-bold shrink-0">UA</div>
-              <div>
-                <p className="text-sm font-semibold text-gray-900">Ustadz Arif</p>
-                <p className="text-sm text-gray-500 mt-1">Menyelesaikan setoran Budi Santoso</p>
-                <p className="text-xs text-gray-400 mt-1">5 jam yang lalu</p>
-              </div>
-            </div>
+            <input
+              type="email"
+              required={!isDemoMode}
+              placeholder="Email Address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full pl-14 pr-6 py-4 bg-white border-2 border-transparent focus:border-primary-300 rounded-full text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-4 focus:ring-primary-500/20 shadow-xl transition-all"
+            />
           </div>
-        </div>
+
+          {/* Password Input (Hidden in Demo if desired, but kept for UI consistency) */}
+          {(!isDemoMode || isDemoMode) && (
+            <div className="relative group">
+              <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary-600 transition-colors pointer-events-none">
+                  <Lock size={20} strokeWidth={1.5} />
+              </div>
+              <input
+                type="password"
+                required={!isDemoMode}
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full pl-14 pr-6 py-4 bg-white border-2 border-transparent focus:border-primary-300 rounded-full text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-4 focus:ring-primary-500/20 shadow-xl transition-all"
+              />
+            </div>
+          )}
+
+          {/* Submit Button */}
+          <button 
+            type="submit"
+            disabled={isLoading}
+            className="w-full py-4 bg-[#0047AB] hover:bg-[#003380] text-white font-bold rounded-full shadow-xl hover:shadow-2xl hover:-translate-y-0.5 transition-all duration-200 mt-2 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {isLoading ? (
+              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            ) : (
+              isDemoMode ? "Masuk Dashboard (Demo)" : "Masuk Dashboard"
+            )}
+          </button>
+        </form>
+
+        {/* Demo Mode Controls (Styled Cleanly) */}
+        {isDemoMode && (
+           <div className="mt-8 bg-white/90 backdrop-blur-md p-5 rounded-2xl w-full shadow-2xl border border-white/20">
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 text-center">Pilih Peran Simulasi</label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setDemoRole('GURU')}
+                  className={`p-2.5 rounded-xl text-sm font-semibold transition-all ${
+                    demoRole === 'GURU' 
+                      ? 'bg-primary-600 text-white shadow-lg transform scale-105' 
+                      : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                  }`}
+                >
+                  Guru
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDemoRole('KOORDINATOR')}
+                  className={`p-2.5 rounded-xl text-sm font-semibold transition-all ${
+                    demoRole === 'KOORDINATOR' 
+                      ? 'bg-primary-600 text-white shadow-lg transform scale-105' 
+                      : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                  }`}
+                >
+                  Koordinator
+                </button>
+              </div>
+           </div>
+        )}
+
+        {/* Switch to/from Demo Mode */}
+        {isFirebaseEnabled && (
+          <button 
+            type="button" 
+            onClick={() => {
+              setIsDemoMode(!isDemoMode);
+              setError("");
+            }}
+            className="mt-6 text-xs font-medium text-white/80 hover:text-white bg-black/20 hover:bg-black/30 px-4 py-2 rounded-full backdrop-blur-sm transition-all"
+          >
+            {isDemoMode ? "Switch to Real Login" : "Switch to Demo Mode"}
+          </button>
+        )}
       </div>
     </div>
   );
