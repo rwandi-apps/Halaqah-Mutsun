@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Student } from '../../../types';
 import { getStudentsByTeacher, addReport } from '../../../services/firestoreService';
@@ -7,17 +8,17 @@ import { Button } from '../../../components/Button';
 import { BookOpen, Book, Plus, Minus, Database } from 'lucide-react';
 
 interface GuruLaporanPageProps {
-  teacherId: string;
+  teacherId?: string;
 }
 
 const IQRA_VOLUMES = ["Iqra' 1", "Iqra' 2", "Iqra' 3", "Iqra' 4", "Iqra' 5", "Iqra' 6"];
 
-// Helper Component for Counter Input (Editable & Can be Empty)
+// Helper Component for Counter Input
 const CounterInput = ({ 
   label, 
   value, 
   onChange, 
-  min = 1 
+  min = 0 
 }: { 
   label?: string, 
   value: number | string, 
@@ -35,7 +36,7 @@ const CounterInput = ({
 
   const handleIncrement = () => {
     if (typeof value === 'string') {
-      onChange(min);
+      onChange(min + 1);
     } else {
       onChange(value + 1);
     }
@@ -113,7 +114,7 @@ const SourceSelect = ({
   </div>
 );
 
-export default function GuruLaporanPage({ teacherId }: GuruLaporanPageProps) {
+export default function GuruLaporanPage({ teacherId = '1' }: GuruLaporanPageProps) {
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -121,9 +122,9 @@ export default function GuruLaporanPage({ teacherId }: GuruLaporanPageProps) {
   // Form State
   const [reportType, setReportType] = useState('Laporan Bulanan');
   const [studentId, setStudentId] = useState('');
-  const [month, setMonth] = useState('Desember'); // Also acts as "Period"
+  const [month, setMonth] = useState('Desember');
   
-  // Tilawah State (Individual) - Defaults are now empty strings
+  // Tilawah State (Individual)
   const [tilawahMethod, setTilawahMethod] = useState<'Al-Quran' | 'Iqra'>('Al-Quran');
   const [tilawahFromSurah, setTilawahFromSurah] = useState(''); 
   const [tilawahFromVerse, setTilawahFromVerse] = useState<number | string>(''); 
@@ -131,7 +132,7 @@ export default function GuruLaporanPage({ teacherId }: GuruLaporanPageProps) {
   const [tilawahToVerse, setTilawahToVerse] = useState<number | string>(''); 
   const [tilawahTotal, setTilawahTotal] = useState({ pages: 0, lines: 0 });
   
-  // Tilawah State (Klasikal) - Defaults are now empty strings
+  // Tilawah State (Klasikal)
   const [tilawahKlasikalMethod, setTilawahKlasikalMethod] = useState<'Al-Quran' | 'Iqra'>('Al-Quran');
   const [tilawahKlasikalFromSurah, setTilawahKlasikalFromSurah] = useState('');
   const [tilawahKlasikalFromVerse, setTilawahKlasikalFromVerse] = useState<number | string>(''); 
@@ -139,7 +140,7 @@ export default function GuruLaporanPage({ teacherId }: GuruLaporanPageProps) {
   const [tilawahKlasikalToVerse, setTilawahKlasikalToVerse] = useState<number | string>(''); 
   const [tilawahKlasikalTotal, setTilawahKlasikalTotal] = useState({ pages: 0, lines: 0 });
 
-  // Tahfizh State - Defaults are now empty strings
+  // Tahfizh State
   const [tahfizhFromSurah, setTahfizhFromSurah] = useState(''); 
   const [tahfizhFromVerse, setTahfizhFromVerse] = useState<number | string>(''); 
   const [tahfizhToSurah, setTahfizhToSurah] = useState('');
@@ -152,7 +153,7 @@ export default function GuruLaporanPage({ teacherId }: GuruLaporanPageProps) {
   const [tahfizhKlasikalToVerse, setTahfizhKlasikalToVerse] = useState<number | string>(''); 
   const [tahfizhKlasikalTotal, setTahfizhKlasikalTotal] = useState({ pages: 0, lines: 0 });
 
-  // Baseline Data (Total Accumulation for Semester Report)
+  // Baseline Data
   const [baselineJuz, setBaselineJuz] = useState<number | string>(0);
   const [baselinePages, setBaselinePages] = useState<number | string>(0);
   const [baselineLines, setBaselineLines] = useState<number | string>(0);
@@ -163,14 +164,16 @@ export default function GuruLaporanPage({ teacherId }: GuruLaporanPageProps) {
     const loadData = async () => {
       if (!teacherId) return;
       setIsLoading(true);
-      const data = await getStudentsByTeacher(teacherId);
-      setStudents(data);
-      setIsLoading(false);
+      try {
+        const data = await getStudentsByTeacher(teacherId);
+        setStudents(data);
+      } finally {
+        setIsLoading(false);
+      }
     };
     loadData();
   }, [teacherId]);
 
-  // Handle Report Type Change -> Reset Period
   useEffect(() => {
     if (reportType === 'Laporan Semester') {
       setMonth('Ganjil');
@@ -179,7 +182,6 @@ export default function GuruLaporanPage({ teacherId }: GuruLaporanPageProps) {
     }
   }, [reportType]);
 
-  // Handle Tilawah Individual Method Change - Reset to Empty
   useEffect(() => {
     setTilawahFromSurah('');
     setTilawahToSurah('');
@@ -187,7 +189,6 @@ export default function GuruLaporanPage({ teacherId }: GuruLaporanPageProps) {
     setTilawahToVerse('');
   }, [tilawahMethod]);
 
-  // Handle Tilawah Klasikal Method Change - Reset to Empty
   useEffect(() => {
     setTilawahKlasikalFromSurah('');
     setTilawahKlasikalToSurah('');
@@ -195,10 +196,8 @@ export default function GuruLaporanPage({ teacherId }: GuruLaporanPageProps) {
     setTilawahKlasikalToVerse('');
   }, [tilawahKlasikalMethod]);
 
-  // Utility to safe convert string|number to number for calculation
   const safeNum = (val: string | number) => (typeof val === 'number' ? val : 0);
 
-  // Calculations
   useEffect(() => {
     const result = calculateHafalan(
       tilawahFromSurah, safeNum(tilawahFromVerse), 
@@ -218,7 +217,7 @@ export default function GuruLaporanPage({ teacherId }: GuruLaporanPageProps) {
   useEffect(() => {
     const result = calculateHafalan(
       tahfizhFromSurah, safeNum(tahfizhFromVerse), 
-      tahfizhToSurah, safeNum(tahfizhToVerse)
+      tahfizhToSurah, safeNum(tahfizhFromVerse)
     );
     setTahfizhTotal(result);
   }, [tahfizhFromSurah, tahfizhFromVerse, tahfizhToSurah, tahfizhToVerse]);
@@ -230,8 +229,6 @@ export default function GuruLaporanPage({ teacherId }: GuruLaporanPageProps) {
     );
     setTahfizhKlasikalTotal(result);
   }, [tahfizhKlasikalFromSurah, tahfizhKlasikalFromVerse, tahfizhKlasikalToSurah, tahfizhKlasikalToVerse]);
-
-  // --- HANDLERS FOR SYNCING FROM -> TO ---
 
   const handleTilawahFromSurahChange = (val: string) => {
     setTilawahFromSurah(val);
@@ -278,13 +275,11 @@ export default function GuruLaporanPage({ teacherId }: GuruLaporanPageProps) {
     const selectedStudent = students.find(s => s.id === studentId);
     if (!selectedStudent) return;
 
-    // Helper to formatting string range safely
     const fmt = (surah: string, verse: number | string) => {
         if (!surah) return '-';
         return `${surah}: ${(typeof verse === 'string' && verse === '') ? '-' : verse}`;
     };
 
-    // Helper to construct the full range string, ensuring if both sides are empty we return "-"
     const makeRange = (fromSurah: string, fromVerse: number | string, toSurah: string, toVerse: number | string) => {
         if (!fromSurah && !toSurah) return '-';
         return `${fmt(fromSurah, fromVerse)} - ${fmt(toSurah, toVerse)}`;
@@ -292,6 +287,7 @@ export default function GuruLaporanPage({ teacherId }: GuruLaporanPageProps) {
 
     setIsSaving(true);
     try {
+      // Fix: Added missing 'method' property to tilawah object to satisfy type requirement
       await addReport({
         studentId,
         studentName: selectedStudent.name,
@@ -299,7 +295,9 @@ export default function GuruLaporanPage({ teacherId }: GuruLaporanPageProps) {
         className: selectedStudent.className,
         type: reportType,
         month,
-        academicYear: '2025/2026', // Can be dynamic
+        academicYear: '2025/2026',
+        date: new Date().toISOString().split('T')[0],
+        evaluation: '',
         tilawah: {
           method: tilawahMethod,
           individual: makeRange(tilawahFromSurah, tilawahFromVerse, tilawahToSurah, tilawahToVerse),
@@ -318,7 +316,6 @@ export default function GuruLaporanPage({ teacherId }: GuruLaporanPageProps) {
       });
       
       alert("Laporan berhasil disimpan ke database!");
-      // Reset fields here if needed
     } catch (error) {
       console.error(error);
       alert("Gagal menyimpan laporan.");
@@ -328,19 +325,16 @@ export default function GuruLaporanPage({ teacherId }: GuruLaporanPageProps) {
   };
 
   const getLabel = (method: string) => method === 'Al-Quran' ? 'Ayat' : 'Hal';
-  
-  const formatTotal = (total: { pages: number, lines: number }) => {
-    return `Total: ${total.pages} Halaman ${total.lines} Baris`;
-  };
+  const formatTotal = (total: { pages: number, lines: number }) => `Total: ${total.pages} Halaman ${total.lines} Baris`;
+
+  if (isLoading) return <div className="p-8 text-center text-gray-500">Memuat data siswa...</div>;
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-12">
-      {/* Header - Tombol Simpan Laporan dihapus */}
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-900">Input Laporan</h2>
       </div>
 
-      {/* Top Filters */}
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
           <div>
@@ -355,7 +349,7 @@ export default function GuruLaporanPage({ teacherId }: GuruLaporanPageProps) {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nama Siswa (Untuk Data Individual)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Nama Siswa</label>
             <select 
               value={studentId} 
               onChange={(e) => setStudentId(e.target.value)}
@@ -403,226 +397,133 @@ export default function GuruLaporanPage({ teacherId }: GuruLaporanPageProps) {
         </div>
       </div>
 
-      {/* Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        
-        {/* LEFT COLUMN: CAPAIAN TAHFIZH */}
         <div className="bg-white rounded-xl shadow-sm border border-teal-100 overflow-hidden">
           <div className="bg-teal-50 px-6 py-4 border-b border-teal-100 flex items-center gap-2">
             <Book className="text-teal-600" size={20} />
             <h3 className="font-bold text-teal-700">Capaian Tahfizh</h3>
           </div>
-
           <div className="p-6 space-y-8">
-            
-            {/* BASELINE DATA SECTION (Only for Semester Report) */}
             {reportType === 'Laporan Semester' && (
-              <div className="bg-teal-50/60 p-5 rounded-lg border border-teal-200 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="bg-teal-50/60 p-5 rounded-lg border border-teal-200 shadow-sm">
                 <div className="flex items-start gap-3 mb-3">
-                  <div className="p-2 bg-teal-100 text-teal-700 rounded-lg">
-                    <Database size={18} />
-                  </div>
+                  <div className="p-2 bg-teal-100 text-teal-700 rounded-lg"><Database size={18} /></div>
                   <div>
-                    <h4 className="font-bold text-teal-800 text-sm">Data Awal / Total Hafalan</h4>
-                    <p className="text-xs text-teal-600 mt-1">
-                      Masukkan total jumlah hafalan siswa saat ini (akumulasi) sebagai data awal semester.
-                    </p>
+                    <h4 className="font-bold text-teal-800 text-sm">Total Hafalan Akumulasi</h4>
+                    <p className="text-xs text-teal-600 mt-1">Gunakan ini untuk menetapkan data awal semester.</p>
                   </div>
                 </div>
-                
                 <div className="grid grid-cols-3 gap-4 mt-4">
                    <div className="flex flex-col items-center">
                       <span className="text-xs font-semibold text-teal-700 mb-2 uppercase">Juz</span>
-                      <CounterInput value={baselineJuz} onChange={setBaselineJuz} min={0} />
+                      <CounterInput value={baselineJuz} onChange={setBaselineJuz} />
                    </div>
                    <div className="flex flex-col items-center">
-                      <span className="text-xs font-semibold text-teal-700 mb-2 uppercase">Halaman</span>
-                      <CounterInput value={baselinePages} onChange={setBaselinePages} min={0} />
+                      <span className="text-xs font-semibold text-teal-700 mb-2 uppercase">Hal</span>
+                      <CounterInput value={baselinePages} onChange={setBaselinePages} />
                    </div>
                    <div className="flex flex-col items-center">
                       <span className="text-xs font-semibold text-teal-700 mb-2 uppercase">Baris</span>
-                      <CounterInput value={baselineLines} onChange={setBaselineLines} min={0} />
+                      <CounterInput value={baselineLines} onChange={setBaselineLines} />
                    </div>
-                </div>
-                <div className="mt-3 pt-3 border-t border-teal-200/50">
-                   <p className="text-[10px] text-teal-600 italic text-center">
-                     *Jumlah ini akan otomatis bertambah saat input laporan bulanan berikutnya.
-                   </p>
                 </div>
               </div>
             )}
-
-            {/* Metode Individual */}
             <div>
               <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center gap-2 border-l-4 border-teal-600 pl-3">
-                  <h4 className="font-bold text-gray-800">Capaian Periode Ini</h4>
-                </div>
-                <span className="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-md font-medium">
-                  {formatTotal(tahfizhTotal)}
-                </span>
+                <div className="flex items-center gap-2 border-l-4 border-teal-600 pl-3"><h4 className="font-bold text-gray-800">Capaian Periode Ini</h4></div>
+                <span className="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-md font-medium">{formatTotal(tahfizhTotal)}</span>
               </div>
-
-              {/* Inputs */}
               <div className="space-y-4">
                 <div className="flex gap-4 items-end">
                    <SourceSelect label="DARI" value={tahfizhFromSurah} onChange={handleTahfizhFromSurahChange} method="Al-Quran" />
-                   <div className="mb-0.5">
-                     <CounterInput label="Ayat" value={tahfizhFromVerse} onChange={handleTahfizhFromVerseChange} />
-                   </div>
+                   <div className="mb-0.5"><CounterInput label="Ayat" value={tahfizhFromVerse} onChange={handleTahfizhFromVerseChange} /></div>
                 </div>
                 <div className="flex gap-4 items-end">
                    <SourceSelect label="SAMPAI" value={tahfizhToSurah} onChange={setTahfizhToSurah} method="Al-Quran" />
-                   <div className="mb-0.5">
-                     <CounterInput label="Ayat" value={tahfizhToVerse} onChange={setTahfizhToVerse} />
-                   </div>
+                   <div className="mb-0.5"><CounterInput label="Ayat" value={tahfizhToVerse} onChange={setTahfizhToVerse} /></div>
                 </div>
               </div>
             </div>
-
             <div className="h-px bg-gray-100"></div>
-
-            {/* Metode Klasikal */}
             <div>
               <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-2 border-l-4 border-teal-600 pl-3">
                   <h4 className="font-bold text-gray-800">Metode Klasikal</h4>
-                  <span className="bg-gray-100 text-gray-500 text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wide">Semua Siswa</span>
                 </div>
-                <span className="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-md font-medium">
-                   {formatTotal(tahfizhKlasikalTotal)}
-                </span>
+                <span className="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-md font-medium">{formatTotal(tahfizhKlasikalTotal)}</span>
               </div>
-
-              {/* Inputs */}
               <div className="space-y-4">
                 <div className="flex gap-4 items-end">
                    <SourceSelect label="DARI" value={tahfizhKlasikalFromSurah} onChange={handleTahfizhKlasikalFromSurahChange} method="Al-Quran" />
-                   <div className="mb-0.5">
-                     <CounterInput label="Ayat" value={tahfizhKlasikalFromVerse} onChange={handleTahfizhKlasikalFromVerseChange} />
-                   </div>
+                   <div className="mb-0.5"><CounterInput label="Ayat" value={tahfizhKlasikalFromVerse} onChange={handleTahfizhKlasikalFromVerseChange} /></div>
                 </div>
                 <div className="flex gap-4 items-end">
                    <SourceSelect label="SAMPAI" value={tahfizhKlasikalToSurah} onChange={setTahfizhKlasikalToSurah} method="Al-Quran" />
-                   <div className="mb-0.5">
-                     <CounterInput label="Ayat" value={tahfizhKlasikalToVerse} onChange={setTahfizhKlasikalToVerse} />
-                   </div>
+                   <div className="mb-0.5"><CounterInput label="Ayat" value={tahfizhKlasikalToVerse} onChange={setTahfizhKlasikalToVerse} /></div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* RIGHT COLUMN: CAPAIAN TILAWAH */}
         <div className="bg-white rounded-xl shadow-sm border border-orange-100 overflow-hidden">
           <div className="bg-orange-50 px-6 py-4 border-b border-orange-100 flex items-center gap-2">
             <BookOpen className="text-orange-500" size={20} />
             <h3 className="font-bold text-orange-600">Capaian Tilawah</h3>
           </div>
-
           <div className="p-6 space-y-8">
-            {/* Metode Individual */}
             <div>
               <div className="flex justify-between items-center mb-4">
-                <div className="flex items-center gap-2 border-l-4 border-primary-600 pl-3">
-                  <h4 className="font-bold text-gray-800">Metode Individual</h4>
-                </div>
-                <span className="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-md font-medium">
-                  {formatTotal(tilawahTotal)}
-                </span>
+                <div className="flex items-center gap-2 border-l-4 border-primary-600 pl-3"><h4 className="font-bold text-gray-800">Metode Individual</h4></div>
+                <span className="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-md font-medium">{formatTotal(tilawahTotal)}</span>
               </div>
-
-              {/* Toggle Individual */}
               <div className="flex gap-2 mb-6">
-                 <button 
-                   onClick={() => setTilawahMethod('Al-Quran')}
-                   className={`px-4 py-1.5 text-sm rounded transition-colors font-medium ${tilawahMethod === 'Al-Quran' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                 >
-                   Al-Qur'an
-                 </button>
-                 <button 
-                   onClick={() => setTilawahMethod('Iqra')}
-                   className={`px-4 py-1.5 text-sm rounded transition-colors font-medium ${tilawahMethod === 'Iqra' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                 >
-                   Iqra' (1-6)
-                 </button>
+                 <button onClick={() => setTilawahMethod('Al-Quran')} className={`px-4 py-1.5 text-sm rounded font-medium ${tilawahMethod === 'Al-Quran' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600'}`}>Al-Qur'an</button>
+                 <button onClick={() => setTilawahMethod('Iqra')} className={`px-4 py-1.5 text-sm rounded font-medium ${tilawahMethod === 'Iqra' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600'}`}>Iqra'</button>
               </div>
-
-              {/* Inputs */}
               <div className="space-y-4">
                 <div className="flex gap-4 items-end">
                    <SourceSelect label="DARI" value={tilawahFromSurah} onChange={handleTilawahFromSurahChange} method={tilawahMethod} />
-                   <div className="mb-0.5">
-                     <CounterInput label={getLabel(tilawahMethod)} value={tilawahFromVerse} onChange={handleTilawahFromVerseChange} />
-                   </div>
+                   <div className="mb-0.5"><CounterInput label={getLabel(tilawahMethod)} value={tilawahFromVerse} onChange={handleTilawahFromVerseChange} /></div>
                 </div>
                 <div className="flex gap-4 items-end">
                    <SourceSelect label="SAMPAI" value={tilawahToSurah} onChange={setTilawahToSurah} method={tilawahMethod} />
-                   <div className="mb-0.5">
-                     <CounterInput label={getLabel(tilawahMethod)} value={tilawahToVerse} onChange={setTilawahToVerse} />
-                   </div>
+                   <div className="mb-0.5"><CounterInput label={getLabel(tilawahMethod)} value={tilawahToVerse} onChange={setTilawahToVerse} /></div>
                 </div>
               </div>
             </div>
-
             <div className="h-px bg-gray-100"></div>
-
-            {/* Metode Klasikal */}
             <div>
               <div className="flex justify-between items-center mb-4">
-                <div className="flex items-center gap-2 border-l-4 border-primary-600 pl-3">
-                  <h4 className="font-bold text-gray-800">Metode Klasikal</h4>
-                  <span className="bg-gray-100 text-gray-500 text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wide">Semua Siswa</span>
-                </div>
-                <span className="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-md font-medium">
-                  {formatTotal(tilawahKlasikalTotal)}
-                </span>
+                <div className="flex items-center gap-2 border-l-4 border-primary-600 pl-3"><h4 className="font-bold text-gray-800">Metode Klasikal</h4></div>
+                <span className="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-md font-medium">{formatTotal(tilawahKlasikalTotal)}</span>
               </div>
-
-              {/* Toggle Klasikal */}
               <div className="flex gap-2 mb-6">
-                 <button 
-                   onClick={() => setTilawahKlasikalMethod('Al-Quran')}
-                   className={`px-4 py-1.5 text-sm rounded transition-colors font-medium ${tilawahKlasikalMethod === 'Al-Quran' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                 >
-                   Al-Qur'an
-                 </button>
-                 <button 
-                   onClick={() => setTilawahKlasikalMethod('Iqra')}
-                   className={`px-4 py-1.5 text-sm rounded transition-colors font-medium ${tilawahKlasikalMethod === 'Iqra' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                 >
-                   Iqra' (1-6)
-                 </button>
+                 <button onClick={() => setTilawahKlasikalMethod('Al-Quran')} className={`px-4 py-1.5 text-sm rounded font-medium ${tilawahKlasikalMethod === 'Al-Quran' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600'}`}>Al-Qur'an</button>
+                 <button onClick={() => setTilawahKlasikalMethod('Iqra')} className={`px-4 py-1.5 text-sm rounded font-medium ${tilawahKlasikalMethod === 'Iqra' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600'}`}>Iqra'</button>
               </div>
-
-              {/* Inputs */}
               <div className="space-y-4">
                 <div className="flex gap-4 items-end">
                    <SourceSelect label="DARI" value={tilawahKlasikalFromSurah} onChange={handleTilawahKlasikalFromSurahChange} method={tilawahKlasikalMethod} />
-                   <div className="mb-0.5">
-                     <CounterInput label={getLabel(tilawahKlasikalMethod)} value={tilawahKlasikalFromVerse} onChange={handleTilawahKlasikalFromVerseChange} />
-                   </div>
+                   <div className="mb-0.5"><CounterInput label={getLabel(tilawahKlasikalMethod)} value={tilawahKlasikalFromVerse} onChange={handleTilawahKlasikalFromVerseChange} /></div>
                 </div>
                 <div className="flex gap-4 items-end">
                    <SourceSelect label="SAMPAI" value={tilawahKlasikalToSurah} onChange={setTilawahKlasikalToSurah} method={tilawahKlasikalMethod} />
-                   <div className="mb-0.5">
-                     <CounterInput label={getLabel(tilawahKlasikalMethod)} value={tilawahKlasikalToVerse} onChange={setTilawahKlasikalToVerse} />
-                   </div>
+                   <div className="mb-0.5"><CounterInput label={getLabel(tilawahKlasikalMethod)} value={tilawahKlasikalToVerse} onChange={setTilawahKlasikalToVerse} /></div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-
       </div>
 
-      {/* Notes Section */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 className="font-bold text-gray-800 mb-4">Catatan Tambahan</h3>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="Tuliskan catatan perkembangan siswa atau kendala yang dihadapi..."
+          placeholder="Tuliskan catatan perkembangan siswa..."
           className="w-full h-32 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none resize-none"
         ></textarea>
       </div>
@@ -632,4 +533,4 @@ export default function GuruLaporanPage({ teacherId }: GuruLaporanPageProps) {
       </div>
     </div>
   );
-        }
+}

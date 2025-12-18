@@ -27,6 +27,7 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout, onSwitchRole }) 
   // Get initials from display name
   const initials = displayName
     .split(' ')
+    .filter(Boolean)
     .map(n => n[0])
     .join('')
     .substring(0, 2)
@@ -57,7 +58,7 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout, onSwitchRole }) 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 h-20 flex items-center justify-between px-4 lg:px-8">
+        <header className="bg-white border-b border-gray-200 h-20 flex items-center justify-between px-4 lg:px-8 shrink-0">
           <div className="flex items-center gap-4">
             <button 
               onClick={() => setSidebarOpen(!isSidebarOpen)}

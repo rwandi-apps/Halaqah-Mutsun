@@ -1,6 +1,8 @@
+
 import React, { useState } from 'react';
-import { LogoSDQ } from '../../../components/LogoSDQ';
-import { Button } from '../../../components/Button';
+// Fix: Use default imports instead of named imports for LogoSDQ and Button
+import LogoSDQ from '../../../components/LogoSDQ';
+import Button from '../../../components/Button';
 import { login, mockLogin } from '../../../lib/auth';
 import { User, Role } from '../../../types';
 import { isFirebaseEnabled } from '../../../lib/firebase';

@@ -1,67 +1,64 @@
-import { signInWithEmailAndPassword, signOut as firebaseSignOut } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
-import { auth, db, isFirebaseEnabled } from './firebase';
+import { auth, db } from './firebase';
 import { User, Role } from '../types';
 
-// Login function: Authenticates with Auth, then fetches Role from Firestore 'users' collection
-export const login = async (email: string, password: string): Promise<User> => {
-  if (!isFirebaseEnabled || !auth) {
-    throw new Error("Koneksi ke Firebase gagal. Cek konfigurasi API Key.");
-  }
+/**
+ * Real Firebase Sign In
+ * Authenticates user and fetches profile data from Firestore 'users' collection.
+ */
+export const login = async (email: string, pass: string): Promise<User> => {
+  if (!auth) throw new Error("Firebase Auth is not initialized");
 
+  const userCredential = await signInWithEmailAndPassword(auth, email, pass);
+  const firebaseUser = userCredential.user;
+
+  // Attempt to fetch profile details (Role, Name, etc.) from Firestore
   try {
-    // 1. Authenticate with Email/Password
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const firebaseUser = userCredential.user;
+    const docRef = doc(db, 'users', firebaseUser.uid);
+    const docSnap = await getDoc(docRef);
 
-    // 2. Fetch User Profile & Role from Firestore
-    // Assuming you have a collection 'users' where document ID = UID
-    let userData: any = {};
-    let userRole: Role = 'GURU'; // Default role if not found
-
-    if (db) {
-      try {
-        const userDocRef = doc(db, 'users', firebaseUser.uid);
-        const userDoc = await getDoc(userDocRef);
-        
-        if (userDoc.exists()) {
-          userData = userDoc.data();
-          userRole = (userData.role as Role) || 'GURU';
-        } else {
-          console.warn("User document not found in Firestore. Using auth profile.");
-        }
-      } catch (dbError) {
-        console.error("Firestore Error (ignoring for login):", dbError);
-        // Continue login even if DB fetch fails (e.g. permission issues), use defaults
-      }
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      return {
+        id: firebaseUser.uid,
+        email: firebaseUser.email || '',
+        name: data.name || firebaseUser.displayName || 'User SDQ',
+        role: (data.role as Role) || 'GURU',
+        nickname: data.nickname || '',
+      };
     }
-
-    return {
-      id: firebaseUser.uid,
-      name: userData.name || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-      email: firebaseUser.email || '',
-      role: userRole,
-    };
-
   } catch (error) {
-    console.error("Auth Error:", error);
-    throw error;
+    console.error("Profile fetch error:", error);
   }
+
+  // Fallback if firestore document doesn't exist yet
+  return {
+    id: firebaseUser.uid,
+    email: firebaseUser.email || '',
+    name: firebaseUser.displayName || 'User SDQ',
+    role: 'GURU'
+  };
 };
 
-export const logout = async (): Promise<void> => {
-  if (auth) {
-    await firebaseSignOut(auth);
-  }
-};
-
-// Mock fallback for Demo purposes
+/**
+ * Demo Mode Login
+ * Used for local testing without Firebase connectivity.
+ */
 export const mockLogin = async (email: string, role: Role): Promise<User> => {
-  await new Promise(resolve => setTimeout(resolve, 800));
   return { 
-    id: 'mock-id-' + Math.floor(Math.random() * 1000), 
-    name: role === 'KOORDINATOR' ? 'Demo Koordinator' : 'Demo Guru', 
-    email, 
+    id: `mock-${role.toLowerCase()}`, 
+    email: email || `demo@sdq.com`, 
+    name: `Ustadz ${role === 'GURU' ? 'Ahmad' : 'Umar'} (Demo)`, 
     role 
   };
+};
+
+/**
+ * Sign Out from Firebase
+ */
+export const logout = async () => {
+  if (auth) {
+    await signOut(auth);
+  }
 };

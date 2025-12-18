@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { User, Student } from '../../../../types';
@@ -39,11 +40,11 @@ export default function CoordinatorTeacherDetail() {
   const role = teacher.role || "GURU";
 
   const avgAttendance = students.length 
-    ? Math.round(students.reduce((acc, s) => acc + s.attendance, 0) / students.length)
+    ? Math.round(students.reduce((acc, s) => acc + (s.attendance || 0), 0) / students.length)
     : 0;
 
   const avgBehavior = students.length
-    ? (students.reduce((acc, s) => acc + s.behaviorScore, 0) / students.length).toFixed(1)
+    ? (students.reduce((acc, s) => acc + (s.behaviorScore || 0), 0) / students.length).toFixed(1)
     : "0.0";
 
   return (
@@ -79,6 +80,7 @@ export default function CoordinatorTeacherDetail() {
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Pass Icon components directly to satisfy LucideIcon type requirements */}
         <StatCard title="Total Siswa" value={students.length} icon={Users} color="bg-blue-50/50" />
         <StatCard title="Rata-rata Kehadiran" value={`${avgAttendance}%`} icon={UserCheck} trend={avgAttendance > 90 ? "Sangat Baik" : "Perlu ditingkatkan"} />
         <StatCard title="Nilai Perilaku Rata-rata" value={avgBehavior} icon={Star} color="bg-yellow-50/50" />
@@ -117,7 +119,7 @@ export default function CoordinatorTeacherDetail() {
                     <td className="px-6 py-3 text-gray-700">{student.currentProgress}</td>
                     <td className="px-6 py-3">
                       <div className="flex items-center gap-2">
-                        <span className={`font-medium ${student.attendance < 80 ? 'text-red-600' : 'text-green-600'}`}>
+                        <span className={`font-medium ${(student.attendance || 0) < 80 ? 'text-red-600' : 'text-green-600'}`}>
                           {student.attendance}%
                         </span>
                       </div>
@@ -143,4 +145,4 @@ export default function CoordinatorTeacherDetail() {
       </div>
     </div>
   );
-                    }
+}

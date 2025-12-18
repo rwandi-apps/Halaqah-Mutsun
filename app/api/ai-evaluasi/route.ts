@@ -1,7 +1,8 @@
+
 import { GoogleGenAI } from "@google/genai";
 import { Student } from "../../../types";
 
-// Initialize Gemini API client
+// Initialize Gemini API client using correct configuration
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export async function POST(student: Student) {
@@ -28,11 +29,13 @@ export async function POST(student: Student) {
       Keep it concise (under 200 words).
     `;
 
+    // Using recommended model for Basic Text Tasks
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash-preview',
       contents: prompt,
     });
 
+    // Directly accessing .text property as per guidelines
     return response.text || "Mohon maaf, evaluasi tidak dapat dibuat saat ini.";
   } catch (error) {
     console.error("Gemini API Error:", error);
