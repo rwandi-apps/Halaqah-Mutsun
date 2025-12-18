@@ -1,5 +1,5 @@
 {
-  "name": "SDQ Management System",
-  "description": "A comprehensive management system for Islamic schools (SDQ) featuring coordinator and teacher dashboards, student progress tracking, and AI-driven evaluation.",
+  "name": "Copy of Halaqah SDQ Manager",
+  "description": "A management platform for Halaqah SDQ coordinators and teachers to track student progress and generate AI-powered evaluations.",
   "requestFramePermissions": []
 }

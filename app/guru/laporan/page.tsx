@@ -217,7 +217,7 @@ export default function GuruLaporanPage({ teacherId = '1' }: GuruLaporanPageProp
   useEffect(() => {
     const result = calculateHafalan(
       tahfizhFromSurah, safeNum(tahfizhFromVerse), 
-      tahfizhToSurah, safeNum(tahfizhToVerse)
+      tahfizhToSurah, safeNum(tahfizhFromVerse)
     );
     setTahfizhTotal(result);
   }, [tahfizhFromSurah, tahfizhFromVerse, tahfizhToSurah, tahfizhToVerse]);
@@ -287,7 +287,7 @@ export default function GuruLaporanPage({ teacherId = '1' }: GuruLaporanPageProp
 
     setIsSaving(true);
     try {
-      // Fix: Added missing required fields date and evaluation as per Report interface definition
+      // Fix: Added missing 'method' property to tilawah object to satisfy type requirement
       await addReport({
         studentId,
         studentName: selectedStudent.name,
@@ -299,6 +299,7 @@ export default function GuruLaporanPage({ teacherId = '1' }: GuruLaporanPageProp
         date: new Date().toISOString().split('T')[0],
         evaluation: '',
         tilawah: {
+          method: tilawahMethod,
           individual: makeRange(tilawahFromSurah, tilawahFromVerse, tilawahToSurah, tilawahToVerse),
           classical: makeRange(tilawahKlasikalFromSurah, tilawahKlasikalFromVerse, tilawahKlasikalToSurah, tilawahKlasikalToVerse)
         },

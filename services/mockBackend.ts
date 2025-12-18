@@ -1,3 +1,4 @@
+
 import { User, Student, Role, Report } from '../types';
 
 export const CLASS_LIST = [
@@ -68,7 +69,8 @@ let MOCK_REPORTS: Report[] = [
     type: 'Laporan Bulanan',
     month: 'Desember',
     tilawah: {
-      // Fix: Removed 'method' property to match Report type definition
+      // Fix: Restored missing 'method' property to satisfy type requirement
+      method: 'Al-Quran',
       individual: 'Al-Baqarah: 1 - Al-Baqarah: 25',
       classical: 'Al-Fatihah: 1 - Al-Fatihah: 7'
     },
@@ -91,7 +93,8 @@ let MOCK_REPORTS: Report[] = [
     type: 'Laporan Bulanan',
     month: 'Desember',
     tilawah: {
-      // Fix: Removed 'method' property to match Report type definition
+      // Fix: Restored missing 'method' property to satisfy type requirement
+      method: 'Al-Quran',
       individual: 'Iqra 5: 10 - Iqra 5: 15',
       classical: 'Al-Fatihah: 1 - Al-Fatihah: 7'
     },

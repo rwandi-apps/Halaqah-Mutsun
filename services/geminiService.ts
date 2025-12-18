@@ -28,9 +28,9 @@ export const generateStudentEvaluation = async (student: Student): Promise<strin
       Keep it concise (under 200 words).
     `;
 
-    // Using gemini-2.5-flash as requested in the snippet logic
+    // Fix: Updated model to gemini-3-flash-preview for Basic Text Tasks as per instructions
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash-preview',
       contents: prompt,
     });
 

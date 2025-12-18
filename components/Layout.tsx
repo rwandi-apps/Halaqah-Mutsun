@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { 
@@ -29,10 +28,11 @@ interface LayoutProps {
   title?: string;
 }
 
+// Fix: Changed default onSwitchRole implementation to accept a 'Role' parameter, resolving the "Expected 0 arguments, but got 1" error
 export const Layout: React.FC<LayoutProps> = ({ 
   user, 
   onLogout = () => {}, 
-  onSwitchRole = () => {},
+  onSwitchRole = (_role: Role) => {},
   children,
   sidebar,
   title
@@ -45,22 +45,23 @@ export const Layout: React.FC<LayoutProps> = ({
   const isCoordinator = user?.role === 'KOORDINATOR';
 
   // Specific menu items based on Role, aligned with App.tsx routes
+  // Fix: Removed incorrect "/app" prefix from navigation links to ensure consistency with defined routes in App.tsx
   const navItems = isCoordinator ? [
-    { to: "/app/coordinator/dashboard", icon: LayoutDashboard, label: "Dashboard Utama" },
-    { to: "/app/coordinator/guru", icon: Users, label: "Data Guru" },
-    { to: "/app/coordinator/siswa", icon: GraduationCap, label: "Data Siswa" },
-    { to: "/app/coordinator/kelas", icon: BookOpen, label: "Data Kelas & Halaqah" },
+    { to: "/coordinator/dashboard", icon: LayoutDashboard, label: "Dashboard Utama" },
+    { to: "/coordinator/guru", icon: Users, label: "Data Guru" },
+    { to: "/coordinator/siswa", icon: GraduationCap, label: "Data Siswa" },
+    { to: "/coordinator/kelas", icon: BookOpen, label: "Data Kelas & Halaqah" },
     { type: 'header', label: 'SUPERVISI' },
-    { to: "/app/coordinator/reports", icon: FileText, label: "Pantau Laporan" },
-    { to: "/app/coordinator/evaluations", icon: ClipboardList, label: "Input Evaluasi" },
+    { to: "/coordinator/reports", icon: FileText, label: "Pantau Laporan" },
+    { to: "/coordinator/evaluations", icon: ClipboardList, label: "Input Evaluasi" },
   ] : [
-    { to: "/app/guru/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-    { to: "/app/guru/halaqah", icon: Users, label: "Halaqah" },
-    { to: "/app/guru/laporan", icon: FileText, label: "Input Laporan" },
-    { to: "/app/guru/view-report", icon: ClipboardList, label: "Lihat Laporan" },
-    { to: "/app/guru/evaluation", icon: BarChart2, label: "Evaluasi & Tindak Lanjut" },
-    { to: "/app/guru/grades", icon: BookOpen, label: "Input Nilai Rapor", hasDropdown: true },
-    { to: "/app/guru/rapor", icon: FileText, label: "Rapor", hasDropdown: true },
+    { to: "/guru/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+    { to: "/guru/halaqah", icon: Users, label: "Halaqah" },
+    { to: "/guru/laporan", icon: FileText, label: "Input Laporan" },
+    { to: "/guru/view-report", icon: ClipboardList, label: "Lihat Laporan" },
+    { to: "/guru/evaluation", icon: BarChart2, label: "Evaluasi & Tindak Lanjut" },
+    { to: "/guru/grades", icon: BookOpen, label: "Input Nilai Rapor", hasDropdown: true },
+    { to: "/guru/rapor", icon: FileText, label: "Rapor", hasDropdown: true },
   ];
 
   // Theme based on role

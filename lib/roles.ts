@@ -1,5 +1,6 @@
 
-import { UserRole } from '../types';
+// Fix: Corrected imported member name and logic based on Role type in types.ts
+import { Role } from '../types';
 
-export const canAccessCoordinator = (role: UserRole) => role === UserRole.COORDINATOR || role === UserRole.ADMIN;
-export const canAccessGuru = (role: UserRole) => role === UserRole.GURU || role === UserRole.ADMIN;
+export const canAccessCoordinator = (role: Role) => role === 'KOORDINATOR';
+export const canAccessGuru = (role: Role) => role === 'GURU';
