@@ -66,10 +66,14 @@ export const addTeacher = async (name: string, email: string, nickname: string, 
 
   const docRef = await addDoc(collection(db, 'users'), newUser);
   
+  // // Fix: Use a string timestamp for the return object to satisfy the User interface requirements
   return {
     id: docRef.id,
-    ...newUser,
-    role 
+    name,
+    nickname,
+    email,
+    role,
+    createdAt: new Date().toISOString()
   } as User;
 };
 
@@ -140,9 +144,14 @@ export const addStudent = async (student: Omit<Student, 'id' | 'attendance' | 'b
 
   const docRef = await addDoc(collection(db, 'siswa'), newStudentData);
 
+  // // Fix: Return object with string createdAt instead of FieldValue to match Student interface
   return {
     id: docRef.id,
-    ...newStudentData
+    ...student,
+    classLevel: level,
+    attendance: 100,
+    behaviorScore: 10,
+    createdAt: new Date().toISOString()
   } as Student;
 };
 
