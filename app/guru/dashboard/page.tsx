@@ -39,14 +39,12 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
   }, [teacherId]);
 
   // 2. Reactive Aggregation (Derived State)
-  // useMemo memastikan perhitungan hanya jalan saat rawStudents/rawReports berubah (termasuk delete)
   const studentsWithProgress = useMemo(() => {
     return rawStudents.map(student => {
       const studentReports = rawReports.filter(r => r.studentId === student.id);
       studentReports.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
       const latestReport = studentReports[0];
 
-      // Gunakan data terbaru dari laporan, atau fallback ke data awal siswa
       const effectiveData = {
         ...student,
         totalHafalan: latestReport?.totalHafalan || student.totalHafalan || { juz: 0, pages: 0, lines: 0 },
@@ -112,14 +110,14 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
         </div>
       </div>
 
-      {/* Widget Capaian Target Kelas */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      {/* Widget Capaian Target Kelas - SCROLLBAR REMOVED */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
           <Trophy size={18} className="text-yellow-500" />
           <h3 className="font-bold text-gray-800">Capaian Target Kelas</h3>
         </div>
         
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-6 overflow-visible">
           {studentsWithProgress.length > 0 ? (
             studentsWithProgress.map((student) => (
               <div 

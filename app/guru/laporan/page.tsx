@@ -13,7 +13,7 @@ interface GuruLaporanPageProps {
 
 const IQRA_VOLUMES = ["Iqra' 1", "Iqra' 2", "Iqra' 3", "Iqra' 4", "Iqra' 5", "Iqra' 6"];
 
-// Helper Component for Counter Input
+// Helper Component for Counter Input - FIXED UI FOR MOBILE
 const CounterInput = ({ 
   label, 
   value, 
@@ -43,40 +43,41 @@ const CounterInput = ({
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1 sm:gap-2">
       <button 
         onClick={handleDecrement}
-        className="w-8 h-8 rounded border border-gray-300 flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:border-gray-400 transition-colors"
+        className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg border border-gray-300 flex items-center justify-center text-gray-500 hover:bg-gray-50 active:bg-gray-100 transition-colors shadow-sm"
         type="button"
       >
-        <Minus size={14} />
+        <Minus size={16} className="sm:w-3.5 sm:h-3.5" />
       </button>
-      <div className="relative">
-        <input
-          type="number"
-          min={min}
-          value={value}
-          placeholder="-"
-          onChange={(e) => {
-            const val = e.target.value;
-            if (val === '') {
-              onChange('');
-            } else {
-              const num = parseInt(val);
-              if (!isNaN(num)) onChange(num);
-            }
-          }}
-          className="w-16 text-center font-medium border border-gray-200 py-1.5 rounded bg-white focus:ring-2 focus:ring-primary-500 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-gray-300"
-        />
-      </div>
+      
+      <input
+        type="number"
+        min={min}
+        value={value}
+        placeholder="-"
+        onChange={(e) => {
+          const val = e.target.value;
+          if (val === '') {
+            onChange('');
+          } else {
+            const num = parseInt(val);
+            if (!isNaN(num)) onChange(num);
+          }
+        }}
+        className="w-12 sm:w-16 text-center font-bold border border-gray-200 py-2 sm:py-1.5 rounded-lg bg-white focus:ring-2 focus:ring-primary-500 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-gray-300 text-base sm:text-sm"
+      />
+      
       <button 
         onClick={handleIncrement}
-        className="w-8 h-8 rounded border border-gray-300 flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:border-gray-400 transition-colors"
+        className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg border border-gray-300 flex items-center justify-center text-gray-500 hover:bg-gray-50 active:bg-gray-100 transition-colors shadow-sm"
         type="button"
       >
-        <Plus size={14} />
+        <Plus size={16} className="sm:w-3.5 sm:h-3.5" />
       </button>
-      {label && <span className="text-sm text-gray-500 ml-1">{label}</span>}
+      
+      {label && <span className="hidden sm:inline text-xs text-gray-400 ml-1">{label}</span>}
     </div>
   );
 };
@@ -287,7 +288,6 @@ export default function GuruLaporanPage({ teacherId = '1' }: GuruLaporanPageProp
 
     setIsSaving(true);
     try {
-      // Fix: Added missing 'method' property to tilawah object to satisfy type requirement
       await addReport({
         studentId,
         studentName: selectedStudent.name,
@@ -405,25 +405,27 @@ export default function GuruLaporanPage({ teacherId = '1' }: GuruLaporanPageProp
           </div>
           <div className="p-6 space-y-8">
             {reportType === 'Laporan Semester' && (
-              <div className="bg-teal-50/60 p-5 rounded-lg border border-teal-200 shadow-sm">
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="p-2 bg-teal-100 text-teal-700 rounded-lg"><Database size={18} /></div>
+              <div className="bg-teal-50/60 p-4 sm:p-5 rounded-xl border border-teal-200 shadow-sm">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="p-2 bg-teal-100 text-teal-700 rounded-lg shrink-0"><Database size={18} /></div>
                   <div>
                     <h4 className="font-bold text-teal-800 text-sm">Total Hafalan Akumulasi</h4>
-                    <p className="text-xs text-teal-600 mt-1">Gunakan ini untuk menetapkan data awal semester.</p>
+                    <p className="text-[10px] sm:text-xs text-teal-600 mt-1">Gunakan ini untuk menetapkan data awal semester.</p>
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-4 mt-4">
-                   <div className="flex flex-col items-center">
-                      <span className="text-xs font-semibold text-teal-700 mb-2 uppercase">Juz</span>
+                
+                {/* GRID FIXED FOR MOBILE - REPLACED flex flex-col items-center WITH BETTER LAYOUT */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-y-6 sm:gap-4 mt-6">
+                   <div className="flex flex-row sm:flex-col items-center justify-between sm:justify-center bg-white/40 sm:bg-transparent p-2 sm:p-0 rounded-lg">
+                      <span className="text-[10px] font-bold text-teal-700 sm:mb-2 uppercase tracking-widest sm:text-center px-2">Juz</span>
                       <CounterInput value={baselineJuz} onChange={setBaselineJuz} />
                    </div>
-                   <div className="flex flex-col items-center">
-                      <span className="text-xs font-semibold text-teal-700 mb-2 uppercase">Hal</span>
+                   <div className="flex flex-row sm:flex-col items-center justify-between sm:justify-center bg-white/40 sm:bg-transparent p-2 sm:p-0 rounded-lg">
+                      <span className="text-[10px] font-bold text-teal-700 sm:mb-2 uppercase tracking-widest sm:text-center px-2">Hal</span>
                       <CounterInput value={baselinePages} onChange={setBaselinePages} />
                    </div>
-                   <div className="flex flex-col items-center">
-                      <span className="text-xs font-semibold text-teal-700 mb-2 uppercase">Baris</span>
+                   <div className="flex flex-row sm:flex-col items-center justify-between sm:justify-center bg-white/40 sm:bg-transparent p-2 sm:p-0 rounded-lg">
+                      <span className="text-[10px] font-bold text-teal-700 sm:mb-2 uppercase tracking-widest sm:text-center px-2">Baris</span>
                       <CounterInput value={baselineLines} onChange={setBaselineLines} />
                    </div>
                 </div>
@@ -432,16 +434,20 @@ export default function GuruLaporanPage({ teacherId = '1' }: GuruLaporanPageProp
             <div>
               <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-2 border-l-4 border-teal-600 pl-3"><h4 className="font-bold text-gray-800">Capaian Periode Ini</h4></div>
-                <span className="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-md font-medium">{formatTotal(tahfizhTotal)}</span>
+                <span className="bg-purple-100 text-purple-700 text-[10px] sm:text-xs px-2 py-1 rounded-md font-medium">{formatTotal(tahfizhTotal)}</span>
               </div>
-              <div className="space-y-4">
-                <div className="flex gap-4 items-end">
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-end">
                    <SourceSelect label="DARI" value={tahfizhFromSurah} onChange={handleTahfizhFromSurahChange} method="Al-Quran" />
-                   <div className="mb-0.5"><CounterInput label="Ayat" value={tahfizhFromVerse} onChange={handleTahfizhFromVerseChange} /></div>
+                   <div className="flex justify-end sm:mb-0.5">
+                      <CounterInput label="Ayat" value={tahfizhFromVerse} onChange={handleTahfizhFromVerseChange} />
+                   </div>
                 </div>
-                <div className="flex gap-4 items-end">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-end">
                    <SourceSelect label="SAMPAI" value={tahfizhToSurah} onChange={setTahfizhToSurah} method="Al-Quran" />
-                   <div className="mb-0.5"><CounterInput label="Ayat" value={tahfizhToVerse} onChange={setTahfizhToVerse} /></div>
+                   <div className="flex justify-end sm:mb-0.5">
+                      <CounterInput label="Ayat" value={tahfizhToVerse} onChange={setTahfizhToVerse} />
+                   </div>
                 </div>
               </div>
             </div>
@@ -451,16 +457,20 @@ export default function GuruLaporanPage({ teacherId = '1' }: GuruLaporanPageProp
                 <div className="flex items-center gap-2 border-l-4 border-teal-600 pl-3">
                   <h4 className="font-bold text-gray-800">Metode Klasikal</h4>
                 </div>
-                <span className="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-md font-medium">{formatTotal(tahfizhKlasikalTotal)}</span>
+                <span className="bg-purple-100 text-purple-700 text-[10px] sm:text-xs px-2 py-1 rounded-md font-medium">{formatTotal(tahfizhKlasikalTotal)}</span>
               </div>
-              <div className="space-y-4">
-                <div className="flex gap-4 items-end">
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-end">
                    <SourceSelect label="DARI" value={tahfizhKlasikalFromSurah} onChange={handleTahfizhKlasikalFromSurahChange} method="Al-Quran" />
-                   <div className="mb-0.5"><CounterInput label="Ayat" value={tahfizhKlasikalFromVerse} onChange={handleTahfizhKlasikalFromVerseChange} /></div>
+                   <div className="flex justify-end sm:mb-0.5">
+                      <CounterInput label="Ayat" value={tahfizhKlasikalFromVerse} onChange={handleTahfizhKlasikalFromVerseChange} />
+                   </div>
                 </div>
-                <div className="flex gap-4 items-end">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-end">
                    <SourceSelect label="SAMPAI" value={tahfizhKlasikalToSurah} onChange={setTahfizhKlasikalToSurah} method="Al-Quran" />
-                   <div className="mb-0.5"><CounterInput label="Ayat" value={tahfizhKlasikalToVerse} onChange={setTahfizhKlasikalToVerse} /></div>
+                   <div className="flex justify-end sm:mb-0.5">
+                      <CounterInput label="Ayat" value={tahfizhKlasikalToVerse} onChange={setTahfizhKlasikalToVerse} />
+                   </div>
                 </div>
               </div>
             </div>
@@ -476,20 +486,24 @@ export default function GuruLaporanPage({ teacherId = '1' }: GuruLaporanPageProp
             <div>
               <div className="flex justify-between items-center mb-4">
                 <div className="flex items-center gap-2 border-l-4 border-primary-600 pl-3"><h4 className="font-bold text-gray-800">Metode Individual</h4></div>
-                <span className="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-md font-medium">{formatTotal(tilawahTotal)}</span>
+                <span className="bg-purple-100 text-purple-700 text-[10px] sm:text-xs px-2 py-1 rounded-md font-medium">{formatTotal(tilawahTotal)}</span>
               </div>
               <div className="flex gap-2 mb-6">
-                 <button onClick={() => setTilawahMethod('Al-Quran')} className={`px-4 py-1.5 text-sm rounded font-medium ${tilawahMethod === 'Al-Quran' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600'}`}>Al-Qur'an</button>
-                 <button onClick={() => setTilawahMethod('Iqra')} className={`px-4 py-1.5 text-sm rounded font-medium ${tilawahMethod === 'Iqra' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600'}`}>Iqra'</button>
+                 <button onClick={() => setTilawahMethod('Al-Quran')} className={`flex-1 sm:flex-none px-4 py-2 text-sm rounded-lg font-medium transition-all ${tilawahMethod === 'Al-Quran' ? 'bg-primary-600 text-white shadow-md' : 'bg-gray-100 text-gray-600'}`}>Al-Qur'an</button>
+                 <button onClick={() => setTilawahMethod('Iqra')} className={`flex-1 sm:flex-none px-4 py-2 text-sm rounded-lg font-medium transition-all ${tilawahMethod === 'Iqra' ? 'bg-primary-600 text-white shadow-md' : 'bg-gray-100 text-gray-600'}`}>Iqra'</button>
               </div>
-              <div className="space-y-4">
-                <div className="flex gap-4 items-end">
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-end">
                    <SourceSelect label="DARI" value={tilawahFromSurah} onChange={handleTilawahFromSurahChange} method={tilawahMethod} />
-                   <div className="mb-0.5"><CounterInput label={getLabel(tilawahMethod)} value={tilawahFromVerse} onChange={handleTilawahFromVerseChange} /></div>
+                   <div className="flex justify-end sm:mb-0.5">
+                      <CounterInput label={getLabel(tilawahMethod)} value={tilawahFromVerse} onChange={handleTilawahFromVerseChange} />
+                   </div>
                 </div>
-                <div className="flex gap-4 items-end">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-end">
                    <SourceSelect label="SAMPAI" value={tilawahToSurah} onChange={setTilawahToSurah} method={tilawahMethod} />
-                   <div className="mb-0.5"><CounterInput label={getLabel(tilawahMethod)} value={tilawahToVerse} onChange={setTilawahToVerse} /></div>
+                   <div className="flex justify-end sm:mb-0.5">
+                      <CounterInput label={getLabel(tilawahMethod)} value={tilawahToVerse} onChange={setTilawahToVerse} />
+                   </div>
                 </div>
               </div>
             </div>
@@ -497,20 +511,24 @@ export default function GuruLaporanPage({ teacherId = '1' }: GuruLaporanPageProp
             <div>
               <div className="flex justify-between items-center mb-4">
                 <div className="flex items-center gap-2 border-l-4 border-primary-600 pl-3"><h4 className="font-bold text-gray-800">Metode Klasikal</h4></div>
-                <span className="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-md font-medium">{formatTotal(tilawahKlasikalTotal)}</span>
+                <span className="bg-purple-100 text-purple-700 text-[10px] sm:text-xs px-2 py-1 rounded-md font-medium">{formatTotal(tilawahKlasikalTotal)}</span>
               </div>
               <div className="flex gap-2 mb-6">
-                 <button onClick={() => setTilawahKlasikalMethod('Al-Quran')} className={`px-4 py-1.5 text-sm rounded font-medium ${tilawahKlasikalMethod === 'Al-Quran' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600'}`}>Al-Qur'an</button>
-                 <button onClick={() => setTilawahKlasikalMethod('Iqra')} className={`px-4 py-1.5 text-sm rounded font-medium ${tilawahKlasikalMethod === 'Iqra' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600'}`}>Iqra'</button>
+                 <button onClick={() => setTilawahKlasikalMethod('Al-Quran')} className={`flex-1 sm:flex-none px-4 py-2 text-sm rounded-lg font-medium transition-all ${tilawahKlasikalMethod === 'Al-Quran' ? 'bg-primary-600 text-white shadow-md' : 'bg-gray-100 text-gray-600'}`}>Al-Qur'an</button>
+                 <button onClick={() => setTilawahKlasikalMethod('Iqra')} className={`flex-1 sm:flex-none px-4 py-2 text-sm rounded-lg font-medium transition-all ${tilawahKlasikalMethod === 'Iqra' ? 'bg-primary-600 text-white shadow-md' : 'bg-gray-100 text-gray-600'}`}>Iqra'</button>
               </div>
-              <div className="space-y-4">
-                <div className="flex gap-4 items-end">
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-end">
                    <SourceSelect label="DARI" value={tilawahKlasikalFromSurah} onChange={handleTilawahKlasikalFromSurahChange} method={tilawahKlasikalMethod} />
-                   <div className="mb-0.5"><CounterInput label={getLabel(tilawahKlasikalMethod)} value={tilawahKlasikalFromVerse} onChange={handleTilawahKlasikalFromVerseChange} /></div>
+                   <div className="flex justify-end sm:mb-0.5">
+                      <CounterInput label={getLabel(tilawahKlasikalMethod)} value={tilawahKlasikalFromVerse} onChange={handleTilawahKlasikalFromVerseChange} />
+                   </div>
                 </div>
-                <div className="flex gap-4 items-end">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-end">
                    <SourceSelect label="SAMPAI" value={tilawahKlasikalToSurah} onChange={setTilawahKlasikalToSurah} method={tilawahKlasikalMethod} />
-                   <div className="mb-0.5"><CounterInput label={getLabel(tilawahKlasikalMethod)} value={tilawahKlasikalToVerse} onChange={setTilawahKlasikalToVerse} /></div>
+                   <div className="flex justify-end sm:mb-0.5">
+                      <CounterInput label={getLabel(tilawahKlasikalMethod)} value={tilawahKlasikalToVerse} onChange={setTilawahKlasikalToVerse} />
+                   </div>
                 </div>
               </div>
             </div>
@@ -524,12 +542,12 @@ export default function GuruLaporanPage({ teacherId = '1' }: GuruLaporanPageProp
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Tuliskan catatan perkembangan siswa..."
-          className="w-full h-32 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none resize-none"
+          className="w-full h-32 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none resize-none text-base"
         ></textarea>
       </div>
 
       <div className="flex justify-end">
-        <Button onClick={handleSave} className="px-8 py-3" isLoading={isSaving}>Simpan Laporan</Button>
+        <Button onClick={handleSave} className="w-full sm:w-auto px-8 py-3" isLoading={isSaving}>Simpan Laporan</Button>
       </div>
     </div>
   );
