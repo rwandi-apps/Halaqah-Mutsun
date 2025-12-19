@@ -1,33 +1,55 @@
+import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
+import { getFirestore, Firestore } from 'firebase/firestore';
+import { getAuth, Auth } from 'firebase/auth';
 
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
-
-// Fix: Replaced import.meta.env with process.env to resolve property 'env' does not exist on type 'ImportMeta'
+/**
+ * Firebase config
+ * Vite WAJIB pakai import.meta.env
+ */
 const firebaseConfig = {
-  apiKey: process.env.VITE_FIREBASE_API_KEY,
-  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.VITE_FIREBASE_APP_ID
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-const isConfigValid = !!process.env.VITE_FIREBASE_API_KEY && !!process.env.VITE_FIREBASE_PROJECT_ID;
+/**
+ * Validasi minimal config
+ */
+const isConfigValid =
+  !!import.meta.env.VITE_FIREBASE_API_KEY &&
+  !!import.meta.env.VITE_FIREBASE_PROJECT_ID;
 
-const app = isConfigValid 
-  ? (getApps().length > 0 ? getApp() : initializeApp(firebaseConfig)) 
-  : undefined;
+let app: FirebaseApp | undefined;
+let db: Firestore | undefined;
+let auth: Auth | undefined;
 
-export const db = app ? getFirestore(app) : undefined;
-export const auth = app ? getAuth(app) : undefined;
+if (isConfigValid) {
+  try {
+    app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    auth = getAuth(app);
+  } catch (error) {
+    console.error('[Firebase] Initialization error:', error);
+  }
+} else {
+  console.warn('[Firebase] Missing environment variables. Running in demo mode.');
+}
+
+export { db, auth };
 export const isFirebaseEnabled = isConfigValid && !!app;
 
+/**
+ * Optional init log
+ */
 export const initFirebase = () => {
   if (isFirebaseEnabled) {
-    // Fix: Replaced import.meta.env with process.env to resolve property 'env' does not exist on type 'ImportMeta'
-    console.log(`[Firebase] Connected to: ${process.env.VITE_FIREBASE_PROJECT_ID}`);
+    console.log(
+      `[Firebase] Connected to project: ${import.meta.env.VITE_FIREBASE_PROJECT_ID}`
+    );
   } else {
-    console.warn("[Firebase] Configuration missing or invalid.");
+    console.warn('[Firebase] Firebase disabled (demo mode)');
   }
 };
