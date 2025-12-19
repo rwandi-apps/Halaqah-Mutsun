@@ -5,7 +5,7 @@ import { auth, db } from './lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { Layout } from './app/layout';
 import LoginPage from './app/(auth)/login/page';
-import GuruDashboard from './app/guru/dashboard/page';
+import GuruDashboardPage from './app/guru/dashboard/page';
 import CoordinatorDashboard from './app/coordinator/dashboard/page';
 import { User, Role } from './types';
 import { logout } from './lib/auth';
@@ -31,6 +31,7 @@ export default function App() {
       const snap = await getDoc(ref);
 
       if (!snap.exists()) {
+        alert('Akun belum didaftarkan oleh admin');
         setUser(null);
         setLoading(false);
         return;
@@ -57,15 +58,24 @@ export default function App() {
   return (
     <HashRouter>
       <Routes>
-        <Route path="/login" element={
-          user
-            ? <Navigate to={user.role === 'KOORDINATOR' ? '/coordinator/dashboard' : '/guru/dashboard'} />
-            : <LoginPage onLogin={setUser} />
-        } />
+        <Route
+          path="/login"
+          element={
+            user
+              ? <Navigate to={user.role === 'KOORDINATOR' ? '/coordinator/dashboard' : '/guru/dashboard'} />
+              : <LoginPage />
+          }
+        />
 
         <Route element={<Layout user={user} onLogout={logout} />}>
-          <Route path="/guru/dashboard" element={user?.role === 'GURU' ? <GuruDashboard /> : <Navigate to="/login" />} />
-          <Route path="/coordinator/dashboard" element={user?.role === 'KOORDINATOR' ? <CoordinatorDashboard /> : <Navigate to="/login" />} />
+          <Route
+            path="/guru/dashboard"
+            element={user?.role === 'GURU' ? <GuruDashboardPage /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/coordinator/dashboard"
+            element={user?.role === 'KOORDINATOR' ? <CoordinatorDashboard /> : <Navigate to="/login" />}
+          />
         </Route>
 
         <Route path="*" element={<Navigate to="/login" />} />
