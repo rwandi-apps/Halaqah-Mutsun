@@ -1,36 +1,41 @@
+"use client";
 
-import React, { useEffect, useState, useMemo } from 'react';
-import { Button } from '../../../components/Button';
-import { Sparkles, CheckCircle, AlertCircle, Trophy } from 'lucide-react';
-import { 
-  subscribeToStudentsByTeacher, 
-  subscribeToReportsByTeacher 
-} from '../../../services/firestoreService';
-import { generateStudentEvaluation } from '../../../services/geminiService';
-import { calculateSDQProgress, SDQProgressResult } from '../../../services/sdqTargets';
-import { Student, Report } from '../../../types';
-
-interface GuruDashboardProps {
-  teacherId?: string;
-}
+import { useEffect, useMemo, useState } from "react";
+import { Button } from "@/components/Button";
+import { Sparkles, Trophy } from "lucide-react";
+import {
+  subscribeToStudentsByTeacher,
+  subscribeToReportsByTeacher,
+} from "@/services/firestoreService";
+import { generateStudentEvaluation } from "@/services/geminiService";
+import { calculateSDQProgress } from "@/services/sdqTargets";
+import { Student, Report } from "@/types";
 
 interface StudentWithProgress extends Student {
-  progressStats: SDQProgressResult;
+  progressStats: ReturnType<typeof calculateSDQProgress>;
 }
 
-export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
-  const [rawStudents, setRawStudents] = useState<Student[]>([]);
-  const [rawReports, setRawReports] = useState<Report[]>([]);
-  const [selectedStudent, setSelectedStudent] = useState<StudentWithProgress | null>(null);
-  const [aiEvaluation, setAiEvaluation] = useState<string | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
+export default function GuruDashboardPage() {
+  const teacherId = "CURRENT_TEACHER_ID"; // ambil dari auth/context kamu
 
-  // 1. Listen to Realtime Data
+  const [students, setStudents] = useState<Student[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
+  const [selected, setSelected] = useState<StudentWithProgress | null>(null);
+  const [aiText, setAiText] = useState<string | null>(null);
+  const [loadingAI, setLoadingAI] = useState(false);
+
+  /* ================= REALTIME ================= */
   useEffect(() => {
     if (!teacherId) return;
 
-    const unsubStudents = subscribeToStudentsByTeacher(teacherId, setRawStudents);
-    const unsubReports = subscribeToReportsByTeacher(teacherId, setRawReports);
+    const unsubStudents = subscribeToStudentsByTeacher(
+      teacherId,
+      setStudents
+    );
+    const unsubReports = subscribeToReportsByTeacher(
+      teacherId,
+      setReports
+    );
 
     return () => {
       unsubStudents();
@@ -38,145 +43,118 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
     };
   }, [teacherId]);
 
-  // 2. Reactive Aggregation (Derived State)
+  /* ============ DERIVED (ANTI DATA HANTU) ============ */
   const studentsWithProgress = useMemo(() => {
-    return rawStudents.map(student => {
-      const studentReports = rawReports.filter(r => r.studentId === student.id);
-      studentReports.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-      const latestReport = studentReports[0];
+    return students.map((student) => {
+      const latest = reports
+        .filter((r) => r.studentId === student.id)
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
 
-      const effectiveData = {
+      const safeStudent: Student = {
         ...student,
-        totalHafalan: latestReport?.totalHafalan || student.totalHafalan || { juz: 0, pages: 0, lines: 0 },
-        currentProgress: latestReport?.tahfizh?.individual?.split(' - ')[1] || student.currentProgress
+        totalHafalan: latest
+          ? latest.totalHafalan
+          : { juz: 0, pages: 0, lines: 0 },
+        currentProgress: latest
+          ? latest.tahfizh?.individual?.split(" - ")[1]
+          : undefined,
       };
 
       return {
         ...student,
-        progressStats: calculateSDQProgress(effectiveData)
+        progressStats: calculateSDQProgress(safeStudent),
       };
-    }).sort((a, b) => a.name.localeCompare(b.name));
-  }, [rawStudents, rawReports]);
+    });
+  }, [students, reports]);
 
-  // 3. Stats Calculation
-  const metrics = useMemo(() => {
-    const total = studentsWithProgress.length;
-    const completed = studentsWithProgress.filter(s => s.progressStats.percentage >= 100).length;
-    const onTrack = studentsWithProgress.filter(s => s.progressStats.percentage >= 80 && s.progressStats.percentage < 100).length;
-    const needsAttention = studentsWithProgress.filter(s => s.progressStats.percentage < 50).length;
-
-    return { total, completed, onTrack, needsAttention };
-  }, [studentsWithProgress]);
-
-  const handleGenerateEvaluation = async (student: Student) => {
-    setIsGenerating(true);
-    try {
-      const result = await generateStudentEvaluation(student);
-      setAiEvaluation(result);
-    } catch (e) {
-      alert("Gagal generate evaluasi AI.");
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
+  /* ================= UI ================= */
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
-      <div className="flex justify-between items-center">
+      <header className="flex justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Dashboard Halaqah</h2>
-          <p className="text-gray-500">Data sinkron secara realtime dengan database.</p>
+          <h1 className="text-2xl font-bold">Dashboard Halaqah</h1>
+          <p className="text-gray-500 text-sm">
+            Data realtime dari Firebase
+          </p>
         </div>
         <Button>+ Input Laporan</Button>
-      </div>
+      </header>
 
-      {/* Metrics Section */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm text-center">
-          <p className="text-xs font-bold text-gray-400 uppercase">Total Siswa</p>
-          <p className="text-3xl font-bold text-gray-800">{metrics.total}</p>
+      <section className="bg-white rounded-xl border">
+        <div className="p-6 flex items-center gap-2 border-b bg-gray-50">
+          <Trophy className="text-yellow-500" size={18} />
+          <h3 className="font-bold">Capaian Target Kelas</h3>
         </div>
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm text-center">
-          <p className="text-xs font-bold text-green-500 uppercase">Target Tercapai</p>
-          <p className="text-3xl font-bold text-green-600">{metrics.completed}</p>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm text-center">
-          <p className="text-xs font-bold text-blue-500 uppercase">On Track</p>
-          <p className="text-3xl font-bold text-blue-600">{metrics.onTrack}</p>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm text-center">
-          <p className="text-xs font-bold text-red-500 uppercase">Butuh Perhatian</p>
-          <p className="text-3xl font-bold text-red-500">{metrics.needsAttention}</p>
-        </div>
-      </div>
 
-      {/* Widget Capaian Target Kelas - SCROLLBAR REMOVED */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
-          <Trophy size={18} className="text-yellow-500" />
-          <h3 className="font-bold text-gray-800">Capaian Target Kelas</h3>
-        </div>
-        
-        <div className="p-6 space-y-6 overflow-visible">
-          {studentsWithProgress.length > 0 ? (
-            studentsWithProgress.map((student) => (
-              <div 
-                key={student.id} 
-                onClick={() => setSelectedStudent(student)}
-                className="group cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors"
-              >
-                <div className="flex justify-between items-center mb-2">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm ${student.progressStats.colorClass}`}>
-                      {student.progressStats.percentage}%
-                    </div>
-                    <div>
-                      <p className="font-bold text-gray-800">{student.name}</p>
-                      <p className="text-xs text-gray-500">Target: {student.progressStats.target} {student.progressStats.unit}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${student.progressStats.percentage >= 100 ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
-                      {student.progressStats.statusText}
-                    </span>
-                    <p className="text-[10px] text-gray-400 mt-1">Capaian: {student.progressStats.current} {student.progressStats.unit}</p>
-                  </div>
-                </div>
-                <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                  <div 
-                    className={`h-full transition-all duration-1000 ${student.progressStats.colorClass}`} 
-                    style={{ width: `${Math.min(student.progressStats.percentage, 100)}%` }}
-                  />
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="text-center py-8 text-gray-400">Belum ada data siswa.</div>
+        <div className="p-6 space-y-4">
+          {studentsWithProgress.length === 0 && (
+            <p className="text-center text-gray-400">
+              Belum ada data siswa
+            </p>
           )}
-        </div>
-      </div>
 
-      {/* Evaluation Modal Placeholder */}
-      {selectedStudent && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 animate-in zoom-in duration-200">
-             <div className="flex justify-between items-start mb-6">
-               <h3 className="text-xl font-bold">Evaluasi: {selectedStudent.name}</h3>
-               <button onClick={() => { setSelectedStudent(null); setAiEvaluation(null); }} className="text-gray-400 hover:text-gray-600">×</button>
-             </div>
-             
-             {!aiEvaluation ? (
-               <div className="text-center">
-                 <Sparkles size={48} className="mx-auto text-primary-600 mb-4" />
-                 <p className="text-gray-600 mb-6">Gunakan AI untuk membuat narasi evaluasi perkembangan siswa berdasarkan capaian {selectedStudent.progressStats.percentage}%.</p>
-                 <Button onClick={() => handleGenerateEvaluation(selectedStudent)} isLoading={isGenerating}>Generate Evaluasi</Button>
-               </div>
-             ) : (
-               <div className="space-y-4">
-                 <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-sm whitespace-pre-wrap">{aiEvaluation}</div>
-                 <Button variant="secondary" onClick={() => setAiEvaluation(null)} className="w-full">Ulangi</Button>
-               </div>
-             )}
+          {studentsWithProgress.map((s) => (
+            <div
+              key={s.id}
+              onClick={() => setSelected(s)}
+              className="cursor-pointer p-3 rounded-lg hover:bg-gray-50"
+            >
+              <div className="flex justify-between mb-2">
+                <strong>{s.name}</strong>
+                <span>{s.progressStats.percentage}%</span>
+              </div>
+              <div className="h-2 bg-gray-100 rounded">
+                <div
+                  className={`h-full ${s.progressStats.colorClass}`}
+                  style={{
+                    width: `${Math.min(
+                      s.progressStats.percentage,
+                      100
+                    )}%`,
+                  }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {selected && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-xl max-w-md w-full">
+            <h3 className="font-bold mb-4">
+              Evaluasi {selected.name}
+            </h3>
+
+            {!aiText ? (
+              <Button
+                isLoading={loadingAI}
+                onClick={async () => {
+                  setLoadingAI(true);
+                  setAiText(
+                    await generateStudentEvaluation(selected)
+                  );
+                  setLoadingAI(false);
+                }}
+              >
+                <Sparkles className="mr-2" /> Generate Evaluasi
+              </Button>
+            ) : (
+              <pre className="text-sm whitespace-pre-wrap">
+                {aiText}
+              </pre>
+            )}
+
+            <Button
+              variant="secondary"
+              className="mt-4 w-full"
+              onClick={() => {
+                setSelected(null);
+                setAiText(null);
+              }}
+            >
+              Tutup
+            </Button>
           </div>
         </div>
       )}
