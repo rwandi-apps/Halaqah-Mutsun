@@ -7,6 +7,7 @@ import {
   where, 
   doc, 
   getDoc,
+  updateDoc,
   serverTimestamp,
   writeBatch,
   onSnapshot,
@@ -37,7 +38,6 @@ export const addTeacher = async (name: string, email: string, nickname: string, 
 
 // --- FETCH FUNCTIONS ---
 
-// Added missing getStudentsByTeacher function
 export const getStudentsByTeacher = async (teacherId: string): Promise<Student[]> => {
   if (!db) return [];
   const q = query(collection(db, 'siswa'), where('teacherId', '==', teacherId));
@@ -45,7 +45,6 @@ export const getStudentsByTeacher = async (teacherId: string): Promise<Student[]
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Student));
 };
 
-// Added missing getReportsByTeacher function
 export const getReportsByTeacher = async (teacherId: string): Promise<Report[]> => {
   if (!db) return [];
   const q = query(collection(db, 'laporan'), where('teacherId', '==', teacherId));
@@ -61,7 +60,6 @@ export const subscribeToStudentsByTeacher = (
 ): Unsubscribe => {
   if (!db) return () => {}; 
   const q = query(collection(db, 'siswa'), where('teacherId', '==', teacherId));
-  // onSnapshot akan terpanggil saat ada data yang dihapus dari console
   return onSnapshot(q, (snapshot) => {
     const students = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Student));
     onUpdate(students);
@@ -87,6 +85,18 @@ export const addStudent = async (student: Omit<Student, 'id' | 'attendance' | 'b
   return { id: docRef.id, ...student, classLevel: level, attendance: 100, behaviorScore: 10, createdAt: new Date().toISOString() } as Student;
 };
 
+export const updateStudent = async (id: string, data: Partial<Student>): Promise<void> => {
+  if (!db) throw new Error("Firestore not initialized");
+  const docRef = doc(db, 'siswa', id);
+  const updateData = { ...data };
+  
+  if (data.className) {
+    (updateData as any).classLevel = extractClassLevel(data.className);
+  }
+  
+  await updateDoc(docRef, updateData);
+};
+
 export const addReport = async (report: Omit<Report, 'id' | 'createdAt'>): Promise<Report> => {
   if (!db) throw new Error("Firestore not initialized");
   const batch = writeBatch(db);
@@ -94,7 +104,6 @@ export const addReport = async (report: Omit<Report, 'id' | 'createdAt'>): Promi
   const createdAt = new Date().toISOString();
   batch.set(newReportRef, { ...report, createdAt });
   
-  // Update denormalisasi progres di doc siswa
   const studentRef = doc(db, 'siswa', report.studentId);
   const latestProgress = report.tahfizh.individual.split(' - ')[1] || report.tahfizh.individual;
   batch.update(studentRef, { 

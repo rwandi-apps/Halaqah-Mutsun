@@ -1,6 +1,7 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { Student, User } from '../../../types';
-import { getAllStudents, getAllTeachers, addStudent } from '../../../services/firestoreService';
+import { getAllStudents, getAllTeachers, addStudent, updateStudent } from '../../../services/firestoreService';
 import { CLASS_LIST } from '../../../services/mockBackend';
 import { Button } from '../../../components/Button';
 import { Search, Filter, Download, Plus, X, Upload } from 'lucide-react';
@@ -16,6 +17,7 @@ export default function CoordinatorSiswaPage() {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   
   // Import State
   const [isImporting, setIsImporting] = useState(false);
@@ -73,6 +75,34 @@ export default function CoordinatorSiswaPage() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleOpenAddModal = () => {
+    setEditingId(null);
+    setFormData({
+      name: '',
+      nis: '',
+      nisn: '',
+      className: '',
+      teacherId: '',
+      memorizationTarget: 'Juz 30',
+      currentProgress: 'Belum Ada'
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEditModal = (student: Student) => {
+    setEditingId(student.id);
+    setFormData({
+      name: student.name,
+      nis: student.nis || '',
+      nisn: student.nisn || '',
+      className: student.className,
+      teacherId: student.teacherId,
+      memorizationTarget: student.memorizationTarget,
+      currentProgress: student.currentProgress
+    });
+    setIsModalOpen(true);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.className || !formData.teacherId) {
@@ -82,23 +112,22 @@ export default function CoordinatorSiswaPage() {
 
     setIsSubmitting(true);
     try {
-      // Fix: Add missing required properties 'classId' and 'progress'
-      await addStudent({
-        ...formData,
-        classId: '',
-        progress: 0
-      });
+      if (editingId) {
+        // Update existing student
+        await updateStudent(editingId, {
+          ...formData
+        });
+      } else {
+        // Add new student
+        await addStudent({
+          ...formData,
+          classId: '',
+          progress: 0
+        });
+      }
+      
       await loadData(); // Reload from Firestore
       setIsModalOpen(false);
-      setFormData({
-        name: '',
-        nis: '',
-        nisn: '',
-        className: '',
-        teacherId: '',
-        memorizationTarget: 'Juz 30',
-        currentProgress: 'Belum Ada'
-      });
     } catch (error) {
       console.error(error);
       alert("Gagal menyimpan data siswa ke database.");
@@ -136,37 +165,29 @@ export default function CoordinatorSiswaPage() {
       let successCount = 0;
       let failCount = 0;
 
-      // Iterasi data row
       for (const row of jsonData as any[]) {
-        // Mapping kolom Excel ke Data
-        // Ekspektasi Header Excel: "Nama", "NIS", "NISN", "Kelas", "Target", "Guru"
-        
         const name = row['Nama'] || row['nama'];
         const nis = row['NIS'] || row['nis'] || '';
         const nisn = row['NISN'] || row['nisn'] || '';
         const className = row['Kelas'] || row['kelas'];
         const target = row['Target'] || row['target'] || 'Juz 30';
-        const teacherName = row['Guru'] || row['guru']; // String nama guru
+        const teacherName = row['Guru'] || row['guru'];
 
         if (!name || !className || !teacherName) {
-          console.warn("Skipping row: Missing mandatory fields", row);
           failCount++;
           continue;
         }
 
-        // Cari Teacher ID berdasarkan Nama (Fuzzy/Exact Match)
         const matchedTeacher = teachers.find(t => 
           t.name.toLowerCase().includes(teacherName.toLowerCase()) || 
           (t.nickname && t.nickname.toLowerCase().includes(teacherName.toLowerCase()))
         );
 
         if (!matchedTeacher) {
-          console.warn(`Skipping row: Teacher '${teacherName}' not found`, row);
           failCount++;
           continue;
         }
 
-        // Fix: Add missing required properties 'classId' and 'progress'
         await addStudent({
           name: String(name),
           nis: String(nis),
@@ -182,7 +203,7 @@ export default function CoordinatorSiswaPage() {
         successCount++;
       }
 
-      alert(`Proses Import Selesai.\nBerhasil: ${successCount}\nGagal: ${failCount}\n\nPastikan format kolom Excel: Nama, NIS, NISN, Kelas, Target, Guru`);
+      alert(`Proses Import Selesai.\nBerhasil: ${successCount}\nGagal: ${failCount}`);
       await loadData();
       
     } catch (error) {
@@ -190,7 +211,6 @@ export default function CoordinatorSiswaPage() {
       alert("Terjadi kesalahan saat membaca file Excel.");
     } finally {
       setIsImporting(false);
-      // Reset input agar bisa upload file yang sama if need be
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
@@ -224,7 +244,7 @@ export default function CoordinatorSiswaPage() {
            <Button variant="outline" onClick={handleImportClick} isLoading={isImporting}>
              <Upload size={18} className="mr-2" /> Import Excel
            </Button>
-           <Button onClick={() => setIsModalOpen(true)}><Plus size={18} className="mr-2" /> Tambah Siswa</Button>
+           <Button onClick={handleOpenAddModal}><Plus size={18} className="mr-2" /> Tambah Siswa</Button>
         </div>
       </div>
 
@@ -285,7 +305,12 @@ export default function CoordinatorSiswaPage() {
                     </td>
                     <td className="px-6 py-4 text-gray-700">{student.currentProgress}</td>
                     <td className="px-6 py-4 text-center">
-                       <button className="text-primary-600 hover:text-primary-800 font-medium text-xs">Edit</button>
+                       <button 
+                         onClick={() => handleOpenEditModal(student)}
+                         className="text-primary-600 hover:text-primary-800 font-medium text-xs bg-primary-50 px-3 py-1 rounded-md transition-colors"
+                       >
+                         Edit
+                       </button>
                     </td>
                   </tr>
                 ))
@@ -308,12 +333,12 @@ export default function CoordinatorSiswaPage() {
         </div>
       </div>
 
-      {/* Add Student Modal */}
+      {/* Add/Edit Student Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
             <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <h3 className="font-bold text-gray-900">Tambah Siswa Baru</h3>
+              <h3 className="font-bold text-gray-900">{editingId ? 'Edit Data Siswa' : 'Tambah Siswa Baru'}</h3>
               <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">
                 <X size={20} />
               </button>
@@ -391,9 +416,6 @@ export default function CoordinatorSiswaPage() {
                       <option key={t.id} value={t.id}>{t.name}</option>
                     ))}
                   </select>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {teachers.length === 0 ? "Belum ada data guru. Tambahkan guru terlebih dahulu." : "Pilih guru yang akan mengampu siswa ini."}
-                  </p>
                 </div>
               </div>
 
@@ -402,7 +424,7 @@ export default function CoordinatorSiswaPage() {
                   Batal
                 </Button>
                 <Button type="submit" isLoading={isSubmitting}>
-                  Simpan Data
+                  {editingId ? 'Simpan Perubahan' : 'Simpan Data'}
                 </Button>
               </div>
             </form>
