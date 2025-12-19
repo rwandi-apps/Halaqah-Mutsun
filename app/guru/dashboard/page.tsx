@@ -1,45 +1,49 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useOutletContext } from "react-router-dom";
+import { Trophy, Sparkles } from "lucide-react";
+
 import { Button } from "@/components/Button";
-import { Sparkles, Trophy } from "lucide-react";
 import {
   subscribeToStudentsByTeacher,
   subscribeToReportsByTeacher,
 } from "@/services/firestoreService";
-import { generateStudentEvaluation } from "@/services/geminiService";
 import { calculateSDQProgress } from "@/services/sdqTargets";
-import { Student, Report } from "@/types";
-import { listenAuth } from "@/services/authService";
+import { generateStudentEvaluation } from "@/services/geminiService";
+
+import { Student, Report, User } from "@/types";
+
+/* ================= TYPES ================= */
 
 interface StudentWithProgress extends Student {
   progressStats: ReturnType<typeof calculateSDQProgress>;
 }
 
+/* ================= PAGE ================= */
+
 export default function GuruDashboardPage() {
-  const [teacherId, setTeacherId] = useState<string | null>(null);
+  /* ===== USER DARI LAYOUT ===== */
+  const { user } = useOutletContext<{ user: User }>();
+
+  /* ===== STATE ===== */
   const [students, setStudents] = useState<Student[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
   const [selected, setSelected] = useState<StudentWithProgress | null>(null);
   const [aiText, setAiText] = useState<string | null>(null);
   const [loadingAI, setLoadingAI] = useState(false);
 
-  /* ================= AUTH ================= */
+  /* ===== REALTIME FIRESTORE ===== */
   useEffect(() => {
-    const unsub = listenAuth(setTeacherId);
-    return () => unsub();
-  }, []);
-
-  /* ================= REALTIME ================= */
-  useEffect(() => {
-    if (!teacherId) return;
+    if (!user?.teacherId) return;
 
     const unsubStudents = subscribeToStudentsByTeacher(
-      teacherId,
+      user.teacherId,
       setStudents
     );
+
     const unsubReports = subscribeToReportsByTeacher(
-      teacherId,
+      user.teacherId,
       setReports
     );
 
@@ -47,24 +51,25 @@ export default function GuruDashboardPage() {
       unsubStudents();
       unsubReports();
     };
-  }, [teacherId]);
+  }, [user?.teacherId]);
 
-  /* ============ DERIVED DATA ============ */
+  /* ===== STUDENT + PROGRESS ===== */
   const studentsWithProgress = useMemo(() => {
     return students
       .map((student) => {
-        const latest = reports
+        const latestReport = reports
           .filter((r) => r.studentId === student.id)
           .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
 
         const safeStudent: Student = {
           ...student,
-          totalHafalan: latest
-            ? latest.totalHafalan
-            : { juz: 0, pages: 0, lines: 0 },
-          currentProgress: latest
-            ? latest.tahfizh?.individual?.split(" - ")[1]
-            : undefined,
+          totalHafalan: latestReport?.totalHafalan ?? {
+            juz: 0,
+            pages: 0,
+            lines: 0,
+          },
+          currentProgress:
+            latestReport?.tahfizh?.individual?.split(" - ")[1],
         };
 
         return {
@@ -75,7 +80,7 @@ export default function GuruDashboardPage() {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [students, reports]);
 
-  /* ============ STATISTICS ============ */
+  /* ===== STATISTICS ===== */
   const stats = useMemo(() => {
     const total = studentsWithProgress.length;
     const completed = studentsWithProgress.filter(
@@ -94,6 +99,7 @@ export default function GuruDashboardPage() {
   }, [studentsWithProgress]);
 
   /* ================= UI ================= */
+
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       {/* ===== HEADER ===== */}
@@ -103,25 +109,18 @@ export default function GuruDashboardPage() {
             Dashboard Halaqah
           </h1>
           <p className="text-sm text-gray-500">
-            Data realtime dari Firebase
+            Data siswa berdasarkan halaqah Anda
           </p>
         </div>
+
         <Button>+ Input Laporan</Button>
       </header>
 
-      {/* ===== STATISTICS ===== */}
+      {/* ===== STAT CARDS ===== */}
       <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard title="Total Siswa" value={stats.total} />
-        <StatCard
-          title="Target Tercapai"
-          value={stats.completed}
-          color="green"
-        />
-        <StatCard
-          title="On Track"
-          value={stats.onTrack}
-          color="blue"
-        />
+        <StatCard title="Target Tercapai" value={stats.completed} color="green" />
+        <StatCard title="On Track" value={stats.onTrack} color="blue" />
         <StatCard
           title="Perlu Perhatian"
           value={stats.needAttention}
@@ -138,44 +137,39 @@ export default function GuruDashboardPage() {
           </h3>
         </div>
 
-        <div className="p-6 space-y-5">
+        <div className="p-6 space-y-4">
           {studentsWithProgress.length === 0 && (
             <p className="text-center text-gray-400 py-10">
-              Belum ada data siswa
+              Belum ada siswa di halaqah ini
             </p>
           )}
 
           {studentsWithProgress.map((s) => (
             <div
               key={s.id}
-              onClick={() => setSelected(s)}
-              className="group cursor-pointer rounded-xl p-4 border border-gray-100 hover:border-gray-200 hover:shadow-sm transition"
+              onClick={() => {
+                setSelected(s);
+                setAiText(null);
+              }}
+              className="cursor-pointer rounded-xl p-4 border hover:shadow-sm transition"
             >
-              <div className="flex justify-between items-center mb-3">
+              <div className="flex justify-between items-center mb-2">
                 <div>
-                  <p className="font-semibold text-gray-800">
-                    {s.name}
-                  </p>
+                  <p className="font-semibold text-gray-800">{s.name}</p>
                   <p className="text-xs text-gray-500">
                     Target: {s.progressStats.target}{" "}
                     {s.progressStats.unit}
                   </p>
                 </div>
 
-                <span
-                  className={`text-xs font-bold px-2 py-1 rounded-full ${
-                    s.progressStats.percentage >= 100
-                      ? "bg-green-100 text-green-700"
-                      : "bg-blue-100 text-blue-700"
-                  }`}
-                >
+                <span className="text-xs font-bold px-2 py-1 rounded-full bg-blue-100 text-blue-700">
                   {s.progressStats.percentage}%
                 </span>
               </div>
 
               <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
                 <div
-                  className={`h-full transition-all duration-700 ${s.progressStats.colorClass}`}
+                  className={`h-full ${s.progressStats.colorClass}`}
                   style={{
                     width: `${Math.min(
                       s.progressStats.percentage,
@@ -202,9 +196,8 @@ export default function GuruDashboardPage() {
                 isLoading={loadingAI}
                 onClick={async () => {
                   setLoadingAI(true);
-                  setAiText(
-                    await generateStudentEvaluation(selected)
-                  );
+                  const result = await generateStudentEvaluation(selected);
+                  setAiText(result);
                   setLoadingAI(false);
                 }}
               >
@@ -220,10 +213,7 @@ export default function GuruDashboardPage() {
             <Button
               variant="secondary"
               className="mt-4 w-full"
-              onClick={() => {
-                setSelected(null);
-                setAiText(null);
-              }}
+              onClick={() => setSelected(null)}
             >
               Tutup
             </Button>
@@ -234,7 +224,8 @@ export default function GuruDashboardPage() {
   );
 }
 
-/* ===== SMALL COMPONENT ===== */
+/* ================= SMALL COMPONENT ================= */
+
 function StatCard({
   title,
   value,
@@ -244,7 +235,7 @@ function StatCard({
   value: number;
   color?: "gray" | "green" | "blue" | "red";
 }) {
-  const colorMap: Record<string, string> = {
+  const colors = {
     gray: "text-gray-800",
     green: "text-green-600",
     blue: "text-blue-600",
@@ -256,9 +247,7 @@ function StatCard({
       <p className="text-xs font-semibold text-gray-400 uppercase">
         {title}
       </p>
-      <p
-        className={`text-3xl font-bold mt-1 ${colorMap[color]}`}
-      >
+      <p className={`text-3xl font-bold mt-1 ${colors[color]}`}>
         {value}
       </p>
     </div>
