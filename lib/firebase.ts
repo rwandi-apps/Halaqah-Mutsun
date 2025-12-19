@@ -3,14 +3,14 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
-// Fix: Use process.env instead of import.meta.env to resolve "Property 'env' does not exist on type 'ImportMeta'" errors.
+// Prioritize Environment Variables (Production), fallback to hardcoded (Dev/Demo)
 const firebaseConfig = {
-  apiKey: process.env.VITE_FIREBASE_API_KEY,
-  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.VITE_FIREBASE_APP_ID
+  apiKey: getEnv("FIREBASE_API_KEY") || "AIzaSyBRI2q9e5mCx9yHod6pP18WS7M2LIcAoPQ",
+  authDomain: getEnv("FIREBASE_AUTH_DOMAIN") || "halaqah-sdq.firebaseapp.com",
+  projectId: getEnv("FIREBASE_PROJECT_ID") || "halaqah-sdq",
+  storageBucket: getEnv("FIREBASE_STORAGE_BUCKET") || "halaqah-sdq.firebasestorage.app",
+  messagingSenderId: getEnv("FIREBASE_MESSAGING_SENDER_ID") || "240288935730",
+  appId: getEnv("FIREBASE_APP_ID") || "1:240288935730:web:f15aeeb395a721fe7bf12b"
 };
 
 const isConfigValid = !!process.env.VITE_FIREBASE_API_KEY && !!process.env.VITE_FIREBASE_PROJECT_ID;
