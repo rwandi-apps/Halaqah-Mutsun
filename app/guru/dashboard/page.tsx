@@ -132,4 +132,71 @@ export default function GuruDashboardPage() {
                         : "bg-blue-100 text-blue-700"
                     }`}
                   >
-                    {s.progressStats.p
+                    {s.progressStats.percentage}%
+                  </span>
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    {s.progressStats.statusText}
+                  </p>
+                </div>
+              </div>
+
+              <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-700 ${s.progressStats.colorClass}`}
+                  style={{
+                    width: `${Math.min(
+                      s.progressStats.percentage,
+                      100
+                    )}%`,
+                  }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ===== MODAL EVALUASI ===== */}
+      {selected && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 animate-in zoom-in duration-200">
+            <h3 className="font-bold text-lg mb-4">
+              Evaluasi {selected.name}
+            </h3>
+
+            {!aiText ? (
+              <Button
+                isLoading={loadingAI}
+                onClick={async () => {
+                  setLoadingAI(true);
+                  const result =
+                    await generateStudentEvaluation(selected);
+                  setAiText(result);
+                  setLoadingAI(false);
+                }}
+              >
+                <Sparkles className="mr-2" size={16} />
+                Generate Evaluasi
+              </Button>
+            ) : (
+              <div className="bg-gray-50 border rounded-lg p-4 text-sm whitespace-pre-wrap">
+                {aiText}
+              </div>
+            )}
+
+            <Button
+              variant="secondary"
+              className="mt-4 w-full"
+              onClick={() => {
+                setSelected(null);
+                setAiText(null);
+              }}
+            >
+              Tutup
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
