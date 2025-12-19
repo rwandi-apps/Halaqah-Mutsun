@@ -17,17 +17,18 @@ interface StudentWithProgress extends Student {
 }
 
 export default function GuruDashboardPage() {
- const [teacherId, setTeacherId] = useState<string | null>(null);
-
-useEffect(() => {
-  const unsub = listenAuth(setTeacherId);
-  return () => unsub();
-}, []);
+  const [teacherId, setTeacherId] = useState<string | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
   const [selected, setSelected] = useState<StudentWithProgress | null>(null);
   const [aiText, setAiText] = useState<string | null>(null);
   const [loadingAI, setLoadingAI] = useState(false);
+
+  /* ================= AUTH ================= */
+  useEffect(() => {
+    const unsub = listenAuth(setTeacherId);
+    return () => unsub();
+  }, []);
 
   /* ================= REALTIME ================= */
   useEffect(() => {
@@ -50,50 +51,58 @@ useEffect(() => {
 
   /* ============ DERIVED (ANTI DATA HANTU) ============ */
   const studentsWithProgress = useMemo(() => {
-    return students.map((student) => {
-      const latest = reports
-        .filter((r) => r.studentId === student.id)
-        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+    return students
+      .map((student) => {
+        const latest = reports
+          .filter((r) => r.studentId === student.id)
+          .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
 
-      const safeStudent: Student = {
-        ...student,
-        totalHafalan: latest
-          ? latest.totalHafalan
-          : { juz: 0, pages: 0, lines: 0 },
-        currentProgress: latest
-          ? latest.tahfizh?.individual?.split(" - ")[1]
-          : undefined,
-      };
+        const safeStudent: Student = {
+          ...student,
+          totalHafalan: latest
+            ? latest.totalHafalan
+            : { juz: 0, pages: 0, lines: 0 },
+          currentProgress: latest
+            ? latest.tahfizh?.individual?.split(" - ")[1]
+            : undefined,
+        };
 
-      return {
-        ...student,
-        progressStats: calculateSDQProgress(safeStudent),
-      };
-    });
+        return {
+          ...student,
+          progressStats: calculateSDQProgress(safeStudent),
+        };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [students, reports]);
 
   /* ================= UI ================= */
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
-      <header className="flex justify-between">
+    <div className="max-w-7xl mx-auto space-y-8">
+      {/* ===== HEADER ===== */}
+      <header className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">Dashboard Halaqah</h1>
-          <p className="text-gray-500 text-sm">
+          <h1 className="text-2xl font-bold text-gray-900">
+            Dashboard Halaqah
+          </h1>
+          <p className="text-sm text-gray-500">
             Data realtime dari Firebase
           </p>
         </div>
         <Button>+ Input Laporan</Button>
       </header>
 
-      <section className="bg-white rounded-xl border">
-        <div className="p-6 flex items-center gap-2 border-b bg-gray-50">
-          <Trophy className="text-yellow-500" size={18} />
-          <h3 className="font-bold">Capaian Target Kelas</h3>
+      {/* ===== CAPAIAN TARGET ===== */}
+      <section className="bg-white rounded-2xl border shadow-sm">
+        <div className="px-6 py-4 flex items-center gap-2 border-b bg-gray-50 rounded-t-2xl">
+          <Trophy size={18} className="text-yellow-500" />
+          <h3 className="font-semibold text-gray-800">
+            Capaian Target Kelas
+          </h3>
         </div>
 
-        <div className="p-6 space-y-4">
+        <div className="p-6 space-y-5">
           {studentsWithProgress.length === 0 && (
-            <p className="text-center text-gray-400">
+            <p className="text-center text-gray-400 py-10">
               Belum ada data siswa
             </p>
           )}
@@ -102,67 +111,25 @@ useEffect(() => {
             <div
               key={s.id}
               onClick={() => setSelected(s)}
-              className="cursor-pointer p-3 rounded-lg hover:bg-gray-50"
+              className="group cursor-pointer rounded-xl p-4 border border-gray-100 hover:border-gray-200 hover:shadow-sm transition"
             >
-              <div className="flex justify-between mb-2">
-                <strong>{s.name}</strong>
-                <span>{s.progressStats.percentage}%</span>
-              </div>
-              <div className="h-2 bg-gray-100 rounded">
-                <div
-                  className={`h-full ${s.progressStats.colorClass}`}
-                  style={{
-                    width: `${Math.min(
-                      s.progressStats.percentage,
-                      100
-                    )}%`,
-                  }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+              <div className="flex justify-between items-center mb-3">
+                <div>
+                  <p className="font-semibold text-gray-800">
+                    {s.name}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Target: {s.progressStats.target}{" "}
+                    {s.progressStats.unit}
+                  </p>
+                </div>
 
-      {selected && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-xl max-w-md w-full">
-            <h3 className="font-bold mb-4">
-              Evaluasi {selected.name}
-            </h3>
-
-            {!aiText ? (
-              <Button
-                isLoading={loadingAI}
-                onClick={async () => {
-                  setLoadingAI(true);
-                  setAiText(
-                    await generateStudentEvaluation(selected)
-                  );
-                  setLoadingAI(false);
-                }}
-              >
-                <Sparkles className="mr-2" /> Generate Evaluasi
-              </Button>
-            ) : (
-              <pre className="text-sm whitespace-pre-wrap">
-                {aiText}
-              </pre>
-            )}
-
-            <Button
-              variant="secondary"
-              className="mt-4 w-full"
-              onClick={() => {
-                setSelected(null);
-                setAiText(null);
-              }}
-            >
-              Tutup
-            </Button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+                <div className="text-right">
+                  <span
+                    className={`text-xs font-bold px-2 py-1 rounded-full ${
+                      s.progressStats.percentage >= 100
+                        ? "bg-green-100 text-green-700"
+                        : "bg-blue-100 text-blue-700"
+                    }`}
+                  >
+                    {s.progressStats.p
