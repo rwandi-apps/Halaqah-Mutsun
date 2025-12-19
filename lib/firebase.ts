@@ -3,7 +3,7 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
-// Fix: Replaced import.meta.env with process.env to resolve property 'env' does not exist on type 'ImportMeta'
+// Fix: Use process.env instead of import.meta.env to resolve "Property 'env' does not exist on type 'ImportMeta'" errors.
 const firebaseConfig = {
   apiKey: process.env.VITE_FIREBASE_API_KEY,
   authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -25,9 +25,9 @@ export const isFirebaseEnabled = isConfigValid && !!app;
 
 export const initFirebase = () => {
   if (isFirebaseEnabled) {
-    // Fix: Replaced import.meta.env with process.env to resolve property 'env' does not exist on type 'ImportMeta'
+    // Fix: Updated to use process.env for consistency across the file.
     console.log(`[Firebase] Connected to: ${process.env.VITE_FIREBASE_PROJECT_ID}`);
   } else {
-    console.warn("[Firebase] Configuration missing or invalid.");
+    console.warn("[Firebase] Configuration missing or invalid. Check your .env file.");
   }
 };
