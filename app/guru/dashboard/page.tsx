@@ -49,7 +49,7 @@ export default function GuruDashboardPage() {
     };
   }, [teacherId]);
 
-  /* ============ DERIVED (ANTI DATA HANTU) ============ */
+  /* ============ DERIVED DATA ============ */
   const studentsWithProgress = useMemo(() => {
     return students
       .map((student) => {
@@ -75,6 +75,24 @@ export default function GuruDashboardPage() {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [students, reports]);
 
+  /* ============ STATISTICS ============ */
+  const stats = useMemo(() => {
+    const total = studentsWithProgress.length;
+    const completed = studentsWithProgress.filter(
+      (s) => s.progressStats.percentage >= 100
+    ).length;
+    const onTrack = studentsWithProgress.filter(
+      (s) =>
+        s.progressStats.percentage >= 80 &&
+        s.progressStats.percentage < 100
+    ).length;
+    const needAttention = studentsWithProgress.filter(
+      (s) => s.progressStats.percentage < 50
+    ).length;
+
+    return { total, completed, onTrack, needAttention };
+  }, [studentsWithProgress]);
+
   /* ================= UI ================= */
   return (
     <div className="max-w-7xl mx-auto space-y-8">
@@ -90,6 +108,26 @@ export default function GuruDashboardPage() {
         </div>
         <Button>+ Input Laporan</Button>
       </header>
+
+      {/* ===== STATISTICS ===== */}
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard title="Total Siswa" value={stats.total} />
+        <StatCard
+          title="Target Tercapai"
+          value={stats.completed}
+          color="green"
+        />
+        <StatCard
+          title="On Track"
+          value={stats.onTrack}
+          color="blue"
+        />
+        <StatCard
+          title="Perlu Perhatian"
+          value={stats.needAttention}
+          color="red"
+        />
+      </section>
 
       {/* ===== CAPAIAN TARGET ===== */}
       <section className="bg-white rounded-2xl border shadow-sm">
@@ -124,20 +162,15 @@ export default function GuruDashboardPage() {
                   </p>
                 </div>
 
-                <div className="text-right">
-                  <span
-                    className={`text-xs font-bold px-2 py-1 rounded-full ${
-                      s.progressStats.percentage >= 100
-                        ? "bg-green-100 text-green-700"
-                        : "bg-blue-100 text-blue-700"
-                    }`}
-                  >
-                    {s.progressStats.percentage}%
-                  </span>
-                  <p className="text-[10px] text-gray-400 mt-1">
-                    {s.progressStats.statusText}
-                  </p>
-                </div>
+                <span
+                  className={`text-xs font-bold px-2 py-1 rounded-full ${
+                    s.progressStats.percentage >= 100
+                      ? "bg-green-100 text-green-700"
+                      : "bg-blue-100 text-blue-700"
+                  }`}
+                >
+                  {s.progressStats.percentage}%
+                </span>
               </div>
 
               <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
@@ -159,7 +192,7 @@ export default function GuruDashboardPage() {
       {/* ===== MODAL EVALUASI ===== */}
       {selected && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 animate-in zoom-in duration-200">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6">
             <h3 className="font-bold text-lg mb-4">
               Evaluasi {selected.name}
             </h3>
@@ -169,13 +202,13 @@ export default function GuruDashboardPage() {
                 isLoading={loadingAI}
                 onClick={async () => {
                   setLoadingAI(true);
-                  const result =
-                    await generateStudentEvaluation(selected);
-                  setAiText(result);
+                  setAiText(
+                    await generateStudentEvaluation(selected)
+                  );
                   setLoadingAI(false);
                 }}
               >
-                <Sparkles className="mr-2" size={16} />
+                <Sparkles size={16} className="mr-2" />
                 Generate Evaluasi
               </Button>
             ) : (
@@ -197,6 +230,37 @@ export default function GuruDashboardPage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ===== SMALL COMPONENT ===== */
+function StatCard({
+  title,
+  value,
+  color = "gray",
+}: {
+  title: string;
+  value: number;
+  color?: "gray" | "green" | "blue" | "red";
+}) {
+  const colorMap: Record<string, string> = {
+    gray: "text-gray-800",
+    green: "text-green-600",
+    blue: "text-blue-600",
+    red: "text-red-600",
+  };
+
+  return (
+    <div className="bg-white border rounded-xl p-5 shadow-sm text-center">
+      <p className="text-xs font-semibold text-gray-400 uppercase">
+        {title}
+      </p>
+      <p
+        className={`text-3xl font-bold mt-1 ${colorMap[color]}`}
+      >
+        {value}
+      </p>
     </div>
   );
 }
