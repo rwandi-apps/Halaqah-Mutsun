@@ -28,31 +28,25 @@ function App() {
     setUser(null);
   };
 
-  const handleSwitchRole = (role: Role) => {
-    if (user) {
-      const updatedUser = { ...user, role };
-      setUser(updatedUser);
-      localStorage.setItem('sdq_auth_user', JSON.stringify(updatedUser));
-    }
-  };
-
   return (
     <HashRouter>
       <Routes>
-        {/* Halaman Login */}
+        {/* Login Page */}
         <Route path="/login" element={
           !user ? <LoginPage onLogin={handleLogin} /> : <Navigate to="/" replace />
         } />
 
-        {/* Jalur Terproteksi */}
-        <Route element={<Layout user={user} onLogout={handleLogout} onSwitchRole={handleSwitchRole} />}>
+        {/* Protected Routes */}
+        <Route element={<Layout user={user} onLogout={handleLogout} />}>
+          
+          {/* ROOT REDIRECTOR */}
           <Route path="/" element={
             user?.role === 'KOORDINATOR' 
               ? <Navigate to="/coordinator/dashboard" replace /> 
               : <Navigate to="/guru/dashboard" replace />
           } />
           
-          {/* Routes Koordinator */}
+          {/* Coordinator Pages */}
           <Route path="/coordinator/dashboard" element={<CoordinatorDashboard />} />
           <Route path="/coordinator/guru" element={<CoordinatorGuruPage />} />
           <Route path="/coordinator/guru/:id" element={<CoordinatorTeacherDetail />} />
@@ -60,14 +54,14 @@ function App() {
           <Route path="/coordinator/kelas" element={<CoordinatorKelasPage />} />
           <Route path="/coordinator/reports" element={<CoordinatorReportsPage />} />
           
-          {/* Routes Guru */}
-          <Route path="/guru/dashboard" element={<GuruDashboard teacherId={(user as any)?.teacherId || user?.id} />} />
-          <Route path="/guru/halaqah" element={<GuruHalaqahPage teacherId={(user as any)?.teacherId || user?.id} />} />
-          <Route path="/guru/laporan" element={<GuruLaporanPage teacherId={(user as any)?.teacherId || user?.id} />} />
-          <Route path="/guru/view-report" element={<GuruViewReportPage teacherId={(user as any)?.teacherId || user?.id} />} />
+          {/* Guru Pages */}
+          <Route path="/guru/dashboard" element={<GuruDashboard teacherId={user?.id} />} />
+          <Route path="/guru/halaqah" element={<GuruHalaqahPage teacherId={user?.id} />} />
+          <Route path="/guru/laporan" element={<GuruLaporanPage teacherId={user?.id} />} />
+          <Route path="/guru/view-report" element={<GuruViewReportPage teacherId={user?.id} />} />
         </Route>
 
-        {/* Catch-all redirect */}
+        {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </HashRouter>

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import { Menu, X, Bell, ChevronDown } from 'lucide-react';
@@ -8,23 +9,18 @@ import { SidebarGuru } from '../components/SidebarGuru';
 interface LayoutProps {
   user: User | null;
   onLogout: () => void;
-  onSwitchRole: (role: Role) => void;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ user, onLogout, onSwitchRole }) => {
+export const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
 
-  // FIX: Jangan return null, tapi Redirect ke /login jika user tidak ada (logout)
   if (!user) {
     return <Navigate to="/login" replace />;
   }
 
   const isCoordinator = user.role === 'KOORDINATOR';
-
-  // Use Nickname if available, otherwise name
   const displayName = user.nickname || user.name;
   
-  // Get initials from display name
   const initials = displayName
     .split(' ')
     .filter(Boolean)
@@ -67,43 +63,27 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout, onSwitchRole }) 
               {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
             
-            {/* Demo Toggle Visual */}
-            <div className="hidden md:flex items-center gap-2 text-sm text-gray-500">
-              <span>Demo:</span>
-              <div className="bg-gray-100 rounded-lg p-1 flex">
-                 <button 
-                   onClick={() => onSwitchRole('KOORDINATOR')}
-                   className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${isCoordinator ? 'bg-primary-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200'}`}
-                 >
-                   Admin
-                 </button>
-                 <button 
-                   onClick={() => onSwitchRole('GURU')}
-                   className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${!isCoordinator ? 'bg-[#0e7490] text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200'}`}
-                 >
-                   Guru
-                 </button>
-              </div>
-            </div>
+            {/* Judul Aplikasi untuk Mobile */}
+            <h1 className="text-lg font-bold text-gray-800 lg:hidden">SDQ Portal</h1>
           </div>
 
-          <div className="flex items-center gap-6">
-             <div className={`hidden md:block px-3 py-1 rounded-full text-xs font-semibold text-white ${isCoordinator ? 'bg-primary-500' : 'bg-green-500'}`}>
-               {isCoordinator ? 'Koordinator' : 'Guru'}
+          <div className="flex items-center gap-4 lg:gap-6">
+             <div className={`hidden sm:block px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-white ${isCoordinator ? 'bg-primary-600' : 'bg-guru-700'}`}>
+               {isCoordinator ? 'Koordinator' : 'Guru Halaqah'}
              </div>
              
-             <button className="relative text-gray-500 hover:text-gray-700">
+             <button className="relative text-gray-400 hover:text-gray-600 transition-colors">
                <Bell size={22} />
                <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
              </button>
 
-             <div className="flex items-center gap-3 pl-6 border-l border-gray-200">
+             <div className="flex items-center gap-3 pl-4 lg:pl-6 border-l border-gray-200">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shadow-sm ${isCoordinator ? 'bg-primary-600' : 'bg-purple-600'}`}>
                   {initials}
                 </div>
                 <div className="hidden md:block">
                   <p className="text-sm font-bold text-gray-800 leading-none mb-1">{displayName}</p>
-                  <p className="text-xs text-gray-500">{isCoordinator ? 'Koordinator Tahfizh' : 'Guru Halaqah'}</p>
+                  <p className="text-[10px] text-gray-500 uppercase font-medium">{isCoordinator ? 'Manajemen Tahfizh' : 'Musyrif Halaqah'}</p>
                 </div>
                 <ChevronDown size={16} className="text-gray-400 hidden md:block" />
              </div>
@@ -111,7 +91,7 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout, onSwitchRole }) 
         </header>
 
         {/* Page Content Outlet */}
-        <main className="flex-1 overflow-y-auto p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto p-4 lg:p-8">
           <Outlet />
         </main>
       </div>

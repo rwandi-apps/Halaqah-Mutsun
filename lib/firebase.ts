@@ -1,45 +1,41 @@
+
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
-// Vite HARUS pakai import.meta.env
+// Vite membutuhkan import.meta.env agar variabel tersedia di browser
+// @ts-ignore - Menghindari error TS jika tipe env tidak didefinisikan
+const env = import.meta.env || {};
+
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey: env.VITE_FIREBASE_API_KEY,
+  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: env.VITE_FIREBASE_APP_ID
 };
 
-// Validasi minimal
-const isConfigValid =
-  !!firebaseConfig.apiKey && !!firebaseConfig.projectId;
+// Validasi apakah config berhasil dimuat
+const isConfigValid = !!firebaseConfig.apiKey && !!firebaseConfig.projectId;
 
 let app;
-
 try {
   if (isConfigValid) {
-    app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-  } else {
-    console.warn('[Firebase] Config tidak lengkap');
+    app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
   }
-} catch (error) {
-  console.error('[Firebase] Initialization error:', error);
+} catch (e) {
+  console.error("[Firebase] Initialization Error:", e);
 }
 
-export const db = app ? getFirestore(app) : null;
-export const auth = app ? getAuth(app) : null;
+export const db = app ? getFirestore(app) : undefined;
+export const auth = app ? getAuth(app) : undefined;
 export const isFirebaseEnabled = !!app;
 
 export const initFirebase = () => {
   if (isFirebaseEnabled) {
-    console.log(
-      `[Firebase] Active Project: ${firebaseConfig.projectId}`
-    );
+    console.log(`[Firebase] Terhubung ke Project: ${firebaseConfig.projectId}`);
   } else {
-    console.error(
-      '[Firebase] Firebase disabled — cek Vercel Environment Variables'
-    );
+    console.error("[Firebase] Konfigurasi Gagal! Pastikan Environment Variables di Vercel sudah benar (VITE_ prefix).");
   }
 };

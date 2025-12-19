@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { 
@@ -19,20 +20,16 @@ import Button from './Button';
 import { User, Role } from '../types';
 
 interface LayoutProps {
-  // Make props optional for compatibility with direct usage in pages/ components
   user?: User | null;
   onLogout?: () => void;
-  onSwitchRole?: (role: Role) => void;
   children?: React.ReactNode;
   sidebar?: React.ReactNode;
   title?: string;
 }
 
-// Fix: Changed default onSwitchRole implementation to accept a 'Role' parameter, resolving the "Expected 0 arguments, but got 1" error
 export const Layout: React.FC<LayoutProps> = ({ 
   user, 
   onLogout = () => {}, 
-  onSwitchRole = (_role: Role) => {},
   children,
   sidebar,
   title
@@ -44,8 +41,6 @@ export const Layout: React.FC<LayoutProps> = ({
 
   const isCoordinator = user?.role === 'KOORDINATOR';
 
-  // Specific menu items based on Role, aligned with App.tsx routes
-  // Fix: Removed incorrect "/app" prefix from navigation links to ensure consistency with defined routes in App.tsx
   const navItems = isCoordinator ? [
     { to: "/coordinator/dashboard", icon: LayoutDashboard, label: "Dashboard Utama" },
     { to: "/coordinator/guru", icon: Users, label: "Data Guru" },
@@ -64,13 +59,11 @@ export const Layout: React.FC<LayoutProps> = ({
     { to: "/guru/rapor", icon: FileText, label: "Rapor", hasDropdown: true },
   ];
 
-  // Theme based on role
   const sidebarBg = isCoordinator ? 'bg-primary-700' : 'bg-[#0f4c75]'; 
   const sidebarHover = isCoordinator ? 'hover:bg-primary-600' : 'hover:bg-white/10';
   const sidebarActive = isCoordinator ? 'bg-primary-600' : 'bg-white/10';
   const logoText = isCoordinator ? "ADMIN SDQ" : "HALAQAH SDQ";
 
-  // If no user and no fallback content, return null to protect routes
   if (!user && !children && !sidebar) return null;
 
   return (
@@ -88,7 +81,6 @@ export const Layout: React.FC<LayoutProps> = ({
         fixed inset-y-0 left-0 z-30 w-64 ${sidebarBg} text-white transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:inset-auto
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
-        {/* Support custom sidebar prop for legacy pages */}
         {sidebar ? sidebar : (
           <>
             <div className="h-20 flex items-center px-6">
@@ -158,28 +150,7 @@ export const Layout: React.FC<LayoutProps> = ({
             >
               {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
-            
-            {/* Support title prop for header display */}
             {title && <h2 className="text-lg font-bold text-gray-800 hidden md:block">{title}</h2>}
-            
-            {/* Demo Toggle Visual */}
-            <div className="hidden md:flex items-center gap-2 text-sm text-gray-500">
-              <span>Demo:</span>
-              <div className="bg-gray-100 rounded-lg p-1 flex">
-                 <button 
-                   onClick={() => onSwitchRole('KOORDINATOR')}
-                   className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${isCoordinator ? 'bg-primary-600 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200'}`}
-                 >
-                   Admin
-                 </button>
-                 <button 
-                   onClick={() => onSwitchRole('GURU')}
-                   className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${!isCoordinator ? 'bg-[#0e7490] text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200'}`}
-                 >
-                   Guru
-                 </button>
-              </div>
-            </div>
           </div>
 
           <div className="flex items-center gap-6">
@@ -211,7 +182,6 @@ export const Layout: React.FC<LayoutProps> = ({
 
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto p-6 lg:p-8">
-          {/* Support children prop for manual wrapping in legacy pages, otherwise use Outlet */}
           {children ? children : <Outlet />}
         </main>
       </div>
