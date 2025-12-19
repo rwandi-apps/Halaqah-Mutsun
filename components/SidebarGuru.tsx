@@ -1,7 +1,5 @@
-"use client";
-
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import React from "react";
+import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -18,25 +16,23 @@ interface SidebarProps {
   onCloseMobile: () => void;
 }
 
-export default function SidebarGuru({
+export const SidebarGuru: React.FC<SidebarProps> = ({
   onLogout,
   onCloseMobile,
-}: SidebarProps) {
-  const pathname = usePathname();
-
+}) => {
   const navItems = [
     { type: "section", label: "UTAMA" },
-    { href: "/guru/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-    { href: "/guru/halaqah", icon: Users, label: "Halaqah" },
+    { to: "/guru/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+    { to: "/guru/halaqah", icon: Users, label: "Halaqah" },
 
     { type: "section", label: "LAPORAN" },
-    { href: "/guru/laporan", icon: FileText, label: "Input Laporan" },
-    { href: "/guru/view-report", icon: ClipboardList, label: "Lihat Laporan" },
+    { to: "/guru/laporan", icon: FileText, label: "Input Laporan" },
+    { to: "/guru/view-report", icon: ClipboardList, label: "Lihat Laporan" },
 
     { type: "section", label: "EVALUASI" },
-    { href: "/guru/evaluation", icon: BarChart2, label: "Evaluasi & Tindak Lanjut" },
-    { href: "/guru/grades", icon: BookOpen, label: "Input Nilai Rapor" },
-    { href: "/guru/rapor", icon: FileText, label: "Rapor" },
+    { to: "/guru/evaluation", icon: BarChart2, label: "Evaluasi & Tindak Lanjut" },
+    { to: "/guru/grades", icon: BookOpen, label: "Input Nilai Rapor" },
+    { to: "/guru/rapor", icon: FileText, label: "Rapor" },
   ];
 
   return (
@@ -58,25 +54,25 @@ export default function SidebarGuru({
             );
           }
 
-          const active = pathname === item.href;
-
           return (
-            <Link
-              key={item.href}
-              href={item.href}
+            <NavLink
+              key={item.to}
+              to={item.to!}
               onClick={onCloseMobile}
-              className={`
+              className={({ isActive }) =>
+                `
                 flex items-center justify-between px-3 py-2.5 rounded-lg mb-1
                 transition-colors
-                ${active ? "bg-white/10" : "hover:bg-white/10"}
-              `}
+                ${isActive ? "bg-white/10" : "hover:bg-white/10"}
+              `
+              }
             >
               <div className="flex items-center gap-3">
                 <item.icon size={18} />
                 <span className="text-sm font-medium">{item.label}</span>
               </div>
               <ChevronDown size={14} className="opacity-40" />
-            </Link>
+            </NavLink>
           );
         })}
       </nav>
@@ -92,4 +88,6 @@ export default function SidebarGuru({
       </div>
     </aside>
   );
-}
+};
+
+export default SidebarGuru;
