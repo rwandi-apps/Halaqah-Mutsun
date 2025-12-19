@@ -85,7 +85,7 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
           <h2 className="text-2xl font-bold text-gray-900">Dashboard Halaqah</h2>
           <p className="text-gray-500">ID Guru: <span className="font-mono text-xs">{teacherId}</span></p>
         </div>
-        <Button onClick={() => window.location.hash = '/guru/laporan'}>+ Input Laporan</Button>
+        {/* Tombol Input Laporan dihapus sesuai permintaan */}
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

@@ -1,80 +1,72 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './app/layout';
-import LoginPage from './app/(auth)/login/page';
 import CoordinatorDashboard from './app/coordinator/dashboard/page';
 import CoordinatorGuruPage from './app/coordinator/guru/page';
 import CoordinatorTeacherDetail from './app/coordinator/guru/[id]/page';
 import CoordinatorSiswaPage from './app/coordinator/siswa/page';
 import CoordinatorKelasPage from './app/coordinator/kelas/page';
+import CoordinatorReportsPage from './app/coordinator/reports/page';
 import GuruDashboard from './app/guru/dashboard/page';
 import GuruHalaqahPage from './app/guru/halaqah/page';
 import GuruLaporanPage from './app/guru/laporan/page';
 import GuruViewReportPage from './app/guru/view-report/page';
 import { User, Role } from './types';
-import { getStoredUser, simpleLogout } from './services/simpleAuth';
 
 function App() {
-  // Ambil user langsung dari localStorage saat init
-  const [user, setUser] = useState<User | null>(() => getStoredUser());
-  const [loading, setLoading] = useState(false);
-
-  const handleLogin = (loggedInUser: User) => {
-    setUser(loggedInUser);
-  };
+  // Set user default ke Koordinator agar tidak perlu login
+  const [user, setUser] = useState<User | null>({
+    id: 'admin-1',
+    name: 'Admin SDQ',
+    nickname: 'Admin',
+    email: 'admin@sdq.com',
+    role: 'KOORDINATOR'
+  });
 
   const handleLogout = () => {
-    simpleLogout();
+    // Logout sementara hanya mengosongkan user
     setUser(null);
   };
 
   const handleSwitchRole = (role: Role) => {
     if (user) {
-      const updatedUser = { ...user, role };
-      setUser(updatedUser);
-      localStorage.setItem('sdq_auth_user', JSON.stringify(updatedUser));
+      setUser({ ...user, role });
     }
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
-    );
-  }
 
   return (
     <HashRouter>
       <Routes>
-        <Route path="/login" element={
+        {/* Redirect root ke dashboard yang sesuai role */}
+        <Route path="/" element={
           user ? (
             <Navigate to={user.role === 'KOORDINATOR' ? '/coordinator/dashboard' : '/guru/dashboard'} replace />
           ) : (
-            <LoginPage onLogin={handleLogin} />
+            <div className="flex items-center justify-center h-screen">
+              <p className="text-gray-500">Aplikasi dalam mode pengelolaan. <button onClick={() => window.location.reload()} className="text-primary-600 underline">Refresh</button></p>
+            </div>
           )
         } />
 
         <Route element={<Layout user={user} onLogout={handleLogout} onSwitchRole={handleSwitchRole} />}>
           {/* Routes Koordinator */}
-          <Route path="/coordinator/dashboard" element={user?.role === 'KOORDINATOR' ? <CoordinatorDashboard /> : <Navigate to="/login" />} />
-          <Route path="/coordinator/guru" element={user?.role === 'KOORDINATOR' ? <CoordinatorGuruPage /> : <Navigate to="/login" />} />
-          <Route path="/coordinator/guru/:id" element={user?.role === 'KOORDINATOR' ? <CoordinatorTeacherDetail /> : <Navigate to="/login" />} />
-          <Route path="/coordinator/siswa" element={user?.role === 'KOORDINATOR' ? <CoordinatorSiswaPage /> : <Navigate to="/login" />} />
-          <Route path="/coordinator/kelas" element={user?.role === 'KOORDINATOR' ? <CoordinatorKelasPage /> : <Navigate to="/login" />} />
+          <Route path="/coordinator/dashboard" element={<CoordinatorDashboard />} />
+          <Route path="/coordinator/guru" element={<CoordinatorGuruPage />} />
+          <Route path="/coordinator/guru/:id" element={<CoordinatorTeacherDetail />} />
+          <Route path="/coordinator/siswa" element={<CoordinatorSiswaPage />} />
+          <Route path="/coordinator/kelas" element={<CoordinatorKelasPage />} />
+          <Route path="/coordinator/reports" element={<CoordinatorReportsPage />} />
           
-          {/* Routes Guru - Menggunakan ID/teacherId dari user object */}
-          <Route path="/guru/dashboard" element={user?.role === 'GURU' ? <GuruDashboard teacherId={(user as any).teacherId || user.id} /> : <Navigate to="/login" />} />
-          <Route path="/guru/halaqah" element={user?.role === 'GURU' ? <GuruHalaqahPage teacherId={(user as any).teacherId || user.id} /> : <Navigate to="/login" />} />
-          <Route path="/guru/laporan" element={user?.role === 'GURU' ? <GuruLaporanPage teacherId={(user as any).teacherId || user.id} /> : <Navigate to="/login" />} />
-          <Route path="/guru/view-report" element={user?.role === 'GURU' ? <GuruViewReportPage teacherId={(user as any).teacherId || user.id} /> : <Navigate to="/login" />} />
+          {/* Routes Guru */}
+          <Route path="/guru/dashboard" element={<GuruDashboard teacherId={(user as any)?.teacherId || user?.id} />} />
+          <Route path="/guru/halaqah" element={<GuruHalaqahPage teacherId={(user as any)?.teacherId || user?.id} />} />
+          <Route path="/guru/laporan" element={<GuruLaporanPage teacherId={(user as any)?.teacherId || user?.id} />} />
+          <Route path="/guru/view-report" element={<GuruViewReportPage teacherId={(user as any)?.teacherId || user?.id} />} />
         </Route>
 
-        {/* Catch-all redirect */}
-        <Route path="*" element={
-          <Navigate to={user ? (user.role === 'KOORDINATOR' ? '/coordinator/dashboard' : '/guru/dashboard') : '/login'} replace />
-        } />
+        {/* Catch-all redirect ke root */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </HashRouter>
   );

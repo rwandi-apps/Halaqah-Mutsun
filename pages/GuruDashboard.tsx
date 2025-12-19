@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Button } from '../components/UIComponents';
 import { Sparkles, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
@@ -46,9 +47,7 @@ export const GuruDashboard: React.FC<GuruDashboardProps> = ({ teacherId = '1' })
           <h2 className="text-2xl font-bold text-gray-900">Ahlan wa Sahlan, Ustadz!</h2>
           <p className="text-gray-500 mt-1">Kelola halaqah dan pantau perkembangan siswa Anda.</p>
         </div>
-        <Button className="shadow-lg shadow-primary-500/30">
-          + Input Laporan
-        </Button>
+        {/* Tombol Input Laporan dihapus */}
       </div>
 
       {/* Main Stats Panel */}
@@ -171,7 +170,7 @@ export const GuruDashboard: React.FC<GuruDashboardProps> = ({ teacherId = '1' })
                   </div>
                   <h4 className="text-lg font-medium text-gray-900 mb-2">Generate Evaluasi dengan AI</h4>
                   <p className="text-gray-500 mb-6 max-w-md mx-auto">
-                    Gemini akan menganalisis data hafalan, kehadiran, dan perilaku santri untuk membuat laporan naratif yang personal.
+                    Gemini akan menganalisis data hafalan, kehadiran, and perilaku santri untuk membuat laporan naratif yang personal.
                   </p>
                   <Button 
                     onClick={() => handleGenerateEvaluation(selectedStudent)} 
