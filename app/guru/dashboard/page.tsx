@@ -10,14 +10,19 @@ import {
 import { generateStudentEvaluation } from "@/services/geminiService";
 import { calculateSDQProgress } from "@/services/sdqTargets";
 import { Student, Report } from "@/types";
+import { listenAuth } from "@/services/authService";
 
 interface StudentWithProgress extends Student {
   progressStats: ReturnType<typeof calculateSDQProgress>;
 }
 
 export default function GuruDashboardPage() {
-  const teacherId = "CURRENT_TEACHER_ID"; // ambil dari auth/context kamu
+ const [teacherId, setTeacherId] = useState<string | null>(null);
 
+useEffect(() => {
+  const unsub = listenAuth(setTeacherId);
+  return () => unsub();
+}, []);
   const [students, setStudents] = useState<Student[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
   const [selected, setSelected] = useState<StudentWithProgress | null>(null);
