@@ -1,14 +1,16 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Role } from '../../../types';
-import { getAllTeachers, addTeacher } from '../../../services/firestoreService';
-import { Users, ChevronRight, Mail, Plus, X, ShieldCheck } from 'lucide-react';
+import { getAllTeachers, addTeacher, updateTeacher } from '../../../services/firestoreService';
+import { Users, ChevronRight, Mail, Plus, X, ShieldCheck, Edit2 } from 'lucide-react';
 import { Button } from '../../../components/Button';
 
 export default function CoordinatorGuruPage() {
   const [teachers, setTeachers] = useState<User[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   
   // Form State
   const [newName, setNewName] = useState('');
@@ -25,7 +27,6 @@ export default function CoordinatorGuruPage() {
   const loadTeachers = () => {
     getAllTeachers()
       .then(data => {
-        // Ensure data is array
         setTeachers(Array.isArray(data) ? data : []);
       })
       .catch(err => {
@@ -34,21 +35,48 @@ export default function CoordinatorGuruPage() {
       });
   };
 
-  const handleAddTeacher = async (e: React.FormEvent) => {
+  const handleOpenAddModal = () => {
+    setEditingId(null);
+    setNewName('');
+    setNewNickname('');
+    setNewEmail('');
+    setNewRole('GURU');
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEditModal = (e: React.MouseEvent, teacher: User) => {
+    e.stopPropagation(); // Mencegah navigasi ke halaman detail
+    setEditingId(teacher.id);
+    setNewName(teacher.name);
+    setNewNickname(teacher.nickname || '');
+    setNewEmail(teacher.email);
+    setNewRole(teacher.role);
+    setIsModalOpen(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName || !newEmail || !newNickname) return;
 
     setIsSubmitting(true);
     try {
-      await addTeacher(newName, newEmail, newNickname, newRole);
+      if (editingId) {
+        // Mode Edit
+        await updateTeacher(editingId, {
+          name: newName,
+          nickname: newNickname,
+          email: newEmail,
+          role: newRole
+        });
+      } else {
+        // Mode Tambah
+        await addTeacher(newName, newEmail, newNickname, newRole);
+      }
+      
       await loadTeachers(); // Refresh list from Firestore
       setIsModalOpen(false);
-      setNewName('');
-      setNewNickname('');
-      setNewEmail('');
-      setNewRole('GURU');
     } catch (error) {
-      console.error("Failed to add teacher", error);
+      console.error("Failed to save teacher", error);
       alert("Gagal menyimpan data ke database.");
     } finally {
       setIsSubmitting(false);
@@ -62,7 +90,7 @@ export default function CoordinatorGuruPage() {
           <h2 className="text-2xl font-bold text-gray-900">Data Guru & Staf</h2>
           <p className="text-gray-500 mt-1">Daftar semua guru halaqah and koordinator.</p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)}>
+        <Button onClick={handleOpenAddModal}>
           <Plus size={18} className="mr-2" /> Tambah Guru
         </Button>
       </div>
@@ -74,7 +102,6 @@ export default function CoordinatorGuruPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {teachers.map((teacher, index) => {
-            // Very defensive coding to prevent white screen
             if (!teacher) return null;
 
             const name = typeof teacher.name === 'string' ? teacher.name : "Tanpa Nama";
@@ -82,7 +109,6 @@ export default function CoordinatorGuruPage() {
             const email = teacher.email || "-";
             const role = teacher.role || 'GURU';
             
-            // Safe charAt access
             const initial = typeof nickname === 'string' && nickname.length > 0 
               ? nickname.charAt(0).toUpperCase() 
               : "?";
@@ -90,7 +116,7 @@ export default function CoordinatorGuruPage() {
             return (
               <div 
                 key={teacher.id || `teacher-${index}`} 
-                className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer group"
+                className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer group relative"
                 onClick={() => navigate(`/coordinator/guru/${teacher.id}`)}
               >
                 <div className="flex items-start justify-between mb-4">
@@ -114,6 +140,15 @@ export default function CoordinatorGuruPage() {
                       </div>
                     </div>
                   </div>
+                  
+                  {/* Tombol Edit Baru */}
+                  <button 
+                    onClick={(e) => handleOpenEditModal(e, teacher)}
+                    className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                    title="Edit Profil Guru"
+                  >
+                    <Edit2 size={16} />
+                  </button>
                 </div>
                 
                 <div className="border-t border-gray-100 pt-4 flex justify-between items-center">
@@ -130,22 +165,24 @@ export default function CoordinatorGuruPage() {
         </div>
       )}
 
-      {/* Add Teacher Modal */}
+      {/* Add/Edit Teacher Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
             <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <h3 className="font-bold text-gray-900">Tambah Guru/Staf Baru</h3>
+              <h3 className="font-bold text-gray-900">{editingId ? 'Edit Profil Guru/Staf' : 'Tambah Guru/Staf Baru'}</h3>
               <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">
                 <X size={20} />
               </button>
             </div>
             
-            <form onSubmit={handleAddTeacher} className="p-6 space-y-4">
-              <div className="p-3 bg-yellow-50 border border-yellow-100 rounded-lg text-xs text-yellow-800">
-                <strong>Catatan:</strong> Menambah user di sini hanya menyimpan data profil. 
-                Anda perlu mendaftarkan email tersebut di Firebase Authentication agar mereka bisa login.
-              </div>
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              {!editingId && (
+                <div className="p-3 bg-yellow-50 border border-yellow-100 rounded-lg text-xs text-yellow-800">
+                  <strong>Catatan:</strong> Menambah user baru di sini hanya menyimpan profil. 
+                  Anda perlu mendaftarkan email tersebut di Firebase Auth agar mereka bisa login.
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
@@ -154,7 +191,7 @@ export default function CoordinatorGuruPage() {
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   placeholder="Contoh: Muhammad Hasan Al-Basri"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm"
                   required
                 />
               </div>
@@ -166,10 +203,9 @@ export default function CoordinatorGuruPage() {
                   value={newNickname}
                   onChange={(e) => setNewNickname(e.target.value)}
                   placeholder="Contoh: Ustadz Hasan"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm"
                   required
                 />
-                <p className="text-[10px] text-gray-400 mt-1">Nama ini akan muncul di pojok kanan atas aplikasi.</p>
               </div>
 
               <div>
@@ -177,7 +213,7 @@ export default function CoordinatorGuruPage() {
                 <select 
                   value={newRole}
                   onChange={(e) => setNewRole(e.target.value as Role)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-white"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-white text-sm"
                 >
                   <option value="GURU">Guru Halaqah</option>
                   <option value="KOORDINATOR">Koordinator</option>
@@ -189,12 +225,13 @@ export default function CoordinatorGuruPage() {
                 <input 
                   type="email" 
                   value={newEmail}
-                  // Fixed: Changed target.value to e.target.value
                   onChange={(e) => setNewEmail(e.target.value)}
                   placeholder="email@sekolah.com"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+                  className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm ${editingId ? 'bg-gray-50 text-gray-500' : ''}`}
                   required
+                  readOnly={!!editingId} // Email biasanya tidak diubah setelah dibuat di Firebase Auth
                 />
+                {editingId && <p className="text-[10px] text-gray-400 mt-1">Email tidak dapat diubah untuk keamanan sistem.</p>}
               </div>
 
               <div className="pt-2 flex gap-3 justify-end">
@@ -202,7 +239,7 @@ export default function CoordinatorGuruPage() {
                   Batal
                 </Button>
                 <Button type="submit" isLoading={isSubmitting}>
-                  Simpan ke Database
+                  {editingId ? 'Simpan Perubahan' : 'Simpan ke Database'}
                 </Button>
               </div>
             </form>

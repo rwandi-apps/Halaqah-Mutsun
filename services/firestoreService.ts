@@ -36,6 +36,12 @@ export const addTeacher = async (name: string, email: string, nickname: string, 
   return { id: docRef.id, name, nickname, email, role, createdAt: new Date().toISOString() } as User;
 };
 
+export const updateTeacher = async (id: string, data: Partial<User>): Promise<void> => {
+  if (!db) throw new Error("Firestore not initialized");
+  const docRef = doc(db, 'users', id);
+  await updateDoc(docRef, { ...data, updatedAt: serverTimestamp() });
+};
+
 // --- FETCH FUNCTIONS ---
 
 export const getStudentsByTeacher = async (teacherId: string): Promise<Student[]> => {
