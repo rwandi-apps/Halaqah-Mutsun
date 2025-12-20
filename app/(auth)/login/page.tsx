@@ -59,8 +59,8 @@ export default function LoginPage({ onLogin }: LoginProps) {
 
         {/* Title */}
         <div className="text-center mb-8">
-          <h2 className="text-white text-2xl font-bold tracking-tight">Laporan Semester</h2>
-          <p className="text-blue-100/70 text-sm">Masuk untuk mengelola halaqah</p>
+          <h2 className="text-white text-2xl font-bold tracking-tight">Halaqah SDQ Mutiara Sunnah</h2>
+          <p className="text-blue-100/70 text-sm">Sistem Informasi Tahfizh & Mutaba'ah</p>
         </div>
 
         {/* Error Notification */}
