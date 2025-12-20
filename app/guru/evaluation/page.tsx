@@ -39,7 +39,7 @@ export default function GuruEvaluationPage() {
 
         {/* Subjudul Islami */}
         <p className="text-sm text-gray-500 leading-relaxed mb-10 px-4">
-          InsyaAllah fitur ini sedang dipersiapkan untuk mendukung proses pembinaan siswa secara lebih optimal.
+          InsyaAllah fitur ini sedang dipersiapkan untuk mendukung proses pembinaan santri secara lebih optimal.
         </p>
 
         {/* Pesan Motivatif Islami Singkat */}
