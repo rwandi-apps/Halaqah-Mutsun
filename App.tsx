@@ -13,6 +13,9 @@ import GuruDashboard from './app/guru/dashboard/page';
 import GuruHalaqahPage from './app/guru/halaqah/page';
 import GuruLaporanPage from './app/guru/laporan/page';
 import GuruViewReportPage from './app/guru/view-report/page';
+import GuruEvaluationPage from './app/guru/evaluation/page';
+import GuruGradesPage from './app/guru/grades/page';
+import GuruRaporPage from './app/guru/rapor/page';
 import { getStoredUser, simpleLogout } from './services/simpleAuth';
 import { User, Role } from './types';
 
@@ -59,6 +62,9 @@ function App() {
           <Route path="/guru/halaqah" element={<GuruHalaqahPage teacherId={user?.id} />} />
           <Route path="/guru/laporan" element={<GuruLaporanPage teacherId={user?.id} />} />
           <Route path="/guru/view-report" element={<GuruViewReportPage teacherId={user?.id} />} />
+          <Route path="/guru/evaluation" element={<GuruEvaluationPage />} />
+          <Route path="/guru/grades" element={<GuruGradesPage />} />
+          <Route path="/guru/rapor" element={<GuruRaporPage />} />
         </Route>
 
         {/* Catch-all */}
