@@ -111,7 +111,7 @@ export default function GuruViewReportPage({ teacherId = '1' }: GuruViewReportPa
     return "0 Baris";
   };
 
-  const getStatusBadge = (rangeStr: string | undefined) => {
+  const getStatusBadge = (rangeStr: string | undefined, reportType: string) => {
     if (!rangeStr || rangeStr === '-') {
       return (
         <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-orange-100 text-orange-700 border border-orange-200">
@@ -121,9 +121,15 @@ export default function GuruViewReportPage({ teacherId = '1' }: GuruViewReportPa
     }
 
     const result = calculateFromRangeString(rangeStr);
-    const targetPages = 1; 
+    const targetPages = reportType === 'Laporan Semester' ? 10 : 2; 
 
-    if (result.pages >= targetPages) {
+    if (result.pages > targetPages) {
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200">
+          Melebihi Target
+        </span>
+      );
+    } else if (result.pages === targetPages) {
       return (
         <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">
           Tercapai
@@ -303,7 +309,7 @@ export default function GuruViewReportPage({ teacherId = '1' }: GuruViewReportPa
                       <td className="px-3 py-3 text-center align-middle text-xs text-gray-600">{formatRangeDisplay(report.tahfizh.classical)}</td>
                       <td className="px-3 py-3 text-center align-middle text-xs text-gray-600 font-medium">{formatRangeDisplay(report.tahfizh.individual)}</td>
                       <td className="px-3 py-3 text-center align-middle font-bold text-gray-800 text-xs bg-gray-50">{getCalculationDisplay(tahfizhSource)}</td>
-                      <td className="px-4 py-3 text-center align-middle">{getStatusBadge(tahfizhSource)}</td>
+                      <td className="px-4 py-3 text-center align-middle">{getStatusBadge(tahfizhSource, report.type)}</td>
                       <td className="px-4 py-3 align-middle max-w-[250px] overflow-hidden text-ellipsis" title={report.notes}>
                         <div className="text-xs text-gray-500 italic truncate">{report.notes || "-"}</div>
                       </td>
