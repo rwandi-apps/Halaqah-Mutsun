@@ -1,9 +1,11 @@
+
 import React, { useEffect, useState } from 'react';
 import { Report } from '../../../types';
-import { subscribeToReportsByTeacher } from '../../../services/firestoreService';
+import { subscribeToReportsByTeacher, deleteReport, updateReport } from '../../../services/firestoreService';
 import { calculateFromRangeString } from '../../../services/quranMapping';
-import { Search, Filter, Download } from 'lucide-react';
+import { Search, Download, Edit2, Trash2, X, FileSpreadsheet } from 'lucide-react';
 import { Button } from '../../../components/Button';
+import * as XLSX from 'xlsx';
 
 interface GuruViewReportPageProps {
   teacherId?: string;
@@ -31,6 +33,11 @@ export default function GuruViewReportPage({ teacherId = '1' }: GuruViewReportPa
   const [filterMonth, setFilterMonth] = useState('Semua');
   const [filterType, setFilterType] = useState('Semua');
   const [isLoading, setIsLoading] = useState(true);
+
+  // State untuk Modals
+  const [editingReport, setEditingReport] = useState<Report | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // USE REALTIME LISTENER HERE
   useEffect(() => {
@@ -134,54 +141,67 @@ export default function GuruViewReportPage({ teacherId = '1' }: GuruViewReportPa
   const handleExportExcel = () => {
     if (filteredReports.length === 0) return;
 
-    // Header CSV
-    const headers = [
-      "No",
-      "Nama Siswa",
-      "Kelas",
-      "Jumlah Hafalan", 
-      "Tilawah (Klasikal)",
-      "Tilawah (Individual)",
-      "Hasil Tilawah",
-      "Tahfizh (Klasikal)",
-      "Tahfizh (Individual)",
-      "Hasil Tahfizh",
-      "Catatan"
-    ];
+    // Persiapkan data untuk export Excel
+    const exportData = filteredReports.map((report, idx) => ({
+      "No": idx + 1,
+      "Nama Siswa": report.studentName,
+      "Kelas": report.className || '',
+      "Jumlah Hafalan": formatTotalHafalan(report.totalHafalan),
+      "Tilawah Individual": report.tilawah.individual,
+      "Tilawah Klasikal": report.tilawah.classical,
+      "Hasil Tilawah": getCalculationDisplay(report.tilawah.individual !== '-' ? report.tilawah.individual : report.tilawah.classical),
+      "Tahfizh Individual": report.tahfizh.individual,
+      "Tahfizh Klasikal": report.tahfizh.classical,
+      "Hasil Tahfizh": getCalculationDisplay(report.tahfizh.individual !== '-' ? report.tahfizh.individual : report.tahfizh.classical),
+      "Catatan": report.notes
+    }));
 
-    // Data Rows
-    const rows = filteredReports.map((report, idx) => {
-      const tilawahSource = (report.tilawah.individual && report.tilawah.individual !== '-' && report.tilawah.individual.trim() !== '') 
-        ? report.tilawah.individual 
-        : report.tilawah.classical;
-      const tahfizhSource = (report.tahfizh.individual && report.tahfizh.individual !== '-' && report.tahfizh.individual.trim() !== '')
-        ? report.tahfizh.individual
-        : report.tahfizh.classical;
+    // Generate workbook
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Halaqah");
 
-      return [
-        idx + 1,
-        `"${report.studentName}"`, 
-        `"${report.className || ''}"`,
-        `"${formatTotalHafalan(report.totalHafalan)}"`,
-        `"${report.tilawah.classical || '-'}"`,
-        `"${report.tilawah.individual || '-'}"`,
-        `"${getCalculationDisplay(tilawahSource)}"`,
-        `"${report.tahfizh.classical || '-'}"`,
-        `"${report.tahfizh.individual || '-'}"`,
-        `"${getCalculationDisplay(tahfizhSource)}"`,
-        `"${report.notes || ''}"`
-      ].join(",");
-    });
+    // Tulis file
+    const fileName = `Laporan_Halaqah_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+  };
 
-    const csvContent = [headers.join(","), ...rows].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.body.appendChild(document.createElement("a"));
-    link.href = url;
-    link.download = `Laporan_Halaqah_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  const handleDeleteReport = async (reportId: string) => {
+    if (!window.confirm("Apakah Anda yakin ingin menghapus laporan ini? Data yang dihapus tidak dapat dikembalikan.")) return;
+    
+    setIsDeleting(true);
+    try {
+      await deleteReport(reportId);
+    } catch (error) {
+      alert("Gagal menghapus laporan.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleOpenEdit = (report: Report) => {
+    setEditingReport({ ...report });
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateReport = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingReport) return;
+
+    setIsLoading(true);
+    try {
+      await updateReport(editingReport.id, {
+        notes: editingReport.notes,
+        tilawah: editingReport.tilawah,
+        tahfizh: editingReport.tahfizh
+      });
+      setIsEditModalOpen(false);
+      setEditingReport(null);
+    } catch (error) {
+      alert("Gagal memperbarui laporan.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -230,8 +250,8 @@ export default function GuruViewReportPage({ teacherId = '1' }: GuruViewReportPa
             <option value="Laporan Semester">Semester</option>
           </select>
 
-          <Button variant="secondary" className="whitespace-nowrap" onClick={handleExportExcel}>
-            <Download size={18} className="mr-2" /> Export CSV
+          <Button variant="secondary" className="whitespace-nowrap flex items-center gap-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50" onClick={handleExportExcel}>
+            <FileSpreadsheet size={18} /> Export Excel
           </Button>
         </div>
       </div>
@@ -246,8 +266,9 @@ export default function GuruViewReportPage({ teacherId = '1' }: GuruViewReportPa
                 <th rowSpan={2} className="px-4 py-3 border-r border-white/20 w-32">Jml Hafalan</th>
                 <th colSpan={3} className="px-4 py-3 border-r border-white/20 border-b">Tilawah</th>
                 <th colSpan={3} className="px-4 py-3 border-r border-white/20 border-b">Tahfizh</th>
-                <th rowSpan={2} className="px-4 py-3 border-r border-white/20">Keterangan</th>
-                <th rowSpan={2} className="px-4 py-3 min-w-[200px]">Catatan</th>
+                <th rowSpan={2} className="px-4 py-3 border-r border-white/20">Status</th>
+                <th rowSpan={2} className="px-4 py-3 border-r border-white/20 min-w-[200px]">Catatan</th>
+                <th rowSpan={2} className="px-4 py-3">Aksi</th>
               </tr>
               <tr className="bg-[#0e7490] text-white text-[10px] uppercase font-bold tracking-wider text-center">
                 <th className="px-3 py-2 border-r border-white/10 bg-[#155e75]">Klasikal</th>
@@ -260,7 +281,7 @@ export default function GuruViewReportPage({ teacherId = '1' }: GuruViewReportPa
             </thead>
             <tbody className="divide-y divide-gray-100 text-sm">
               {isLoading ? (
-                <tr><td colSpan={12} className="px-6 py-12 text-center text-gray-500">Memuat laporan...</td></tr>
+                <tr><td colSpan={13} className="px-6 py-12 text-center text-gray-500">Memuat laporan...</td></tr>
               ) : filteredReports.length > 0 ? (
                 filteredReports.map((report, idx) => {
                   const tilawahSource = (report.tilawah.individual && report.tilawah.individual !== '-' && report.tilawah.individual.trim() !== '') 
@@ -286,11 +307,30 @@ export default function GuruViewReportPage({ teacherId = '1' }: GuruViewReportPa
                       <td className="px-4 py-3 align-middle max-w-[250px] overflow-hidden text-ellipsis" title={report.notes}>
                         <div className="text-xs text-gray-500 italic truncate">{report.notes || "-"}</div>
                       </td>
+                      <td className="px-4 py-3 align-middle text-center">
+                        <div className="flex justify-center gap-2">
+                          <button 
+                            onClick={() => handleOpenEdit(report)}
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Edit Laporan"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteReport(report.id)}
+                            className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Hapus Laporan"
+                            disabled={isDeleting}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   );
                 })
               ) : (
-                <tr><td colSpan={12} className="px-6 py-16 text-center text-gray-400">Belum ada laporan ditemukan.</td></tr>
+                <tr><td colSpan={13} className="px-6 py-16 text-center text-gray-400">Belum ada laporan ditemukan.</td></tr>
               )}
             </tbody>
           </table>
@@ -306,6 +346,69 @@ export default function GuruViewReportPage({ teacherId = '1' }: GuruViewReportPa
           </div>
         )}
       </div>
+
+      {/* Edit Modal */}
+      {isEditModalOpen && editingReport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <h3 className="font-bold text-gray-900">Edit Laporan: {editingReport.studentName}</h3>
+              <button onClick={() => setIsEditModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleUpdateReport} className="p-6 space-y-4">
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-xs font-bold text-gray-400 uppercase mb-2">Tahfizh Individual</h4>
+                  <input 
+                    type="text" 
+                    value={editingReport.tahfizh.individual}
+                    onChange={(e) => setEditingReport({
+                      ...editingReport,
+                      tahfizh: { ...editingReport.tahfizh, individual: e.target.value }
+                    })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
+                    placeholder="Surah: Ayat - Surah: Ayat"
+                  />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-gray-400 uppercase mb-2">Tilawah Individual</h4>
+                  <input 
+                    type="text" 
+                    value={editingReport.tilawah.individual}
+                    onChange={(e) => setEditingReport({
+                      ...editingReport,
+                      tilawah: { ...editingReport.tilawah, individual: e.target.value }
+                    })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
+                    placeholder="Surah: Ayat - Surah: Ayat"
+                  />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-gray-400 uppercase mb-2">Catatan Perkembangan</h4>
+                  <textarea 
+                    value={editingReport.notes}
+                    onChange={(e) => setEditingReport({ ...editingReport, notes: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm h-24 resize-none"
+                    placeholder="Tulis catatan..."
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4 flex gap-3 justify-end border-t border-gray-100">
+                <Button type="button" variant="secondary" onClick={() => setIsEditModalOpen(false)}>
+                  Batal
+                </Button>
+                <Button type="submit" isLoading={isLoading}>
+                  Simpan Perubahan
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

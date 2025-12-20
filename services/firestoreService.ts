@@ -8,6 +8,7 @@ import {
   doc, 
   getDoc,
   updateDoc,
+  deleteDoc,
   serverTimestamp,
   writeBatch,
   onSnapshot,
@@ -119,6 +120,24 @@ export const addReport = async (report: Omit<Report, 'id' | 'createdAt'>): Promi
   
   await batch.commit();
   return { id: newReportRef.id, ...report, createdAt } as Report;
+};
+
+/**
+ * Memperbarui data laporan yang sudah ada
+ */
+export const updateReport = async (reportId: string, data: Partial<Report>): Promise<void> => {
+  if (!db) throw new Error("Firestore not initialized");
+  const docRef = doc(db, 'laporan', reportId);
+  await updateDoc(docRef, { ...data, updatedAt: serverTimestamp() });
+};
+
+/**
+ * Menghapus data laporan
+ */
+export const deleteReport = async (reportId: string): Promise<void> => {
+  if (!db) throw new Error("Firestore not initialized");
+  const docRef = doc(db, 'laporan', reportId);
+  await deleteDoc(docRef);
 };
 
 export const getAllStudents = async (): Promise<Student[]> => {
