@@ -160,17 +160,17 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
                    <div className="flex-1 min-w-0">
                       <h3 className="font-bold text-gray-900 truncate" title={student.name}>{student.name}</h3>
                       
-                      {/* FIXED NIS/NISN Display: Flex container with better spacing to prevent overlapping */}
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 mt-2">
+                      {/* NIS & NISN Mendatar (Horizontal) */}
+                      <div className="flex items-center gap-2 mt-1.5 overflow-hidden">
                         {student.nis && (
-                          <div className="inline-flex items-center px-2 py-0.5 bg-gray-50 border border-gray-200 rounded text-[10px] text-gray-500 font-semibold whitespace-nowrap">
-                            NIS: {student.nis}
-                          </div>
+                          <span className="inline-flex items-center px-1.5 py-0.5 bg-gray-50 border border-gray-100 rounded text-[9px] text-gray-400 font-bold whitespace-nowrap">
+                            NIS {student.nis}
+                          </span>
                         )}
                         {student.nisn && (
-                          <div className="inline-flex items-center px-2 py-0.5 bg-gray-50 border border-gray-200 rounded text-[10px] text-gray-500 font-semibold whitespace-nowrap">
-                            NISN: {student.nisn}
-                          </div>
+                          <span className="inline-flex items-center px-1.5 py-0.5 bg-gray-50 border border-gray-100 rounded text-[9px] text-gray-400 font-bold whitespace-nowrap">
+                            NISN {student.nisn}
+                          </span>
                         )}
                       </div>
                    </div>
