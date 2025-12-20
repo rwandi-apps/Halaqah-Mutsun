@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Student, Report } from '../../../types';
 import { getStudentsByTeacher, getReportsByTeacher } from '../../../services/firestoreService';
@@ -152,27 +153,29 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
           {filteredStudents.map((student) => (
             <div key={student.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow border-t-4 border-t-[#0ea5e9]">
               <div className="flex justify-between items-start mb-6">
-                <div className="flex gap-4">
-                   <div className="w-12 h-12 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center font-bold text-xl">
+                <div className="flex gap-4 w-full overflow-hidden">
+                   <div className="w-12 h-12 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center font-bold text-xl shrink-0">
                       {student.name.charAt(0)}
                    </div>
-                   <div>
-                      <h3 className="font-bold text-gray-900 line-clamp-1" title={student.name}>{student.name}</h3>
-                      <div className="flex flex-wrap gap-2 mt-2">
+                   <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-gray-900 truncate" title={student.name}>{student.name}</h3>
+                      
+                      {/* FIXED NIS/NISN Display: Flex container with better spacing to prevent overlapping */}
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 mt-2">
                         {student.nis && (
-                          <span className="text-[10px] px-2 py-0.5 bg-gray-50 border border-gray-200 rounded text-gray-500 font-medium">
+                          <div className="inline-flex items-center px-2 py-0.5 bg-gray-50 border border-gray-200 rounded text-[10px] text-gray-500 font-semibold whitespace-nowrap">
                             NIS: {student.nis}
-                          </span>
+                          </div>
                         )}
                         {student.nisn && (
-                          <span className="text-[10px] px-2 py-0.5 bg-gray-50 border border-gray-200 rounded text-gray-500 font-medium">
+                          <div className="inline-flex items-center px-2 py-0.5 bg-gray-50 border border-gray-200 rounded text-[10px] text-gray-500 font-semibold whitespace-nowrap">
                             NISN: {student.nisn}
-                          </span>
+                          </div>
                         )}
                       </div>
                    </div>
                 </div>
-                <button className="text-gray-300 hover:text-gray-600">
+                <button className="text-gray-300 hover:text-gray-600 shrink-0 ml-2">
                   <MoreVertical size={20} />
                 </button>
               </div>
