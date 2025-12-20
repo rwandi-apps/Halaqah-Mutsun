@@ -40,14 +40,25 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
 
   const studentsWithProgress = useMemo(() => {
     return rawStudents.map(student => {
+      // Ambil semua laporan untuk siswa ini
       const studentReports = rawReports.filter(r => r.studentId === student.id);
+      
+      // Urutkan berdasarkan tanggal pembuatan terbaru
       studentReports.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      
+      // Ambil laporan terbaru jika ada
       const latestReport = studentReports[0];
 
+      /**
+       * PERBAIKAN: Jangan fallback ke student.totalHafalan atau student.currentProgress 
+       * jika latestReport tidak ada. Hal ini karena field tersebut diupdate di Firestore
+       * saat addReport, namun tidak di-revert saat deleteReport. 
+       * Dengan mengandalkan rawReports (realtime), UI akan otomatis sinkron saat data dihapus.
+       */
       const effectiveData = {
         ...student,
-        totalHafalan: latestReport?.totalHafalan || student.totalHafalan || { juz: 0, pages: 0, lines: 0 },
-        currentProgress: latestReport?.tahfizh?.individual?.split(' - ')[1] || student.currentProgress
+        totalHafalan: latestReport?.totalHafalan || { juz: 0, pages: 0, lines: 0 },
+        currentProgress: latestReport?.tahfizh?.individual?.split(' - ')[1] || "-"
       };
 
       return {
