@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
-import { Menu, X, Bell, ChevronDown } from 'lucide-react';
+import { Menu, X, Mail, Bell, ChevronDown } from 'lucide-react';
 import { User, Role } from '../types';
 import { SidebarCoordinator } from '../components/SidebarCoordinator';
 import { SidebarGuru } from '../components/SidebarGuru';
@@ -73,7 +73,7 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
              </div>
              
              <button className="relative text-gray-400 hover:text-gray-600 transition-colors">
-               <Bell size={22} />
+               <Mail size={22} />
                <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
              </button>
 
@@ -83,7 +83,7 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
                 </div>
                 <div className="hidden md:block">
                   <p className="text-sm font-bold text-gray-800 leading-none mb-1">{displayName}</p>
-                  <p className="text-[10px] text-gray-500 uppercase font-medium">{isCoordinator ? 'Manajemen Tahfizh' : 'Musyrif Halaqah'}</p>
+                  <p className="text-[10px] text-gray-500 uppercase font-medium">{isCoordinator ? 'Manajemen Tahfizh' : 'Guru Halaqah'}</p>
                 </div>
                 <ChevronDown size={16} className="text-gray-400 hidden md:block" />
              </div>

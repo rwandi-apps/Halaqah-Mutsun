@@ -83,9 +83,8 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Dashboard Halaqah</h2>
-          <p className="text-gray-500">ID Guru: <span className="font-mono text-xs">{teacherId}</span></p>
+          <p className="text-gray-500 mt-1">Kelola halaqah dan pantau perkembangan siswa Anda</p>
         </div>
-        {/* Tombol Input Laporan dihapus sesuai permintaan */}
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
