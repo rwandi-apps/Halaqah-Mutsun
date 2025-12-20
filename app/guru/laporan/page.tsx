@@ -215,10 +215,11 @@ export default function GuruLaporanPage({ teacherId = '1' }: GuruLaporanPageProp
     setTilawahKlasikalTotal(result);
   }, [tilawahKlasikalFromSurah, tilawahKlasikalFromVerse, tilawahKlasikalToSurah, tilawahKlasikalToVerse]);
 
+  // FIX: Menggunakan tahfizhToVerse untuk ayat akhir (Sampai Ayat)
   useEffect(() => {
     const result = calculateHafalan(
       tahfizhFromSurah, safeNum(tahfizhFromVerse), 
-      tahfizhToSurah, safeNum(tahfizhFromVerse)
+      tahfizhToSurah, safeNum(tahfizhToVerse)
     );
     setTahfizhTotal(result);
   }, [tahfizhFromSurah, tahfizhFromVerse, tahfizhToSurah, tahfizhToVerse]);
@@ -414,7 +415,6 @@ export default function GuruLaporanPage({ teacherId = '1' }: GuruLaporanPageProp
                   </div>
                 </div>
                 
-                {/* GRID FIXED FOR MOBILE - REPLACED flex flex-col items-center WITH BETTER LAYOUT */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-y-6 sm:gap-4 mt-6">
                    <div className="flex flex-row sm:flex-col items-center justify-between sm:justify-center bg-white/40 sm:bg-transparent p-2 sm:p-0 rounded-lg">
                       <span className="text-[10px] font-bold text-teal-700 sm:mb-2 uppercase tracking-widest sm:text-center px-2">Juz</span>
