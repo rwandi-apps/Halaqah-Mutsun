@@ -1,4 +1,3 @@
-import Image from "next/image";
 import React from "react";
 
 type LogoSDQProps = {
@@ -15,12 +14,11 @@ const LogoSDQ: React.FC<LogoSDQProps> = ({
   if (variant === "image") {
     return (
       <div className={`flex flex-col items-center ${className}`}>
-        <Image
+        <img
           src="/images/logo-sdq.png"
           alt="Logo Sekolah Dasar Qur'an"
           width={size}
           height={size}
-          priority
           className="rounded-full"
         />
         <span className="mt-2 text-sm font-semibold text-white">
@@ -30,7 +28,7 @@ const LogoSDQ: React.FC<LogoSDQProps> = ({
     );
   }
 
-  // DEFAULT: ICON (BACKWARD COMPATIBLE)
+  // DEFAULT ICON (AMAN UNTUK SEMUA HALAMAN)
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       <div className="bg-emerald-500 p-2 rounded-lg">
