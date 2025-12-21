@@ -49,10 +49,9 @@ export default function LoginPage({ onLogin }: LoginProps) {
       {/* Content */}
       <div className="relative z-10 w-full max-w-[400px] px-6 flex flex-col items-center">
 
-        {/* LOGO – TANPA KOTAK PUTIH */}
-        <div className="mb-8 flex justify-center drop-shadow-[0_0_30px_rgba(255,255,255,0.35)]">
-          <LogoSDQ />
-        </div>
+        <div className="mb-8 flex justify-center drop-shadow-[0_0_40px_rgba(255,255,255,0.4)]">
+  <LogoSDQ className="h-28 w-auto" />
+</div>
 
         {/* Title */}
         <div className="text-center mb-10">
