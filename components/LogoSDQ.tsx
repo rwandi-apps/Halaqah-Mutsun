@@ -6,18 +6,17 @@ type LogoSDQProps = {
 };
 
 const LogoSDQ: React.FC<LogoSDQProps> = ({
-  size = 80,
+  size = 64,
   className = "",
 }) => {
   return (
-    <div className={`flex justify-center ${className}`}>
-      <img
-        src="/images/logo-sdq.png"
-        alt="Logo Sekolah Dasar Qur'an"
-        width={size}
-        height={size}
-      />
-    </div>
+    <img
+      src="/images/logo-sdq.png"
+      alt="Logo Sekolah Dasar Qur'an"
+      width={size}
+      height={size}
+      className={className}
+    />
   );
 };
 
