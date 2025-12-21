@@ -49,7 +49,7 @@ export default function LoginPage({ onLogin }: LoginProps) {
       {/* Content */}
       <div className="relative z-10 w-full max-w-[400px] px-6 flex flex-col items-center">
 
-        <div className="mb-8 flex justify-center drop-shadow-[0_0_40px_rgba(255,255,255,0.4)]">
+        <div className="mb-3 flex justify-center drop-shadow-[0_0_40px_rgba(255,255,255,0.4)]">
   <LogoSDQ className="h-40 w-auto" />
 </div>
 
