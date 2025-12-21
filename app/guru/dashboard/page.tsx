@@ -147,7 +147,7 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${student.progressStats.percentage >= 100 ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${student.progressStats.percentage >= 100 ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
                       {student.progressStats.statusText}
                     </span>
                     <p className="text-[10px] text-gray-400 mt-1">Capaian: {student.progressStats.current} {student.progressStats.unit}</p>
