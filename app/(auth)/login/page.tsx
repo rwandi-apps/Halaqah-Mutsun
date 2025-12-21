@@ -38,14 +38,20 @@ export default function LoginPage({ onLogin }: LoginProps) {
       
       {/* Background */}
       <div className="absolute inset-0 z-0">
-        <img
-          src="https://images.unsplash.com/photo-1609599006353-e629aaabfeae?q=80&w=2070&auto=format&fit=crop"
-          alt="Al-Quran Background"
-          className="w-full h-full object-cover opacity-50"
-        />
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/70 via-teal-800/60 to-gray-900" />
-      </div>
+  <img
+    src="/images/bg-login.jpg"
+    alt="Background Login SDQ"
+    className="w-full h-full object-cover"
+  />
 
+  {/* Overlay agar teks tetap jelas */}
+  <div className="absolute inset-0
+    bg-gradient-to-br
+    from-emerald-900/80
+    via-teal-800/70
+    to-slate-900
+  " />
+</div>
       {/* Content */}
       <div className="relative z-10 w-full max-w-[400px] px-6
   flex flex-col items-center
