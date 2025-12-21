@@ -13,7 +13,7 @@ const LogoSDQ: React.FC<LogoSDQProps> = ({
 }) => {
   if (variant === "image") {
     return (
-      <div className={`flex flex-col items-center ${className}`}>
+      <div className={`flex items-center justify-center ${className}`}>
         <img
           src="/images/logo-sdq.png"
           alt="Logo Sekolah Dasar Qur'an"
@@ -21,16 +21,13 @@ const LogoSDQ: React.FC<LogoSDQProps> = ({
           height={size}
           className="rounded-full"
         />
-        <span className="mt-2 text-sm font-semibold text-white">
-          SDQ Portal
-        </span>
       </div>
     );
   }
 
-  // DEFAULT ICON (AMAN UNTUK SEMUA HALAMAN)
+  // DEFAULT ICON (SVG)
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
+    <div className={`flex items-center ${className}`}>
       <div className="bg-emerald-500 p-2 rounded-lg">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -47,9 +44,6 @@ const LogoSDQ: React.FC<LogoSDQProps> = ({
           <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
         </svg>
       </div>
-      <span className="font-bold text-lg tracking-tight">
-        SDQ Portal
-      </span>
     </div>
   );
 };
