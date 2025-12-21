@@ -378,7 +378,7 @@ export default function GuruLaporanPage({ teacherId = '1' }: GuruLaporanPageProp
                 <span className="text-[10px] font-bold text-blue-500 bg-blue-50/50 px-2 py-0.5 rounded">{formatTotal(tilawahKlasikalTotal)}</span>
               </div>
               <div className="flex gap-1.5 mb-2">
-                 <button onClick={() => setTilawahKlasikalMethod('Al-Quran')} className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all ${tilawahKlasikalMethod === 'Al-Quran' ? 'bg-blue-400 text-white shadow-sm' : 'bg-gray-50 text-gray-400'}`}>AL-QUR'AN</button>
+                 <button onClick={() => setTilawahKlasikalMethod('Al-Quran')} className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all ${tilawahKlasikalMethod === 'Al-Quran' ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-50 text-gray-400'}`}>AL-QUR'AN</button>
                  <button onClick={() => setTilawahKlasikalMethod('Iqra')} className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all ${tilawahKlasikalMethod === 'Iqra' ? 'bg-blue-400 text-white shadow-sm' : 'bg-gray-50 text-gray-400'}`}>IQRA'</button>
               </div>
               <InputRow label="DARI">
@@ -399,7 +399,7 @@ export default function GuruLaporanPage({ teacherId = '1' }: GuruLaporanPageProp
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="Tuliskan catatan perkembangan hafalan santri bulan ini..."
+          placeholder="Tuliskan progress perkembangan siswa dan kendala yang dihadapi..."
           className="w-full h-28 p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none resize-none text-sm placeholder:text-gray-300 shadow-sm"
         ></textarea>
       </div>
