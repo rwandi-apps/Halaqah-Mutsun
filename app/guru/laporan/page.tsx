@@ -379,7 +379,7 @@ export default function GuruLaporanPage({ teacherId = '1' }: GuruLaporanPageProp
               </div>
               <div className="flex gap-1.5 mb-2">
                  <button onClick={() => setTilawahKlasikalMethod('Al-Quran')} className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all ${tilawahKlasikalMethod === 'Al-Quran' ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-50 text-gray-400'}`}>AL-QUR'AN</button>
-                 <button onClick={() => setTilawahKlasikalMethod('Iqra')} className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all ${tilawahKlasikalMethod === 'Iqra' ? 'bg-blue-400 text-white shadow-sm' : 'bg-gray-50 text-gray-400'}`}>IQRA'</button>
+                 <button onClick={() => setTilawahKlasikalMethod('Iqra')} className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all ${tilawahKlasikalMethod === 'Iqra' ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-50 text-gray-400'}`}>IQRA'</button>
               </div>
               <InputRow label="DARI">
                 <SourceSelect value={tilawahKlasikalFromSurah} onChange={(v) => {setTilawahKlasikalFromSurah(v); setTilawahKlasikalToSurah(v);}} method={tilawahKlasikalMethod} />
