@@ -54,7 +54,7 @@ export default function LoginPage({ onLogin }: LoginProps) {
 </div>
 
         {/* Title */}
-        <div className="text-center mb-10">
+        <div className="text-center mb-6">
           <h2 className="text-white text-2xl font-bold tracking-tight">
             Halaqah SDQ Mutiara Sunnah
           </h2>
