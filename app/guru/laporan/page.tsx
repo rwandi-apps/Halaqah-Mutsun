@@ -291,7 +291,7 @@ export default function GuruLaporanPage({ teacherId = '1' }: GuruLaporanPageProp
               <div className="bg-emerald-50/30 p-4 rounded-xl border border-emerald-100/50">
                  <div className="flex items-center gap-2 mb-4">
                     <Database size={16} className="text-emerald-600"/>
-                    <h4 className="font-bold text-emerald-800 text-xs">Akumulasi Awal Semester</h4>
+                    <h4 className="font-bold text-emerald-800 text-xs">Jumlah Hafalan</h4>
                  </div>
                  <div className="grid grid-cols-3 gap-2">
                     <div className="text-center">
