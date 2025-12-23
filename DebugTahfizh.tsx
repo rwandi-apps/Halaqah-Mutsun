@@ -6,9 +6,13 @@ export default function DebugTahfizh() {
   "An-Naba",
   1,
   "An-Naba",
-  20
+  30
 );
-
+{result.isPartial && (
+  <p style={{ color: "orange" }}>
+    ⚠️ Data ayat belum lengkap, hasil dihitung hingga ayat terakhir tersedia
+  </p>
+)}
 
   return (
     <div style={{ padding: 40, fontFamily: "sans-serif" }}>
