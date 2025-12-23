@@ -1,10 +1,16 @@
 import { AYAT_DB, AyatEntry } from "./ayatDB";
+
+export interface TahfizhResult {
+  totalLines: number;
+  totalPages: number;
+}
+
 export function calculateTahfizhRange(
   startSurah: string,
   startAyat: number,
   endSurah: string,
   endAyat: number
-) {
+): TahfizhResult {
 
   let isInRange = false;
   const selected: AyatEntry[] = [];
@@ -24,8 +30,8 @@ export function calculateTahfizhRange(
     }
   }
 
-  const totalLines = selected.reduce((s, a) => s + a.lines, 0);
-  const totalPages = new Set(selected.map(a => a.page)).size;
-
-  return { totalLines, totalPages };
+  return {
+    totalLines: selected.reduce((s, a) => s + a.lines, 0),
+    totalPages: new Set(selected.map(a => a.page)).size
+  };
 }
