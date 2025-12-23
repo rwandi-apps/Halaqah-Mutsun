@@ -1,15 +1,10 @@
-import { calculateAyatRange } from "./calculateAyatRange";
+import React from "react";
 
 export default function DebugTahfizh() {
-  const result = calculateAyatRange({
-    start: { surah: "At-Tahrim", ayat: 1 },
-    end: { surah: "Adz-Dzariyat", ayat: 30 },
-  });
-
   return (
-    <div style={{ padding: 24 }}>
-      <h1>DEBUG TAHFIZH SDQ</h1>
-      <pre>{JSON.stringify(result, null, 2)}</pre>
+    <div style={{ padding: 40 }}>
+      <h1>DEBUG TAHFIZH</h1>
+      <p>Halaman debug aktif.</p>
     </div>
   );
 }
