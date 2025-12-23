@@ -1,3 +1,4 @@
+import { AYAT_DB, AyatEntry } from "./ayatDB";
 export function calculateTahfizhRange(
   startSurah: string,
   startAyat: number,
