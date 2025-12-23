@@ -2,12 +2,13 @@ import React from "react";
 import { calculateTahfizhRange } from "./calculateTahfizhRange";
 
 export default function DebugTahfizh() {
-  const result = calculateTahfizhRange(
-  "At-Tahrim",
+ const result = calculateTahfizhRange(
+  "An-Naba",
   1,
-  "Adz-Dzariyat",
-  30
+  "An-Naba",
+  20
 );
+
 
   return (
     <div style={{ padding: 40, fontFamily: "sans-serif" }}>
