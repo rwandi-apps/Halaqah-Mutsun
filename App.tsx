@@ -18,6 +18,8 @@ import GuruGradesPage from './app/guru/grades/page';
 import GuruRaporPage from './app/guru/rapor/page';
 import { getStoredUser, simpleLogout } from './services/simpleAuth';
 import { User, Role } from './types';
+import DebugTahfizh from "./DebugTahfizh";
+
 
 function App() {
   const [user, setUser] = useState<User | null>(getStoredUser());
@@ -65,6 +67,8 @@ function App() {
           <Route path="/guru/evaluation" element={<GuruEvaluationPage />} />
           <Route path="/guru/grades" element={<GuruGradesPage />} />
           <Route path="/guru/rapor" element={<GuruRaporPage />} />
+          {/* DEBUG (SEMENTARA) */}
+<Route path="/debug-tahfizh" element={<DebugTahfizh />} />
         </Route>
 
         {/* Catch-all */}
