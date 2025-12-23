@@ -6,7 +6,7 @@ export default function DebugTahfizh() {
   "An-Naba",
   1,
   "An-Naba",
-  30
+  40
 );
 {result.isPartial && (
   <p style={{ color: "orange" }}>
