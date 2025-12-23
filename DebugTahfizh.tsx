@@ -3,11 +3,11 @@ import { calculateTahfizhRange } from "./calculateTahfizhRange";
 
 export default function DebugTahfizh() {
   const result = calculateTahfizhRange(
-    "An-Naba",
-    1,
-    "An-Naba",
-    30
-  );
+  "At-Tahrim",
+  1,
+  "Adz-Dzariyat",
+  30
+);
 
   return (
     <div style={{ padding: 40, fontFamily: "sans-serif" }}>
