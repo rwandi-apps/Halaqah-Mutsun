@@ -2,23 +2,24 @@ import React from "react";
 import { calculateTahfizhRange } from "./calculateTahfizhRange";
 
 export default function DebugTahfizh() {
- const result = calculateTahfizhRange(
-  "An-Naba",
-  1,
-  "An-Naba",
-  40
-);
-{result.isPartial && (
-  <p style={{ color: "orange" }}>
-    ⚠️ Data ayat belum lengkap, hasil dihitung hingga ayat terakhir tersedia
-  </p>
-)}
+  const result = calculateTahfizhRange(
+    "An-Naba",
+    1,
+    "An-Naba",
+    40
+  );
 
   return (
     <div style={{ padding: 40, fontFamily: "sans-serif" }}>
       <h1>DEBUG TAHFIZH</h1>
 
-      <p><strong>Range:</strong> An-Naba ayat 1 → 30</p>
+      <p><strong>Range:</strong> An-Naba ayat 1 → 40</p>
+
+      {result.isPartial && (
+        <p style={{ color: "orange" }}>
+          ⚠️ Data ayat belum lengkap, hasil dihitung hingga ayat terakhir tersedia
+        </p>
+      )}
 
       <div style={{ marginTop: 20 }}>
         <p><strong>Total Halaman:</strong> {result.totalPages}</p>
