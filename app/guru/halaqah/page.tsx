@@ -28,33 +28,22 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
   const getEndPart = (str: string | undefined) => {
     if (!str || str === '-' || str.trim() === '') return '-';
     const parts = str.split(' - ');
-    // Jika ada separator " - ", ambil bagian kedua. Jika tidak, ambil string utuh.
     return parts.length > 1 ? parts[1].trim() : parts[0].trim();
   };
 
-  // Helper: Tentukan Juz berdasarkan string (misal: "An-Naba: 30")
+  // Helper: Tentukan Juz berdasarkan string
   const getJuzFromString = (str: string) => {
     if (!str || str === '-' || str === '') return '-';
-    
-    // Ambil nama surah (sebelum titik dua atau spasi angka)
-    // Contoh: "An-Naba: 30" -> "An-Naba"
     const match = str.match(/^(.*?)[:\d]/);
     const surahName = match ? match[1].trim() : str.trim();
-
-    // Cari di Mapping
     const entry = QURAN_MAPPING.find(q => q.surah.toLowerCase() === surahName.toLowerCase());
-    
-    if (!entry) return str; // Fallback jika tidak ketemu
-
+    if (!entry) return str;
     const p = entry.page;
-    
-    // Logika penentuan Juz berdasarkan Halaman
     if (p >= 582) return "Juz 30";
     if (p >= 562) return "Juz 29";
     if (p >= 542) return "Juz 28";
     if (p >= 522) return "Juz 27";
     if (p >= 502) return "Juz 26";
-    
     return `Juz ${Math.ceil(p / 20)}`;
   };
 
@@ -73,10 +62,17 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
           studentReports.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
           const latest = studentReports[0];
 
+          // LOGIKA BARU: Tampilan Hafalan Adaptif (Juz + Halaman)
           let hafalanDisplay = "0 Juz";
           if (latest && latest.totalHafalan) {
-             const { juz } = latest.totalHafalan;
-             hafalanDisplay = `${juz} Juz`;
+             const j = Number(latest.totalHafalan.juz || 0);
+             const p = Number(latest.totalHafalan.pages || 0);
+             
+             const parts = [];
+             if (j > 0) parts.push(`${j} Juz`);
+             if (p > 0) parts.push(`${p} Halaman`);
+             
+             hafalanDisplay = parts.length > 0 ? parts.join(' ') : "0 Juz";
           }
 
           const sabaqRaw = latest?.tahfizh?.individual;
@@ -159,8 +155,6 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
                    </div>
                    <div className="flex-1 min-w-0">
                       <h3 className="font-bold text-gray-900 truncate" title={student.name}>{student.name}</h3>
-                      
-                      {/* NIS & NISN Mendatar (Horizontal) */}
                       <div className="flex items-center gap-2 mt-1.5 overflow-hidden">
                         {student.nis && (
                           <span className="inline-flex items-center px-1.5 py-0.5 bg-gray-50 border border-gray-100 rounded text-[9px] text-gray-400 font-bold whitespace-nowrap">

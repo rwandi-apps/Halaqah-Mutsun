@@ -11,7 +11,7 @@ interface GuruViewReportPageProps {
   teacherId?: string;
 }
 
-// Helper: Format Total Hafalan Adaptif (Juz > Halaman > Baris)
+// Helper: Format Total Hafalan Adaptif (Juz + Halaman)
 const formatTotalHafalan = (total: { juz: number; pages: number; lines: number } | undefined) => {
   if (!total) return '-';
   
@@ -19,11 +19,14 @@ const formatTotalHafalan = (total: { juz: number; pages: number; lines: number }
   const p = Number(total.pages || 0);
   const l = Number(total.lines || 0);
 
-  if (j > 0) return `${j} Juz`;
-  if (p > 0) return `${p} Halaman`;
-  if (l > 0) return `${l} Baris`;
+  const parts = [];
+  if (j > 0) parts.push(`${j} Juz`);
+  if (p > 0) parts.push(`${p} Halaman`);
   
-  return '-'; 
+  // Jika tidak ada Juz/Hal tapi ada Baris, tampilkan baris
+  if (parts.length === 0 && l > 0) return `${l} Baris`;
+  
+  return parts.length > 0 ? parts.join(' ') : '0 Juz'; 
 };
 
 export default function GuruViewReportPage({ teacherId = '1' }: GuruViewReportPageProps) {
@@ -34,12 +37,10 @@ export default function GuruViewReportPage({ teacherId = '1' }: GuruViewReportPa
   const [filterType, setFilterType] = useState('Semua');
   const [isLoading, setIsLoading] = useState(true);
 
-  // State untuk Modals
   const [editingReport, setEditingReport] = useState<Report | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // USE REALTIME LISTENER HERE
   useEffect(() => {
     if (!teacherId) return;
     setIsLoading(true);
@@ -54,52 +55,34 @@ export default function GuruViewReportPage({ teacherId = '1' }: GuruViewReportPa
 
   useEffect(() => {
     let result = reports;
-
     if (search) {
       result = result.filter(r => 
         r.studentName.toLowerCase().includes(search.toLowerCase()) ||
         (r.className || '').toLowerCase().includes(search.toLowerCase())
       );
     }
-
-    if (filterMonth !== 'Semua') {
-      result = result.filter(r => r.month === filterMonth);
-    }
-
-    if (filterType !== 'Semua') {
-      result = result.filter(r => r.type === filterType);
-    }
-
+    if (filterMonth !== 'Semua') result = result.filter(r => r.month === filterMonth);
+    if (filterType !== 'Semua') result = result.filter(r => r.type === filterType);
     setFilteredReports(result);
   }, [search, filterMonth, filterType, reports]);
 
-  // Helper to format range string nicely
   const formatRangeDisplay = (rangeStr: string | undefined) => {
     if (!rangeStr || rangeStr === '-' || rangeStr.trim() === '') return "-";
-
     const parts = rangeStr.split(' - ');
     if (parts.length !== 2) return rangeStr;
-
     const startPart = parts[0].trim();
     const endPart = parts[1].trim();
-
     const parse = (s: string) => {
       const match = s.match(/^(.*)[:\s]+(\d+)$/);
       if (match) return { surah: match[1].trim(), ayat: match[2] };
       return null;
     };
-
     const startObj = parse(startPart);
     const endObj = parse(endPart);
-
     if (startObj && endObj) {
-      if (startObj.surah === endObj.surah) {
-        return `${startObj.surah}: ${startObj.ayat}-${endObj.ayat}`;
-      } else {
-        return `${startPart} - ${endPart}`;
-      }
+      if (startObj.surah === endObj.surah) return `${startObj.surah}: ${startObj.ayat}-${endObj.ayat}`;
+      return `${startPart} - ${endPart}`;
     }
-
     return rangeStr;
   };
 
@@ -113,41 +96,17 @@ export default function GuruViewReportPage({ teacherId = '1' }: GuruViewReportPa
 
   const getStatusBadge = (rangeStr: string | undefined, reportType: string) => {
     if (!rangeStr || rangeStr === '-') {
-      return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-orange-100 text-orange-700 border border-orange-200">
-          Belum Tercapai
-        </span>
-      );
+      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-orange-100 text-orange-700 border border-orange-200">Belum Tercapai</span>;
     }
-
     const result = calculateFromRangeString(rangeStr);
     const targetPages = reportType === 'Laporan Semester' ? 10 : 2; 
-
-    if (result.pages > targetPages) {
-      return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200">
-          Melebihi Target
-        </span>
-      );
-    } else if (result.pages === targetPages) {
-      return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">
-          Tercapai
-        </span>
-      );
-    } else {
-      return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-orange-100 text-orange-700 border border-orange-200">
-          Belum Tercapai
-        </span>
-      );
-    }
+    if (result.pages > targetPages) return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200">Melebihi Target</span>;
+    if (result.pages === targetPages) return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">Tercapai</span>;
+    return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-orange-100 text-orange-700 border border-orange-200">Belum Tercapai</span>;
   };
 
   const handleExportExcel = () => {
     if (filteredReports.length === 0) return;
-
-    // Persiapkan data untuk export Excel
     const exportData = filteredReports.map((report, idx) => ({
       "No": idx + 1,
       "Nama Siswa": report.studentName,
@@ -161,36 +120,21 @@ export default function GuruViewReportPage({ teacherId = '1' }: GuruViewReportPa
       "Hasil Tahfizh": getCalculationDisplay(report.tahfizh.individual !== '-' ? report.tahfizh.individual : report.tahfizh.classical),
       "Catatan": report.notes
     }));
-
-    // Generate workbook
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Halaqah");
-
-    // Tulis file
-    const fileName = `Laporan_Halaqah_${new Date().toISOString().split('T')[0]}.xlsx`;
-    XLSX.writeFile(workbook, fileName);
+    XLSX.writeFile(workbook, `Laporan_Halaqah_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   const handleDeleteReport = async (reportId: string) => {
-    if (!window.confirm("Apakah Anda yakin ingin menghapus laporan ini? Data yang dihapus tidak dapat dikembalikan.")) return;
-    
+    if (!window.confirm("Apakah Anda yakin ingin menghapus laporan ini?")) return;
     setIsDeleting(true);
-    try {
-      await deleteReport(reportId);
-    } catch (error) {
-      alert("Gagal menghapus laporan.");
-    } finally {
-      setIsDeleting(false);
-    }
+    try { await deleteReport(reportId); } catch (error) { alert("Gagal menghapus laporan."); } finally { setIsDeleting(false); }
   };
 
   const handleOpenEdit = (report: Report) => {
-    // Pastikan totalHafalan ada objeknya agar tidak error saat diakses di input
     const baseReport = { ...report };
-    if (!baseReport.totalHafalan) {
-      baseReport.totalHafalan = { juz: 0, pages: 0, lines: 0 };
-    }
+    if (!baseReport.totalHafalan) baseReport.totalHafalan = { juz: 0, pages: 0, lines: 0 };
     setEditingReport(baseReport);
     setIsEditModalOpen(true);
   };
@@ -198,7 +142,6 @@ export default function GuruViewReportPage({ teacherId = '1' }: GuruViewReportPa
   const handleUpdateReport = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingReport) return;
-
     setIsLoading(true);
     try {
       await updateReport(editingReport.id, {
@@ -209,11 +152,7 @@ export default function GuruViewReportPage({ teacherId = '1' }: GuruViewReportPa
       });
       setIsEditModalOpen(false);
       setEditingReport(null);
-    } catch (error) {
-      alert("Gagal memperbarui laporan.");
-    } finally {
-      setIsLoading(false);
-    }
+    } catch (error) { alert("Gagal memperbarui laporan."); } finally { setIsLoading(false); }
   };
 
   return (
@@ -238,22 +177,14 @@ export default function GuruViewReportPage({ teacherId = '1' }: GuruViewReportPa
         </div>
 
         <div className="flex gap-4 overflow-x-auto pb-2 lg:pb-0">
-          <select 
-            value={filterMonth}
-            onChange={(e) => setFilterMonth(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 outline-none focus:ring-2 focus:ring-primary-500 min-w-[140px]"
-          >
+          <select value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)} className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 outline-none focus:ring-2 focus:ring-primary-500 min-w-[140px]">
             <option value="Semua">Semua Bulan</option>
             {["Juli", "Agustus", "September", "Oktober", "November", "Desember", "Januari", "Februari", "Maret", "April", "Mei", "Juni"].map(m => (
               <option key={m} value={m}>{m}</option>
             ))}
           </select>
 
-          <select 
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 outline-none focus:ring-2 focus:ring-primary-500 min-w-[160px]"
-          >
+          <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 outline-none focus:ring-2 focus:ring-primary-500 min-w-[160px]">
             <option value="Semua">Semua Tipe</option>
             <option value="Laporan Bulanan">Bulanan</option>
             <option value="Laporan Semester">Semester</option>
@@ -293,14 +224,8 @@ export default function GuruViewReportPage({ teacherId = '1' }: GuruViewReportPa
                 <tr><td colSpan={13} className="px-6 py-12 text-center text-gray-500">Memuat laporan...</td></tr>
               ) : filteredReports.length > 0 ? (
                 filteredReports.map((report, idx) => {
-                  const tilawahSource = (report.tilawah.individual && report.tilawah.individual !== '-' && report.tilawah.individual.trim() !== '') 
-                    ? report.tilawah.individual 
-                    : report.tilawah.classical;
-
-                  const tahfizhSource = (report.tahfizh.individual && report.tahfizh.individual !== '-' && report.tahfizh.individual.trim() !== '')
-                    ? report.tahfizh.individual
-                    : report.tahfizh.classical;
-
+                  const tilawahSource = (report.tilawah.individual && report.tilawah.individual !== '-' && report.tilawah.individual.trim() !== '') ? report.tilawah.individual : report.tilawah.classical;
+                  const tahfizhSource = (report.tahfizh.individual && report.tahfizh.individual !== '-' && report.tahfizh.individual.trim() !== '') ? report.tahfizh.individual : report.tahfizh.classical;
                   return (
                     <tr key={report.id} className={`hover:bg-gray-50/50 transition-colors group ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}>
                       <td className="px-4 py-3 text-center text-gray-500 font-medium">{idx + 1}</td>
@@ -313,187 +238,52 @@ export default function GuruViewReportPage({ teacherId = '1' }: GuruViewReportPa
                       <td className="px-3 py-3 text-center align-middle text-xs text-gray-600 font-medium">{formatRangeDisplay(report.tahfizh.individual)}</td>
                       <td className="px-3 py-3 text-center align-middle font-bold text-gray-800 text-xs bg-gray-50">{getCalculationDisplay(tahfizhSource)}</td>
                       <td className="px-4 py-3 text-center align-middle">{getStatusBadge(tahfizhSource, report.type)}</td>
-                      <td className="px-4 py-3 align-middle max-w-[250px] overflow-hidden text-ellipsis" title={report.notes}>
-                        <div className="text-xs text-gray-500 italic truncate">{report.notes || "-"}</div>
-                      </td>
+                      <td className="px-4 py-3 align-middle max-w-[250px] overflow-hidden text-ellipsis" title={report.notes}><div className="text-xs text-gray-500 italic truncate">{report.notes || "-"}</div></td>
                       <td className="px-4 py-3 align-middle text-center">
                         <div className="flex justify-center gap-2">
-                          <button 
-                            onClick={() => handleOpenEdit(report)}
-                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="Edit Laporan"
-                          >
-                            <Edit2 size={16} />
-                          </button>
-                          <button 
-                            onClick={() => handleDeleteReport(report.id)}
-                            className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Hapus Laporan"
-                            disabled={isDeleting}
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                          <button onClick={() => handleOpenEdit(report)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
+                          <button onClick={() => handleDeleteReport(report.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors" disabled={isDeleting}><Trash2 size={16} /></button>
                         </div>
                       </td>
                     </tr>
                   );
                 })
-              ) : (
-                <tr><td colSpan={13} className="px-6 py-16 text-center text-gray-400">Belum ada laporan ditemukan.</td></tr>
-              )}
+              ) : (<tr><td colSpan={13} className="px-6 py-16 text-center text-gray-400">Belum ada laporan ditemukan.</td></tr>)}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Edit Modal - DIPERBARUI */}
       {isEditModalOpen && editingReport && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200 my-8">
             <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
               <h3 className="font-bold text-gray-900">Edit Laporan: {editingReport.studentName}</h3>
-              <button onClick={() => setIsEditModalOpen(false)} className="text-gray-400 hover:text-gray-600">
-                <X size={20} />
-              </button>
+              <button onClick={() => setIsEditModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
             </div>
-            
             <form onSubmit={handleUpdateReport} className="p-6 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                
-                {/* SEKSI TAHFIZH */}
                 <div className="space-y-4">
-                  <div className="flex items-center gap-2 text-emerald-600 mb-1">
-                    <Book size={16} />
-                    <h4 className="text-xs font-bold uppercase">Data Tahfizh</h4>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Individual (Sabaq)</label>
-                    <input 
-                      type="text" 
-                      value={editingReport.tahfizh.individual}
-                      onChange={(e) => setEditingReport({
-                        ...editingReport,
-                        tahfizh: { ...editingReport.tahfizh, individual: e.target.value }
-                      })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
-                      placeholder="Surah: Ayat - Surah: Ayat"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Klasikal</label>
-                    <input 
-                      type="text" 
-                      value={editingReport.tahfizh.classical}
-                      onChange={(e) => setEditingReport({
-                        ...editingReport,
-                        tahfizh: { ...editingReport.tahfizh, classical: e.target.value }
-                      })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
-                      placeholder="Surah: Ayat - Surah: Ayat"
-                    />
-                  </div>
+                  <div className="flex items-center gap-2 text-emerald-600 mb-1"><Book size={16} /><h4 className="text-xs font-bold uppercase">Data Tahfizh</h4></div>
+                  <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Individual (Sabaq)</label><input type="text" value={editingReport.tahfizh.individual} onChange={(e) => setEditingReport({...editingReport, tahfizh: { ...editingReport.tahfizh, individual: e.target.value }})} className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none" /></div>
+                  <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Klasikal</label><input type="text" value={editingReport.tahfizh.classical} onChange={(e) => setEditingReport({...editingReport, tahfizh: { ...editingReport.tahfizh, classical: e.target.value }})} className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none" /></div>
                 </div>
-
-                {/* SEKSI TILAWAH */}
                 <div className="space-y-4">
-                  <div className="flex items-center gap-2 text-blue-600 mb-1">
-                    <BookOpen size={16} />
-                    <h4 className="text-xs font-bold uppercase">Data Tilawah</h4>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Individual</label>
-                    <input 
-                      type="text" 
-                      value={editingReport.tilawah.individual}
-                      onChange={(e) => setEditingReport({
-                        ...editingReport,
-                        tilawah: { ...editingReport.tilawah, individual: e.target.value }
-                      })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                      placeholder="Surah: Ayat - Surah: Ayat"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Klasikal</label>
-                    <input 
-                      type="text" 
-                      value={editingReport.tilawah.classical}
-                      onChange={(e) => setEditingReport({
-                        ...editingReport,
-                        tilawah: { ...editingReport.tilawah, classical: e.target.value }
-                      })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                      placeholder="Surah: Ayat - Surah: Ayat"
-                    />
-                  </div>
+                  <div className="flex items-center gap-2 text-blue-600 mb-1"><BookOpen size={16} /><h4 className="text-xs font-bold uppercase">Data Tilawah</h4></div>
+                  <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Individual</label><input type="text" value={editingReport.tilawah.individual} onChange={(e) => setEditingReport({...editingReport, tilawah: { ...editingReport.tilawah, individual: e.target.value }})} className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" /></div>
+                  <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Klasikal</label><input type="text" value={editingReport.tilawah.classical} onChange={(e) => setEditingReport({...editingReport, tilawah: { ...editingReport.tilawah, classical: e.target.value }})} className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" /></div>
                 </div>
               </div>
-
-              {/* SEKSI JUMLAH HAFALAN */}
               <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                <div className="flex items-center gap-2 text-teal-700 mb-3">
-                  <Database size={16} />
-                  <h4 className="text-xs font-bold uppercase">Akumulasi Jumlah Hafalan</h4>
-                </div>
+                <div className="flex items-center gap-2 text-teal-700 mb-3"><Database size={16} /><h4 className="text-xs font-bold uppercase">Akumulasi Jumlah Hafalan</h4></div>
                 <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 text-center">Juz</label>
-                    <input 
-                      type="number" 
-                      value={editingReport.totalHafalan?.juz || 0}
-                      onChange={(e) => setEditingReport({
-                        ...editingReport,
-                        totalHafalan: { ...editingReport.totalHafalan!, juz: parseInt(e.target.value) || 0 }
-                      })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-teal-500 outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 text-center">Halaman</label>
-                    <input 
-                      type="number" 
-                      value={editingReport.totalHafalan?.pages || 0}
-                      onChange={(e) => setEditingReport({
-                        ...editingReport,
-                        totalHafalan: { ...editingReport.totalHafalan!, pages: parseInt(e.target.value) || 0 }
-                      })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-teal-500 outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 text-center">Baris</label>
-                    <input 
-                      type="number" 
-                      value={editingReport.totalHafalan?.lines || 0}
-                      onChange={(e) => setEditingReport({
-                        ...editingReport,
-                        totalHafalan: { ...editingReport.totalHafalan!, lines: parseInt(e.target.value) || 0 }
-                      })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-teal-500 outline-none"
-                    />
-                  </div>
+                  <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 text-center">Juz</label><input type="number" value={editingReport.totalHafalan?.juz || 0} onChange={(e) => setEditingReport({...editingReport, totalHafalan: { ...editingReport.totalHafalan!, juz: parseInt(e.target.value) || 0 }})} className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-teal-500 outline-none" /></div>
+                  <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 text-center">Halaman</label><input type="number" value={editingReport.totalHafalan?.pages || 0} onChange={(e) => setEditingReport({...editingReport, totalHafalan: { ...editingReport.totalHafalan!, pages: parseInt(e.target.value) || 0 }})} className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-teal-500 outline-none" /></div>
+                  <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 text-center">Baris</label><input type="number" value={editingReport.totalHafalan?.lines || 0} onChange={(e) => setEditingReport({...editingReport, totalHafalan: { ...editingReport.totalHafalan!, lines: parseInt(e.target.value) || 0 }})} className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-teal-500 outline-none" /></div>
                 </div>
               </div>
-
-              {/* CATATAN */}
-              <div>
-                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Catatan Perkembangan</label>
-                <textarea 
-                  value={editingReport.notes}
-                  onChange={(e) => setEditingReport({ ...editingReport, notes: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm h-28 resize-none focus:ring-2 focus:ring-primary-500 outline-none"
-                  placeholder="Tulis catatan..."
-                />
-              </div>
-
-              <div className="pt-4 flex gap-3 justify-end border-t border-gray-100">
-                <Button type="button" variant="secondary" onClick={() => setIsEditModalOpen(false)}>
-                  Batal
-                </Button>
-                <Button type="submit" isLoading={isLoading} className="px-8">
-                  Simpan Perubahan
-                </Button>
-              </div>
+              <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Catatan</label><textarea value={editingReport.notes} onChange={(e) => setEditingReport({ ...editingReport, notes: e.target.value })} className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm h-28 resize-none focus:ring-2 focus:ring-primary-500 outline-none" /></div>
+              <div className="pt-4 flex gap-3 justify-end border-t border-gray-100"><Button type="button" variant="secondary" onClick={() => setIsEditModalOpen(false)}>Batal</Button><Button type="submit" isLoading={isLoading} className="px-8">Simpan</Button></div>
             </form>
           </div>
         </div>
