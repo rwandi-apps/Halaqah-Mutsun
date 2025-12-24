@@ -17,25 +17,25 @@ import GuruEvaluationPage from './app/guru/evaluation/page';
 import GuruGradesPage from './app/guru/grades/page';
 import GuruRaporPage from './app/guru/rapor/page';
 import { getStoredUser, simpleLogout } from './services/simpleAuth';
-import { User, Role } from './types';
+import { User } from './types';
 
 function App() {
-  // Hardcoded mock user to bypass login for configuration purposes
-  // Sekarang diubah ke role: 'GURU' untuk masuk sebagai guru
-  const [user, setUser] = useState<User | null>({
-    id: 'u2', // Menggunakan ID yang ada di mock data (Ust. Hasan)
-    name: 'Ustadz Hasan (Dev Mode)',
-    nickname: 'Ustadz Hasan',
-    email: 'guru@sdq.com',
-    role: 'GURU'
-  });
+  // Mengambil user dari storage saat pertama kali load
+  const [user, setUser] = useState<User | null>(getStoredUser());
 
   const handleLogin = (newUser: User) => {
     setUser(newUser);
   };
 
-  const handleLogout = () => {
-    console.log("Logout triggered in dev mode");
+  const handleLogout = async () => {
+    try {
+      await simpleLogout();
+      setUser(null);
+    } catch (error) {
+      console.error("Gagal logout:", error);
+      // Tetap paksa hapus state jika terjadi error network
+      setUser(null);
+    }
   };
 
   return (
