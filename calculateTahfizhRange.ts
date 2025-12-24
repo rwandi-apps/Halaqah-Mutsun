@@ -1,3 +1,4 @@
+import { QURAN_MAPPING } from "./services/quranMapping";
 import { AYAT_DB, AyatEntry } from "./ayatDB";
 
 export interface TahfizhResult {
@@ -32,7 +33,7 @@ export function calculateTahfizhRange(
       break;
     }
   }
-
+console.log("mapping loaded", QURAN_MAPPING.length);
   return {
     totalLines: selected.reduce((s, a) => s + a.lines, 0),
     totalPages: new Set(selected.map(a => a.page)).size,
