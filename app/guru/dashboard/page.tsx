@@ -137,17 +137,12 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
                       {student.progressStats.percentage}%
                     </div>
                     <div>
-                      <p
-  className="font-bold text-gray-800 truncate max-w-[180px]"
-  title={student.name}
->
-  {student.name}
-</p>
+                      <p className="font-bold text-gray-800">{student.name}</p>
                       <p className="text-xs text-gray-500">Target: {student.progressStats.target} {student.progressStats.unit}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${student.progressStats.percentage >= 100 ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${student.progressStats.percentage >= 100 ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
                       {student.progressStats.statusText}
                     </span>
                     <p className="text-[10px] text-gray-400 mt-1">Capaian: {student.progressStats.current} {student.progressStats.unit}</p>

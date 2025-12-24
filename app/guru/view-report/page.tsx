@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Report } from '../../../types';
 import { subscribeToReportsByTeacher, deleteReport, updateReport } from '../../../services/firestoreService';
 import { calculateFromRangeString } from '../../../services/quranMapping';
-import { Search, Download, Edit2, Trash2, X, FileSpreadsheet } from 'lucide-react';
+import { Search, Download, Edit2, Trash2, X, FileSpreadsheet, Book, BookOpen, Database } from 'lucide-react';
 import { Button } from '../../../components/Button';
 import * as XLSX from 'xlsx';
 
@@ -186,7 +186,12 @@ export default function GuruViewReportPage({ teacherId = '1' }: GuruViewReportPa
   };
 
   const handleOpenEdit = (report: Report) => {
-    setEditingReport({ ...report });
+    // Pastikan totalHafalan ada objeknya agar tidak error saat diakses di input
+    const baseReport = { ...report };
+    if (!baseReport.totalHafalan) {
+      baseReport.totalHafalan = { juz: 0, pages: 0, lines: 0 };
+    }
+    setEditingReport(baseReport);
     setIsEditModalOpen(true);
   };
 
@@ -199,7 +204,8 @@ export default function GuruViewReportPage({ teacherId = '1' }: GuruViewReportPa
       await updateReport(editingReport.id, {
         notes: editingReport.notes,
         tilawah: editingReport.tilawah,
-        tahfizh: editingReport.tahfizh
+        tahfizh: editingReport.tahfizh,
+        totalHafalan: editingReport.totalHafalan
       });
       setIsEditModalOpen(false);
       setEditingReport(null);
@@ -238,12 +244,9 @@ export default function GuruViewReportPage({ teacherId = '1' }: GuruViewReportPa
             className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 outline-none focus:ring-2 focus:ring-primary-500 min-w-[140px]"
           >
             <option value="Semua">Semua Bulan</option>
-            <option value="Desember">Desember</option>
-            <option value="November">November</option>
-            <option value="Oktober">Oktober</option>
-            <option value="September">September</option>
-            <option value="Agustus">Agustus</option>
-            <option value="Juli">Juli</option>
+            {["Juli", "Agustus", "September", "Oktober", "November", "Desember", "Januari", "Februari", "Maret", "April", "Mei", "Juni"].map(m => (
+              <option key={m} value={m}>{m}</option>
+            ))}
           </select>
 
           <select 
@@ -341,22 +344,12 @@ export default function GuruViewReportPage({ teacherId = '1' }: GuruViewReportPa
             </tbody>
           </table>
         </div>
-        
-        {filteredReports.length > 0 && (
-          <div className="px-6 py-3 border-t border-gray-200 bg-gray-50 flex justify-between items-center text-xs text-gray-500">
-             <span>Menampilkan {filteredReports.length} dari {reports.length} laporan</span>
-             <div className="flex gap-2">
-               <button disabled className="px-3 py-1 border border-gray-200 rounded bg-white text-gray-400 cursor-not-allowed">Previous</button>
-               <button disabled className="px-3 py-1 border border-gray-200 rounded bg-white text-gray-400 cursor-not-allowed">Next</button>
-             </div>
-          </div>
-        )}
       </div>
 
-      {/* Edit Modal */}
+      {/* Edit Modal - DIPERBARUI */}
       {isEditModalOpen && editingReport && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200 my-8">
             <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
               <h3 className="font-bold text-gray-900">Edit Laporan: {editingReport.studentName}</h3>
               <button onClick={() => setIsEditModalOpen(false)} className="text-gray-400 hover:text-gray-600">
@@ -364,50 +357,140 @@ export default function GuruViewReportPage({ teacherId = '1' }: GuruViewReportPa
               </button>
             </div>
             
-            <form onSubmit={handleUpdateReport} className="p-6 space-y-4">
-              <div className="space-y-4">
-                <div>
-                  <h4 className="text-xs font-bold text-gray-400 uppercase mb-2">Tahfizh Individual</h4>
-                  <input 
-                    type="text" 
-                    value={editingReport.tahfizh.individual}
-                    onChange={(e) => setEditingReport({
-                      ...editingReport,
-                      tahfizh: { ...editingReport.tahfizh, individual: e.target.value }
-                    })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
-                    placeholder="Surah: Ayat - Surah: Ayat"
-                  />
+            <form onSubmit={handleUpdateReport} className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                {/* SEKSI TAHFIZH */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-emerald-600 mb-1">
+                    <Book size={16} />
+                    <h4 className="text-xs font-bold uppercase">Data Tahfizh</h4>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Individual (Sabaq)</label>
+                    <input 
+                      type="text" 
+                      value={editingReport.tahfizh.individual}
+                      onChange={(e) => setEditingReport({
+                        ...editingReport,
+                        tahfizh: { ...editingReport.tahfizh, individual: e.target.value }
+                      })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                      placeholder="Surah: Ayat - Surah: Ayat"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Klasikal</label>
+                    <input 
+                      type="text" 
+                      value={editingReport.tahfizh.classical}
+                      onChange={(e) => setEditingReport({
+                        ...editingReport,
+                        tahfizh: { ...editingReport.tahfizh, classical: e.target.value }
+                      })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                      placeholder="Surah: Ayat - Surah: Ayat"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-xs font-bold text-gray-400 uppercase mb-2">Tilawah Individual</h4>
-                  <input 
-                    type="text" 
-                    value={editingReport.tilawah.individual}
-                    onChange={(e) => setEditingReport({
-                      ...editingReport,
-                      tilawah: { ...editingReport.tilawah, individual: e.target.value }
-                    })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
-                    placeholder="Surah: Ayat - Surah: Ayat"
-                  />
+
+                {/* SEKSI TILAWAH */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-blue-600 mb-1">
+                    <BookOpen size={16} />
+                    <h4 className="text-xs font-bold uppercase">Data Tilawah</h4>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Individual</label>
+                    <input 
+                      type="text" 
+                      value={editingReport.tilawah.individual}
+                      onChange={(e) => setEditingReport({
+                        ...editingReport,
+                        tilawah: { ...editingReport.tilawah, individual: e.target.value }
+                      })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                      placeholder="Surah: Ayat - Surah: Ayat"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Klasikal</label>
+                    <input 
+                      type="text" 
+                      value={editingReport.tilawah.classical}
+                      onChange={(e) => setEditingReport({
+                        ...editingReport,
+                        tilawah: { ...editingReport.tilawah, classical: e.target.value }
+                      })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                      placeholder="Surah: Ayat - Surah: Ayat"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-xs font-bold text-gray-400 uppercase mb-2">Catatan Perkembangan</h4>
-                  <textarea 
-                    value={editingReport.notes}
-                    onChange={(e) => setEditingReport({ ...editingReport, notes: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm h-24 resize-none"
-                    placeholder="Tulis catatan..."
-                  />
+              </div>
+
+              {/* SEKSI JUMLAH HAFALAN */}
+              <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                <div className="flex items-center gap-2 text-teal-700 mb-3">
+                  <Database size={16} />
+                  <h4 className="text-xs font-bold uppercase">Akumulasi Jumlah Hafalan</h4>
                 </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 text-center">Juz</label>
+                    <input 
+                      type="number" 
+                      value={editingReport.totalHafalan?.juz || 0}
+                      onChange={(e) => setEditingReport({
+                        ...editingReport,
+                        totalHafalan: { ...editingReport.totalHafalan!, juz: parseInt(e.target.value) || 0 }
+                      })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-teal-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 text-center">Halaman</label>
+                    <input 
+                      type="number" 
+                      value={editingReport.totalHafalan?.pages || 0}
+                      onChange={(e) => setEditingReport({
+                        ...editingReport,
+                        totalHafalan: { ...editingReport.totalHafalan!, pages: parseInt(e.target.value) || 0 }
+                      })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-teal-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 text-center">Baris</label>
+                    <input 
+                      type="number" 
+                      value={editingReport.totalHafalan?.lines || 0}
+                      onChange={(e) => setEditingReport({
+                        ...editingReport,
+                        totalHafalan: { ...editingReport.totalHafalan!, lines: parseInt(e.target.value) || 0 }
+                      })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-teal-500 outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* CATATAN */}
+              <div>
+                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Catatan Perkembangan</label>
+                <textarea 
+                  value={editingReport.notes}
+                  onChange={(e) => setEditingReport({ ...editingReport, notes: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm h-28 resize-none focus:ring-2 focus:ring-primary-500 outline-none"
+                  placeholder="Tulis catatan..."
+                />
               </div>
 
               <div className="pt-4 flex gap-3 justify-end border-t border-gray-100">
                 <Button type="button" variant="secondary" onClick={() => setIsEditModalOpen(false)}>
                   Batal
                 </Button>
-                <Button type="submit" isLoading={isLoading}>
+                <Button type="submit" isLoading={isLoading} className="px-8">
                   Simpan Perubahan
                 </Button>
               </div>
