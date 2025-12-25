@@ -1,83 +1,83 @@
+import { AYAH_MAP } from "./ayahMap";
 
-import { AyahPointer, CalculationResult } from './types';
-import { QURAN_METADATA } from './quranData';
-import { SDQ_SURAH_ORDER } from './sdqCurriculum';
-import { AYAH_MAP } from './ayahMap';
+export interface TahfizhResult {
+  totalPages: number;
+  totalLines: number;
+  isPartial: boolean;
+}
 
-export class TahfizhEngine {
-  /**
-   * Menghitung capaian berdasarkan kurikulum SDQ.
-   * Menggunakan AYAH_MAP untuk akurasi baris absolut jika tersedia.
-   */
-  static calculateRange(start: AyahPointer, end: AyahPointer): CalculationResult {
-    try {
-      const cleanStartSurah = this.normalizeSurahName(start.surah);
-      const cleanEndSurah = this.normalizeSurahName(end.surah);
+/**
+ * HITUNG PROGRES TAHFIZH BERDASARKAN BARIS MUSHAF
+ */
+export function calculateTahfizhRange(
+  startSurah: string,
+  startAyah: number,
+  endSurah: string,
+  endAyah: number
+): TahfizhResult {
+  // 1️⃣ Ambil semua baris awal
+  const startLines = AYAH_MAP.filter(
+    (r) => r.surah === startSurah && r.ayah === startAyah
+  );
 
-      const startIndex = SDQ_SURAH_ORDER.indexOf(cleanStartSurah);
-      const endIndex = SDQ_SURAH_ORDER.indexOf(cleanEndSurah);
+  // 2️⃣ Ambil semua baris akhir
+  const endLines = AYAH_MAP.filter(
+    (r) => r.surah === endSurah && r.ayah === endAyah
+  );
 
-      if (startIndex === -1 || endIndex === -1) {
-        return { pages: 0, lines: 0, juz: 0, isPartial: true, error: "Surah tidak ditemukan" };
-      }
-
-      // Pastikan urutan selalu searah kurikulum
-      if (startIndex > endIndex) {
-         return this.calculateRange(end, start);
-      }
-
-      const surahPath = SDQ_SURAH_ORDER.slice(startIndex, endIndex + 1);
-      let totalLines = 0;
-
-      surahPath.forEach((surahName, index) => {
-        const meta = QURAN_METADATA[surahName];
-        if (!meta) return;
-
-        const isFirstSurah = index === 0;
-        const isLastSurah = index === surahPath.length - 1;
-
-        let sAyah = isFirstSurah ? start.ayah : 1;
-        let eAyah = isLastSurah ? end.ayah : meta.totalAyah;
-
-        // PRIORITAS 1: Gunakan Precision Map jika data tersedia
-        const startLoc = AYAH_MAP.find(a => this.normalizeSurahName(a.surah) === surahName && a.ayah === sAyah);
-        const endLoc = AYAH_MAP.find(a => this.normalizeSurahName(a.surah) === surahName && a.ayah === eAyah);
-
-        if (startLoc && endLoc) {
-          // Perhitungan baris presisi: (Selisih Halaman * 15) + Selisih Baris + 1 (inklusif)
-          const lines = ((endLoc.page - startLoc.page) * 15) + (endLoc.line - startLoc.line) + 1;
-          totalLines += Math.max(0, lines);
-        } else {
-          // PRIORITAS 2: Fallback ke Estimasi Rasio (untuk Juz < 26)
-          const totalPagesInSurah = meta.endPage - meta.startPage + 1;
-          const totalLinesInSurah = totalPagesInSurah * 15;
-          const ayatsCovered = Math.max(0, eAyah - sAyah + 1);
-          const linesEarned = totalLinesInSurah * (ayatsCovered / meta.totalAyah);
-          totalLines += linesEarned;
-        }
-      });
-
-      const finalPages = Math.floor(totalLines / 15);
-      const remainingLines = Math.round(totalLines % 15);
-      const decimalJuz = parseFloat((totalLines / 300).toFixed(2)); // 300 baris = 20 hal = 1 juz
-
-      return {
-        pages: finalPages,
-        lines: remainingLines,
-        juz: decimalJuz,
-        isPartial: false
-      };
-    } catch (error) {
-      console.error("Tahfizh Engine Error:", error);
-      return { pages: 0, lines: 0, juz: 0, isPartial: true };
-    }
+  // 3️⃣ Validasi data
+  if (startLines.length === 0 || endLines.length === 0) {
+    return {
+      totalPages: 0,
+      totalLines: 0,
+      isPartial: true,
+    };
   }
 
-  private static normalizeSurahName(name: string): string {
-    // Normalisasi tanda petik dan karakter Arab-latin umum
-    return name
-      .replace(/^\d+\.\s*/, '')
-      .replace(/[’‘`]/g, "'")
-      .trim();
+  // 4️⃣ Tentukan baris start paling AWAL
+  const start = startLines.reduce((a, b) =>
+    a.globalLine < b.globalLine ? a : b
+  );
+
+  // 5️⃣ Tentukan baris end paling AKHIR
+  const end = endLines.reduce((a, b) =>
+    a.globalLine > b.globalLine ? a : b
+  );
+
+  // 6️⃣ Pastikan urutan valid
+  if (end.globalLine < start.globalLine) {
+    return {
+      totalPages: 0,
+      totalLines: 0,
+      isPartial: true,
+    };
   }
+
+  // 7️⃣ Ambil semua baris di antaranya
+  const coveredLines = AYAH_MAP.filter(
+    (r) =>
+      r.globalLine >= start.globalLine &&
+      r.globalLine <= end.globalLine
+  );
+
+  if (coveredLines.length === 0) {
+    return {
+      totalPages: 0,
+      totalLines: 0,
+      isPartial: true,
+    };
+  }
+
+  // 8️⃣ Hitung baris & halaman
+  const totalLines = coveredLines.length;
+
+  const uniquePages = new Set(
+    coveredLines.map((r) => r.page)
+  );
+
+  return {
+    totalLines,
+    totalPages: uniquePages.size,
+    isPartial: false,
+  };
 }
