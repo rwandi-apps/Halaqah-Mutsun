@@ -32,9 +32,6 @@ const getIqraAbsolutePage = (volume: number, page: number): number => {
   return absolute + page;
 };
 
-/**
- * RE-ROUTED: Menggunakan TahfizhEngine untuk akurasi kurikulum SDQ
- */
 export const calculateHafalan = (
   fromSurah: string, 
   fromAyat: number, 
@@ -46,7 +43,6 @@ export const calculateHafalan = (
   const fromIqraVol = getIqraVolume(fromSurah);
   const toIqraVol = getIqraVolume(toSurah);
 
-  // Jika Iqra, gunakan logika linear lama
   if (fromIqraVol !== null && toIqraVol !== null) {
     const startAbs = getIqraAbsolutePage(fromIqraVol, fromAyat);
     const endAbs = getIqraAbsolutePage(toIqraVol, toAyat);
@@ -54,7 +50,6 @@ export const calculateHafalan = (
     return { pages: Math.max(0, diff), lines: 0 };
   }
 
-  // Jika Al-Quran, gunakan TahfizhEngine yang menghargai urutan SDQ
   const result = TahfizhEngine.calculateRange(
     { surah: fromSurah, ayah: fromAyat },
     { surah: toSurah, ayah: toAyat }
@@ -74,6 +69,7 @@ export const calculateFromRangeString = (rangeStr: string): { pages: number, lin
   }
 
   const parseLocation = (s: string) => {
+    // Menangani format "Surah: Ayat" atau "Surah Ayat"
     const match = s.match(/^(.*?)[:\s]+(\d+)$/);
     if (match) return { surah: match[1].trim(), ayah: parseInt(match[2]) };
     return null;
@@ -82,7 +78,6 @@ export const calculateFromRangeString = (rangeStr: string): { pages: number, lin
   const start = parseLocation(parts[0]);
   const end = parseLocation(parts[1]);
 
-  // Fix: Corrected property 'ayat' to 'ayah' as defined in the return type of parseLocation
   if (start && end) return calculateHafalan(start.surah, start.ayah, end.surah, end.ayah);
   return { pages: 0, lines: 0 };
 };
