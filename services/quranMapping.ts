@@ -9,6 +9,9 @@ export const QURAN_MAPPING = Object.values(QURAN_METADATA).map(m => ({
   end: m.totalAyah
 }));
 
+/**
+ * Interface untuk mapping Iqra
+ */
 export const IQRA_MAPPING = [
   { volume: 1, pages: 31 },
   { volume: 2, pages: 30 },
@@ -18,20 +21,6 @@ export const IQRA_MAPPING = [
   { volume: 6, pages: 31 },
 ];
 
-const getIqraVolume = (surahName: string): number | null => {
-  const match = surahName.match(/iqra\s*'?\s*(\d+)/i);
-  if (match) return parseInt(match[1]);
-  return null;
-};
-
-const getIqraAbsolutePage = (volume: number, page: number): number => {
-  let absolute = 0;
-  for (let i = 0; i < volume - 1; i++) {
-    absolute += IQRA_MAPPING[i].pages;
-  }
-  return absolute + page;
-};
-
 export const calculateHafalan = (
   fromSurah: string, 
   fromAyat: number, 
@@ -39,16 +28,6 @@ export const calculateHafalan = (
   toAyat: number
 ): { pages: number, lines: number } => {
   if (!fromSurah || !toSurah) return { pages: 0, lines: 0 };
-
-  const fromIqraVol = getIqraVolume(fromSurah);
-  const toIqraVol = getIqraVolume(toSurah);
-
-  if (fromIqraVol !== null && toIqraVol !== null) {
-    const startAbs = getIqraAbsolutePage(fromIqraVol, fromAyat);
-    const endAbs = getIqraAbsolutePage(toIqraVol, toAyat);
-    const diff = endAbs - startAbs + 1;
-    return { pages: Math.max(0, diff), lines: 0 };
-  }
 
   const result = TahfizhEngine.calculateRange(
     { surah: fromSurah, ayah: fromAyat },
@@ -69,7 +48,6 @@ export const calculateFromRangeString = (rangeStr: string): { pages: number, lin
   }
 
   const parseLocation = (s: string) => {
-    // Menangani format "Surah: Ayat" atau "Surah Ayat"
     const match = s.match(/^(.*?)[:\s]+(\d+)$/);
     if (match) return { surah: match[1].trim(), ayah: parseInt(match[2]) };
     return null;

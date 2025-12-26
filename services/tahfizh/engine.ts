@@ -5,83 +5,111 @@ import { SDQ_SURAH_ORDER } from './sdqCurriculum';
 import { AYAH_MAP } from './ayahMap';
 
 export class TahfizhEngine {
+  private static readonly LINES_PER_PAGE = 15;
+
   /**
-   * Menghitung capaian berdasarkan kurikulum SDQ.
-   * Menggunakan AYAH_MAP untuk akurasi baris absolut jika tersedia.
+   * Menghitung total baris capaian antara dua titik (Start -> End).
+   * Menghitung secara deterministik sesuai urutan kurikulum SDQ.
    */
   static calculateRange(start: AyahPointer, end: AyahPointer): CalculationResult {
-    try {
-      const cleanStartSurah = this.normalizeSurahName(start.surah);
-      const cleanEndSurah = this.normalizeSurahName(end.surah);
+    const sSurah = this.normalizeSurahName(start.surah);
+    const eSurah = this.normalizeSurahName(end.surah);
 
-      const startIndex = SDQ_SURAH_ORDER.indexOf(cleanStartSurah);
-      const endIndex = SDQ_SURAH_ORDER.indexOf(cleanEndSurah);
+    const startIndex = SDQ_SURAH_ORDER.indexOf(sSurah);
+    const endIndex = SDQ_SURAH_ORDER.indexOf(eSurah);
 
-      if (startIndex === -1 || endIndex === -1) {
-        return { pages: 0, lines: 0, juz: 0, isPartial: true, error: "Surah tidak ditemukan" };
-      }
-
-      // Pastikan urutan selalu searah kurikulum
-      if (startIndex > endIndex) {
-         return this.calculateRange(end, start);
-      }
-
-      const surahPath = SDQ_SURAH_ORDER.slice(startIndex, endIndex + 1);
-      let totalLines = 0;
-
-      surahPath.forEach((surahName, index) => {
-        const meta = QURAN_METADATA[surahName];
-        if (!meta) return;
-
-        const isFirstSurah = index === 0;
-        const isLastSurah = index === surahPath.length - 1;
-
-        let sAyah = isFirstSurah ? start.ayah : 1;
-        let eAyah = isLastSurah ? end.ayah : meta.totalAyah;
-
-        // PRIORITAS 1: Gunakan Precision Map jika data tersedia (untuk akurasi per baris)
-        const startLoc = AYAH_MAP.find(a => this.normalizeSurahName(a.surah) === surahName && a.ayah === sAyah);
-        const endLoc = AYAH_MAP.find(a => this.normalizeSurahName(a.surah) === surahName && a.ayah === eAyah);
-
-        if (startLoc && endLoc) {
-          // Perhitungan baris presisi: (Selisih Halaman * 15) + Selisih Baris + 1 (inklusif)
-          const lines = ((endLoc.page - startLoc.page) * 15) + (endLoc.line - startLoc.line) + 1;
-          totalLines += Math.max(0, lines);
-        } else {
-          // PRIORITAS 2: Fallback ke Estimasi Rasio (untuk Juz yang belum dipetakan lengkap)
-          const totalPagesInSurah = meta.endPage - meta.startPage + 1;
-          const totalLinesInSurah = totalPagesInSurah * 15;
-          const ayatsCovered = Math.max(0, eAyah - sAyah + 1);
-          const linesEarned = totalLinesInSurah * (ayatsCovered / meta.totalAyah);
-          totalLines += linesEarned;
-        }
-      });
-
-      const finalPages = Math.floor(totalLines / 15);
-      const remainingLines = Math.round(totalLines % 15);
-      const decimalJuz = parseFloat((totalLines / 300).toFixed(2)); // 300 baris = 20 hal = 1 juz
-
-      return {
-        pages: finalPages,
-        lines: remainingLines,
-        juz: decimalJuz,
-        isPartial: false
-      };
-    } catch (error) {
-      console.error("Tahfizh Engine Error:", error);
-      return { pages: 0, lines: 0, juz: 0, isPartial: true };
+    if (startIndex === -1 || endIndex === -1) {
+      return { pages: 0, lines: 0, juz: 0, isPartial: true, error: "Surah tidak terdaftar di kurikulum" };
     }
+
+    // Pastikan arah perhitungan selalu maju sesuai kurikulum
+    const path = (startIndex <= endIndex) 
+      ? SDQ_SURAH_ORDER.slice(startIndex, endIndex + 1)
+      : SDQ_SURAH_ORDER.slice(endIndex, startIndex + 1);
+
+    let totalLines = 0;
+    const uniquePages = new Set<number>();
+
+    path.forEach((surahName, index) => {
+      const isFirstSurah = index === 0;
+      const isLastSurah = index === path.length - 1;
+
+      const surahMeta = QURAN_METADATA[surahName];
+      if (!surahMeta) return;
+
+      const sAyah = isFirstSurah ? start.ayah : 1;
+      const eAyat = isLastSurah ? end.ayah : surahMeta.totalAyah;
+
+      // Logika "Delta Baris":
+      // Kita hitung dari akhir Ayah (eAyat) dikurangi posisi SEBELUM Ayah awal (sAyah).
+      const locEnd = this.getPointer(surahName, eAyat);
+      const locStartPrev = this.getPointer(surahName, sAyah - 1);
+
+      totalLines += this.diffLines(locStartPrev, locEnd);
+
+      // Tracking halaman fisik untuk output info halaman
+      for (let p = Math.min(locEnd.page, locStartPrev.page); p <= Math.max(locEnd.page, locStartPrev.page); p++) {
+        if (p > 0) uniquePages.add(p);
+      }
+    });
+
+    const pages = Math.floor(totalLines / this.LINES_PER_PAGE);
+    const lines = totalLines % this.LINES_PER_PAGE;
+    const juz = parseFloat((totalLines / 300).toFixed(2));
+
+    return { pages, lines, juz, isPartial: false };
   }
 
   /**
-   * Menormalisasi nama surah agar pencarian di map konsisten.
-   * Menghapus angka urutan, menormalisasi tanda petik curly, dan spasi.
+   * Menghitung selisih baris antara dua koordinat (Inclusive of End, Exclusive of StartPrev).
    */
+  private static diffLines(start: {page: number, line: number}, end: {page: number, line: number}): number {
+    if (start.page === 0 || end.page === 0) return 0;
+
+    // Jika pada halaman yang sama
+    if (start.page === end.page) {
+      // Aturan Khusus: jika ayat awal di baris 1 (atau start prev di baris 0)
+      if (start.line === 0) return end.line;
+      return Math.max(0, end.line - start.line);
+    }
+
+    // Jika pada halaman yang berbeda
+    return (this.LINES_PER_PAGE - start.line) + 
+           ((end.page - start.page - 1) * this.LINES_PER_PAGE) + 
+           end.line;
+  }
+
+  /**
+   * Mengambil koordinat fisik Ayah dari map atau estimasi.
+   */
+  private static getPointer(surah: string, ayah: number): {page: number, line: number} {
+    // 1. Cek di Manual Map (Akurasi Tinggi)
+    const manual = AYAH_MAP.find(a => a.surah === surah && a.ayah === ayah);
+    if (manual) return { page: manual.page, line: manual.line };
+
+    // 2. Fallback: Gunakan estimasi berbasis metadata surah (Mushaf Madinah)
+    const meta = QURAN_METADATA[surah];
+    if (!meta) return { page: 0, line: 0 };
+
+    if (ayah <= 0) {
+      // Posisi sebelum Ayah 1 (Header/Basmalah)
+      return { page: meta.startPage, line: 0 };
+    }
+
+    if (ayah >= meta.totalAyah) {
+      return { page: meta.endPage, line: 15 };
+    }
+
+    // Estimasi linier sederhana jika tidak ada di map
+    const totalLinesSurah = (meta.endPage - meta.startPage + 1) * 15;
+    const estLineCount = Math.floor(totalLinesSurah * (ayah / meta.totalAyah));
+    const estPage = meta.startPage + Math.floor(estLineCount / 15);
+    const estLine = estLineCount % 15 || 1;
+
+    return { page: estPage, line: estLine };
+  }
+
   private static normalizeSurahName(name: string): string {
-    if (!name) return "";
-    return name
-      .replace(/^\d+\.\s*/, '') // Hapus "1. ", "2. ", dst
-      .replace(/[’‘`]/g, "'")   // Ubah tanda petik curly ke straight
-      .trim();
+    return name.replace(/[’‘`]/g, "'").trim();
   }
 }

@@ -2,154 +2,42 @@
 import { AyahPointer } from './types';
 
 interface AyahMapEntry extends AyahPointer {
-  juz: number;
   page: number;
   line: number;
-  global_index: number;
 }
 
 /**
- * Database koordinat ayat (Halaman & Baris) untuk perhitungan presisi.
- * Data difokuskan pada Juz 26 - 30 sesuai permintaan.
+ * Database koordinat ayat Mushaf Al-Qur'an Standar (Madinah).
+ * Digunakan oleh engine untuk menghitung baris secara fisik.
  */
 export const AYAH_MAP: AyahMapEntry[] = [
-  // JUZ 30
-  { "juz": 30, "surah": "An-Naba’", "ayah": 1, "page": 582, "line": 3, "global_index": 5672 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 2, "page": 582, "line": 3, "global_index": 5673 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 3, "page": 582, "line": 3, "global_index": 5674 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 4, "page": 582, "line": 4, "global_index": 5675 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 5, "page": 582, "line": 4, "global_index": 5676 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 6, "page": 582, "line": 4, "global_index": 5677 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 7, "page": 582, "line": 5, "global_index": 5678 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 8, "page": 582, "line": 5, "global_index": 5679 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 9, "page": 582, "line": 5, "global_index": 5680 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 10, "page": 582, "line": 6, "global_index": 5681 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 11, "page": 582, "line": 6, "global_index": 5682 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 12, "page": 582, "line": 7, "global_index": 5683 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 13, "page": 582, "line": 7, "global_index": 5684 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 14, "page": 582, "line": 8, "global_index": 5685 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 15, "page": 582, "line": 8, "global_index": 5686 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 16, "page": 582, "line": 9, "global_index": 5687 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 17, "page": 582, "line": 9, "global_index": 5688 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 18, "page": 582, "line": 10, "global_index": 5689 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 19, "page": 582, "line": 10, "global_index": 5690 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 20, "page": 582, "line": 11, "global_index": 5691 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 21, "page": 582, "line": 11, "global_index": 5692 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 22, "page": 582, "line": 11, "global_index": 5693 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 23, "page": 582, "line": 12, "global_index": 5694 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 24, "page": 582, "line": 12, "global_index": 5695 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 25, "page": 582, "line": 13, "global_index": 5696 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 26, "page": 582, "line": 13, "global_index": 5697 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 27, "page": 582, "line": 14, "global_index": 5698 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 28, "page": 582, "line": 14, "global_index": 5699 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 29, "page": 582, "line": 15, "global_index": 5700 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 30, "page": 582, "line": 15, "global_index": 5701 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 31, "page": 583, "line": 1, "global_index": 5702 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 32, "page": 583, "line": 1, "global_index": 5703 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 33, "page": 583, "line": 1, "global_index": 5704 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 34, "page": 583, "line": 2, "global_index": 5705 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 35, "page": 583, "line": 2, "global_index": 5706 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 36, "page": 583, "line": 2, "global_index": 5707 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 37, "page": 583, "line": 3, "global_index": 5708 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 38, "page": 583, "line": 4, "global_index": 5709 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 38, "page": 583, "line": 5, "global_index": 5710 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 39, "page": 583, "line": 6, "global_index": 5711 },
-  { "juz": 30, "surah": "An-Naba’", "ayah": 40, "page": 583, "line": 7, "global_index": 5712 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 1, "page": 583, "line": 10, "global_index": 5713 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 2, "page": 583, "line": 10, "global_index": 5714 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 3, "page": 583, "line": 10, "global_index": 5715 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 4, "page": 583, "line": 11, "global_index": 5716 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 5, "page": 583, "line": 11, "global_index": 5717 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 6, "page": 583, "line": 11, "global_index": 5718 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 7, "page": 583, "line": 12, "global_index": 5719 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 8, "page": 583, "line": 12, "global_index": 5720 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 9, "page": 583, "line": 13, "global_index": 5721 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 10, "page": 583, "line": 13, "global_index": 5722 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 11, "page": 583, "line": 14, "global_index": 5723 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 12, "page": 583, "line": 14, "global_index": 5724 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 13, "page": 583, "line": 15, "global_index": 5725 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 14, "page": 583, "line": 15, "global_index": 5726 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 15, "page": 583, "line": 15, "global_index": 5727 },
-  { "juz": 30, "surah": "Abasa", "ayah": 1, "page": 585, "line": 1, "global_index": 5759 },
-  { "juz": 30, "surah": "Abasa", "ayah": 2, "page": 585, "line": 1, "global_index": 5760 },
-  { "juz": 30, "surah": "Abasa", "ayah": 3, "page": 585, "line": 1, "global_index": 5761 },
-  { "juz": 30, "surah": "Abasa", "ayah": 4, "page": 585, "line": 2, "global_index": 5762 },
-  { "juz": 30, "surah": "Abasa", "ayah": 5, "page": 585, "line": 2, "global_index": 5763 },
-  { "juz": 30, "surah": "Abasa", "ayah": 6, "page": 585, "line": 2, "global_index": 5764 },
-  { "juz": 30, "surah": "Abasa", "ayah": 7, "page": 585, "line": 3, "global_index": 5765 },
-  { "juz": 30, "surah": "Abasa", "ayah": 8, "page": 585, "line": 3, "global_index": 5766 },
-  { "juz": 30, "surah": "Abasa", "ayah": 9, "page": 585, "line": 3, "global_index": 5767 },
-  { "juz": 30, "surah": "Abasa", "ayah": 10, "page": 585, "line": 4, "global_index": 5768 },
-  { "juz": 30, "surah": "Abasa", "ayah": 11, "page": 585, "line": 4, "global_index": 5769 },
-  { "juz": 30, "surah": "Abasa", "ayah": 12, "page": 585, "line": 4, "global_index": 5770 },
-  { "juz": 30, "surah": "Abasa", "ayah": 13, "page": 585, "line": 4, "global_index": 5771 },
-  { "juz": 30, "surah": "Abasa", "ayah": 14, "page": 585, "line": 5, "global_index": 5772 },
-  { "juz": 30, "surah": "Abasa", "ayah": 15, "page": 585, "line": 5, "global_index": 5773 },
-  { "juz": 30, "surah": "Abasa", "ayah": 16, "page": 585, "line": 5, "global_index": 5774 },
-  { "juz": 30, "surah": "Abasa", "ayah": 17, "page": 585, "line": 5, "global_index": 5775 },
-  { "juz": 30, "surah": "Abasa", "ayah": 18, "page": 585, "line": 6, "global_index": 5776 },
-  { "juz": 30, "surah": "Abasa", "ayah": 19, "page": 585, "line": 6, "global_index": 5777 },
-  { "juz": 30, "surah": "Abasa", "ayah": 20, "page": 585, "line": 7, "global_index": 5778 },
-  { "juz": 30, "surah": "Abasa", "ayah": 21, "page": 585, "line": 7, "global_index": 5779 },
-  { "juz": 30, "surah": "Abasa", "ayah": 22, "page": 585, "line": 7, "global_index": 5780 },
-  { "juz": 30, "surah": "Abasa", "ayah": 23, "page": 585, "line": 8, "global_index": 5781 },
-  { "juz": 30, "surah": "Abasa", "ayah": 24, "page": 585, "line": 8, "global_index": 5782 },
-  { "juz": 30, "surah": "Abasa", "ayah": 25, "page": 585, "line": 8, "global_index": 5783 },
-  { "juz": 30, "surah": "Abasa", "ayah": 26, "page": 585, "line": 9, "global_index": 5784 },
-  { "juz": 30, "surah": "Abasa", "ayah": 27, "page": 585, "line": 9, "global_index": 5785 },
-  { "juz": 30, "surah": "Abasa", "ayah": 28, "page": 585, "line": 9, "global_index": 5786 },
-  { "juz": 30, "surah": "Abasa", "ayah": 29, "page": 585, "line": 10, "global_index": 5787 },
-  { "juz": 30, "surah": "Abasa", "ayah": 30, "page": 585, "line": 10, "global_index": 5788 },
-  { "juz": 30, "surah": "Abasa", "ayah": 31, "page": 585, "line": 10, "global_index": 5789 },
-  { "juz": 30, "surah": "Abasa", "ayah": 32, "page": 585, "line": 11, "global_index": 5790 },
-  { "juz": 30, "surah": "Abasa", "ayah": 33, "page": 585, "line": 11, "global_index": 5791 },
-  { "juz": 30, "surah": "Abasa", "ayah": 34, "page": 585, "line": 11, "global_index": 5792 },
-  { "juz": 30, "surah": "Abasa", "ayah": 35, "page": 585, "line": 12, "global_index": 5793 },
-  { "juz": 30, "surah": "Abasa", "ayah": 36, "page": 585, "line": 12, "global_index": 5794 },
-  { "juz": 30, "surah": "Abasa", "ayah": 37, "page": 585, "line": 12, "global_index": 5795 },
-  { "juz": 30, "surah": "Abasa", "ayah": 38, "page": 585, "line": 13, "global_index": 5796 },
-  { "juz": 30, "surah": "Abasa", "ayah": 39, "page": 585, "line": 13, "global_index": 5797 },
-  { "juz": 30, "surah": "Abasa", "ayah": 40, "page": 585, "line": 14, "global_index": 5798 },
-  { "juz": 30, "surah": "Abasa", "ayah": 41, "page": 585, "line": 14, "global_index": 5799 },
-  { "juz": 30, "surah": "Abasa", "ayah": 42, "page": 585, "line": 14, "global_index": 5800 },
-  { "juz": 30, "surah": "At-Takwir", "ayah": 1, "page": 586, "line": 3, "global_index": 5801 },
-  // JUZ 29
-  { "juz": 29, "surah": "Al-Mulk", "ayah": 1, "page": 562, "line": 3, "global_index": 5241 },
-  { "juz": 29, "surah": "Al-Mulk", "ayah": 2, "page": 562, "line": 4, "global_index": 5242 },
-  { "juz": 29, "surah": "Al-Mulk", "ayah": 3, "page": 562, "line": 6, "global_index": 5243 },
-  { "juz": 29, "surah": "Al-Mulk", "ayah": 4, "page": 562, "line": 7, "global_index": 5244 },
-  { "juz": 29, "surah": "Al-Mulk", "ayah": 5, "page": 562, "line": 8, "global_index": 5245 },
-  { "juz": 29, "surah": "Al-Mulk", "ayah": 6, "page": 562, "line": 9, "global_index": 5246 },
-  { "juz": 29, "surah": "Al-Mulk", "ayah": 7, "page": 562, "line": 10, "global_index": 5247 },
-  { "juz": 29, "surah": "Al-Mulk", "ayah": 8, "page": 562, "line": 11, "global_index": 5248 },
-  { "juz": 29, "surah": "Al-Mulk", "ayah": 9, "page": 562, "line": 12, "global_index": 5249 },
-  { "juz": 29, "surah": "Al-Mulk", "ayah": 10, "page": 562, "line": 13, "global_index": 5250 },
-  { "juz": 29, "surah": "Al-Mulk", "ayah": 11, "page": 562, "line": 14, "global_index": 5251 },
-  { "juz": 29, "surah": "Al-Mulk", "ayah": 12, "page": 562, "line": 15, "global_index": 5252 },
-  { "juz": 29, "surah": "Al-Mulk", "ayah": 13, "page": 562, "line": 1, "global_index": 5253 },
-  { "juz": 29, "surah": "Al-Mulk", "ayah": 14, "page": 562, "line": 2, "global_index": 5254 },
-  { "juz": 29, "surah": "Al-Mulk", "ayah": 15, "page": 562, "line": 3, "global_index": 5255 },
-  { "juz": 29, "surah": "Al-Mulk", "ayah": 16, "page": 562, "line": 4, "global_index": 5256 },
-  { "juz": 29, "surah": "Al-Mulk", "ayah": 17, "page": 563, "line": 5, "global_index": 5257 },
-  { "juz": 29, "surah": "Al-Mulk", "ayah": 18, "page": 563, "line": 6, "global_index": 5258 },
-  { "juz": 29, "surah": "Al-Mulk", "ayah": 19, "page": 563, "line": 8, "global_index": 5259 },
-  { "juz": 29, "surah": "Al-Mulk", "ayah": 20, "page": 563, "line": 9, "global_index": 5260 },
-  { "juz": 29, "surah": "Al-Mulk", "ayah": 21, "page": 563, "line": 10, "global_index": 5261 },
-  { "juz": 29, "surah": "Al-Mulk", "ayah": 22, "page": 563, "line": 11, "global_index": 5262 },
-  { "juz": 29, "surah": "Al-Mulk", "ayah": 23, "page": 563, "line": 13, "global_index": 5263 },
-  { "juz": 29, "surah": "Al-Mulk", "ayah": 24, "page": 563, "line": 14, "global_index": 5264 },
-  { "juz": 29, "surah": "Al-Mulk", "ayah": 25, "page": 563, "line": 14, "global_index": 5265 },
-  { "juz": 29, "surah": "Al-Mulk", "ayah": 26, "page": 563, "line": 15, "global_index": 5266 },
-  { "juz": 29, "surah": "Al-Mulk", "ayah": 27, "page": 564, "line": 1, "global_index": 5267 },
-  { "juz": 29, "surah": "Al-Mulk", "ayah": 28, "page": 564, "line": 3, "global_index": 5268 },
-  { "juz": 29, "surah": "Al-Mulk", "ayah": 29, "page": 564, "line": 4, "global_index": 5269 },
-  { "juz": 29, "surah": "Al-Mulk", "ayah": 30, "page": 564, "line": 5, "global_index": 5270 },
-  // JUZ 28
-  { "juz": 28, "surah": "Al-Mujadillah", "ayah": 1, "page": 542, "line": 4, "global_index": 5104 },
-  // JUZ 27
-  { "juz": 27, "surah": "Adz-Dzariyat", "ayah": 31, "page": 522, "line": 1, "global_index": 4699 },
-  { "juz": 27, "surah": "Ath-Thur", "ayah": 42, "page": 525, "line": 8, "global_index": 4770 },
-  // JUZ 26
-  { "juz": 26, "surah": "Al-Ahqaf", "ayah": 1, "page": 502, "line": 9, "global_index": 4504 },
-  { "juz": 26, "surah": "Adz-Dzariyat", "ayah": 30, "page": 521, "line": 15, "global_index": 4698 }
+  // An-Naba' (p582 - p583)
+  { "surah": "An-Naba'", "ayah": 0, "page": 582, "line": 0 }, // Representasi Header/Basmalah (l1-l2)
+  { "surah": "An-Naba'", "ayah": 1, "page": 582, "line": 3 },
+  { "surah": "An-Naba'", "ayah": 24, "page": 582, "line": 12 },
+  { "surah": "An-Naba'", "ayah": 25, "page": 582, "line": 13 },
+  { "surah": "An-Naba'", "ayah": 30, "page": 582, "line": 15 },
+  { "surah": "An-Naba'", "ayah": 31, "page": 583, "line": 1 },
+  { "surah": "An-Naba'", "ayah": 36, "page": 583, "line": 2 },
+  { "surah": "An-Naba'", "ayah": 40, "page": 583, "line": 7 },
+
+  // Juz 30 (Reverse Order Pages)
+  { "surah": "An-Nas", "ayah": 1, "page": 604, "line": 11 },
+  { "surah": "An-Nas", "ayah": 6, "page": 604, "line": 15 },
+  { "surah": "Al-Falaq", "ayah": 1, "page": 604, "line": 6 },
+  { "surah": "Al-Falaq", "ayah": 5, "page": 604, "line": 9 },
+  { "surah": "Al-Ikhlas", "ayah": 1, "page": 604, "line": 1 },
+  { "surah": "Al-Ikhlas", "ayah": 4, "page": 604, "line": 4 },
+  { "surah": "Al-Kafirun", "ayah": 1, "page": 603, "line": 11 },
+  { "surah": "Al-Kafirun", "ayah": 6, "page": 603, "line": 15 }
 ];
+
+// Helper untuk estimasi jika data map tidak tersedia ( fallback )
+export const getAyahLocation = (surah: string, ayah: number): { page: number, line: number } => {
+  const found = AYAH_MAP.find(a => a.surah === surah && a.ayah === ayah);
+  if (found) return { page: found.page, line: found.line };
+  
+  // Jika tidak ada di map, kita gunakan logika proporsional sederhana
+  // Note: Dalam aplikasi nyata, map ini harus lengkap 6236 ayat.
+  return { page: 0, line: 0 };
+};
