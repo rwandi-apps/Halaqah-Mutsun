@@ -75,8 +75,8 @@ function App() {
           <Route path="/guru/laporan" element={<GuruLaporanPage teacherId={user?.id} />} />
           <Route path="/guru/view-report" element={<GuruViewReportPage teacherId={user?.id} />} />
           <Route path="/guru/evaluation" element={<GuruEvaluationPage />} />
-          <Route path="/guru/grades" element={<GuruGradesPage />} />
-          <Route path="/guru/rapor" element={<GuruRaporPage />} />
+          <Route path="/guru/grades" element={<GuruGradesPage teacherId={user?.id} />} />
+          <Route path="/guru/rapor" element={<GuruRaporPage teacherId={user?.id} />} />
         </Route>
 
         {/* Catch-all */}

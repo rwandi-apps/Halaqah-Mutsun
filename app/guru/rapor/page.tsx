@@ -6,7 +6,7 @@ import { Button } from '../../../components/Button';
 import { FileText, Printer, ArrowLeft, Search, GraduationCap } from 'lucide-react';
 import LogoSDQ from '../../../components/LogoSDQ';
 
-export default function GuruRaporPage({ teacherId = 'u2' }: { teacherId?: string }) {
+export default function GuruRaporPage({ teacherId }: { teacherId?: string }) {
   const [students, setStudents] = useState<Student[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
   const [search, setSearch] = useState('');
@@ -14,8 +14,16 @@ export default function GuruRaporPage({ teacherId = 'u2' }: { teacherId?: string
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Tahun ajaran default untuk pencarian rapor
+  const DEFAULT_YEAR = '2025 / 2026';
+
   useEffect(() => {
-    if (teacherId) getStudentsByTeacher(teacherId).then(setStudents);
+    if (teacherId) {
+      getStudentsByTeacher(teacherId).then(data => {
+        setStudents(data);
+        setFilteredStudents(data);
+      });
+    }
   }, [teacherId]);
 
   useEffect(() => {
@@ -24,12 +32,12 @@ export default function GuruRaporPage({ teacherId = 'u2' }: { teacherId?: string
 
   const handleViewReport = async (student: Student) => {
     setIsLoading(true);
-    const report = await getSemesterReport(student.id, '2023 / 2024', 'Ganjil');
+    const report = await getSemesterReport(student.id, DEFAULT_YEAR, 'Ganjil');
     if (report) {
       setViewingReport(report);
       setSelectedStudent(student);
     } else {
-      alert("Data rapor belum diinput untuk siswa ini. Silakan input di menu 'Input Nilai Rapor'.");
+      alert(`Data rapor belum diinput untuk siswa ini pada tahun ajaran ${DEFAULT_YEAR}. Silakan input di menu 'Input Nilai Rapor'.`);
     }
     setIsLoading(false);
   };
@@ -209,7 +217,7 @@ export default function GuruRaporPage({ teacherId = 'u2' }: { teacherId?: string
               <div className="border-2 border-gray-900 p-6 text-center text-sm italic font-medium leading-relaxed">
                  {viewingReport.notes}
                  <div className="mt-4 not-italic font-bold">
-                    خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ ( البخاري)<br/>
+                    خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّMَهُ ( البخاري)<br/>
                     "Sebaik-baik kalian adalah yang mempelajari Al-Qur'an dan mengamalkannya." (HR. Bukhori)
                  </div>
               </div>
@@ -257,40 +265,48 @@ export default function GuruRaporPage({ teacherId = 'u2' }: { teacherId?: string
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredStudents.map(student => (
-          <div key={student.id} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all group">
-             <div className="flex items-center gap-4 mb-6">
-                <div className="w-12 h-12 rounded-full bg-primary-50 text-primary-600 flex items-center justify-center font-bold text-lg">
-                  {student.name.charAt(0)}
-                </div>
-                <div>
-                   <h3 className="font-bold text-gray-900 group-hover:text-primary-600 transition-colors">{student.name}</h3>
-                   <p className="text-xs text-gray-500 font-medium">{student.className}</p>
-                </div>
-             </div>
-             
-             <div className="space-y-3 mb-6">
-                <div className="flex justify-between text-xs text-gray-500 font-bold uppercase tracking-wider">
-                   <span>ID / NIS</span>
-                   <span className="text-gray-900">{student.nis || '-'}</span>
-                </div>
-                <div className="flex justify-between text-xs text-gray-500 font-bold uppercase tracking-wider">
-                   <span>Target</span>
-                   <span className="text-gray-900">{student.memorizationTarget}</span>
-                </div>
-             </div>
+      {isLoading ? (
+        <div className="text-center py-12 text-gray-500">Memuat daftar siswa...</div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredStudents.length > 0 ? filteredStudents.map(student => (
+            <div key={student.id} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all group">
+              <div className="flex items-center gap-4 mb-6">
+                  <div className="w-12 h-12 rounded-full bg-primary-50 text-primary-600 flex items-center justify-center font-bold text-lg">
+                    {student.name.charAt(0)}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-900 group-hover:text-primary-600 transition-colors">{student.name}</h3>
+                    <p className="text-xs text-gray-500 font-medium">{student.className}</p>
+                  </div>
+              </div>
+              
+              <div className="space-y-3 mb-6">
+                  <div className="flex justify-between text-xs text-gray-500 font-bold uppercase tracking-wider">
+                    <span>ID / NIS</span>
+                    <span className="text-gray-900">{student.nis || '-'}</span>
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-500 font-bold uppercase tracking-wider">
+                    <span>Target</span>
+                    <span className="text-gray-900">{student.memorizationTarget}</span>
+                  </div>
+              </div>
 
-             <Button 
-               onClick={() => handleViewReport(student)} 
-               variant="secondary" 
-               className="w-full font-bold text-xs uppercase tracking-widest border-primary-100 text-primary-600 hover:bg-primary-50"
-             >
-               <FileText size={16} /> Lihat Rapor Semester
-             </Button>
-          </div>
-        ))}
-      </div>
+              <Button 
+                onClick={() => handleViewReport(student)} 
+                variant="secondary" 
+                className="w-full font-bold text-xs uppercase tracking-widest border-primary-100 text-primary-600 hover:bg-primary-50"
+              >
+                <FileText size={16} /> Lihat Rapor Semester
+              </Button>
+            </div>
+          )) : (
+            <div className="col-span-full py-12 text-center text-gray-400 bg-white rounded-2xl border border-dashed">
+              Tidak ada siswa dalam bimbingan Anda.
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

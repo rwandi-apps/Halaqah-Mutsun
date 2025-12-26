@@ -5,21 +5,21 @@ import { getStudentsByTeacher, saveSemesterReport, getSemesterReport } from '../
 import { Button } from '../../../components/Button';
 import { Save, User, BookOpen, ClipboardCheck, GraduationCap } from 'lucide-react';
 
-export default function GuruGradesPage({ teacherId = 'u2' }: { teacherId?: string }) {
+export default function GuruGradesPage({ teacherId }: { teacherId?: string }) {
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Form State
+  // Form State - Tahun Ajaran mulai 2025 / 2026
   const [report, setReport] = useState<SemesterReport>({
     studentId: '',
     teacherId: teacherId || '',
-    academicYear: '2023 / 2024',
+    academicYear: '2025 / 2026',
     semester: 'Ganjil',
     targetHafalan: '10 Halaman',
-    dateStr: '22 Desember 2023',
-    dateHijri: '09 Jumadil Akhir 1445 H',
+    dateStr: '',
+    dateHijri: '',
     assessments: { adab: 'B', murojaah: 'B', tajwid: 'B', makharij: 'A', pencapaianTarget: 85 },
     exams: { uts: 80, uas: 80 },
     statusHafalan: {
@@ -31,7 +31,11 @@ export default function GuruGradesPage({ teacherId = 'u2' }: { teacherId?: strin
   });
 
   useEffect(() => {
-    if (teacherId) getStudentsByTeacher(teacherId).then(setStudents);
+    if (teacherId) {
+      getStudentsByTeacher(teacherId).then(data => {
+        setStudents(data);
+      });
+    }
   }, [teacherId]);
 
   const handleStudentChange = async (id: string) => {
@@ -47,7 +51,8 @@ export default function GuruGradesPage({ teacherId = 'u2' }: { teacherId?: strin
       setReport(prev => ({
         ...prev,
         studentId: id,
-        notes: `Tingkatkan kembali semangat Ananda ${student?.name || ''} dalam menghafal...`
+        teacherId: teacherId || '',
+        notes: `Tingkatkan kembali semangat Ananda ${student?.name || ''} dalam menghafal serta memuroja'ah hafalan. Semoga Allah selalu memberikan kemudahan kepada Ananda dalam mempelajari dan menghafal Al-Qur'an serta mengamalkannya dalam kehidupan sehari-hari.`
       }));
     }
     setIsLoading(false);
@@ -91,14 +96,14 @@ export default function GuruGradesPage({ teacherId = 'u2' }: { teacherId?: strin
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-1">
-            <label className="block text-xs font-bold text-gray-400 uppercase mb-1 ml-1">Pilih Siswa</label>
+            <label className="block text-xs font-bold text-gray-400 uppercase mb-1 ml-1">Pilih Siswa ({students.length})</label>
             <select 
               value={selectedStudentId} 
               onChange={(e) => handleStudentChange(e.target.value)}
               className="w-full px-4 py-2.5 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-primary-500 outline-none text-sm"
             >
               <option value="">-- Pilih Siswa --</option>
-              {students.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              {students.map(s => <option key={s.id} value={s.id}>{s.name} - {s.className}</option>)}
             </select>
           </div>
           <div>
@@ -115,7 +120,9 @@ export default function GuruGradesPage({ teacherId = 'u2' }: { teacherId?: strin
         </div>
       </div>
 
-      {selectedStudentId && (
+      {isLoading ? (
+        <div className="text-center py-12 text-gray-500">Memuat data...</div>
+      ) : selectedStudentId && (
         <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
           {/* Aspek Penilaian */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -142,7 +149,7 @@ export default function GuruGradesPage({ teacherId = 'u2' }: { teacherId?: strin
                       <option value="B">B</option>
                       <option value="C">C</option>
                     </select>
-                    <span className="text-[10px] font-bold text-gray-400 italic">{getPredikatLetter((report.assessments as any)[item.id])}</span>
+                    <span className="text-[10px] font-bold text-gray-400 italic shrink-0 w-20">{getPredikatLetter((report.assessments as any)[item.id])}</span>
                   </div>
                 </div>
               ))}
@@ -227,11 +234,11 @@ export default function GuruGradesPage({ teacherId = 'u2' }: { teacherId?: strin
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
               <div>
                 <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Tanggal (Masehi)</label>
-                <input type="text" value={report.dateStr} onChange={e => setReport({...report, dateStr: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                <input type="text" placeholder="Contoh: 22 Desember 2025" value={report.dateStr} onChange={e => setReport({...report, dateStr: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Tanggal (Hijriah)</label>
-                <input type="text" value={report.dateHijri} onChange={e => setReport({...report, dateHijri: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                <input type="text" placeholder="Contoh: 01 Jumadil Akhir 1447 H" value={report.dateHijri} onChange={e => setReport({...report, dateHijri: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
               </div>
             </div>
           </div>
