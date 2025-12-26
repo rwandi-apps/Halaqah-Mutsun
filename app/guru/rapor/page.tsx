@@ -3,8 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Student, SemesterReport } from '../../../types';
 import { getStudentsByTeacher, getSemesterReport } from '../../../services/firestoreService';
 import { Button } from '../../../components/Button';
-import { FileText, Printer, ArrowLeft, Search, GraduationCap } from 'lucide-react';
-import LogoSDQ from '../../../components/LogoSDQ';
+import { FileText, Printer, ArrowLeft, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function GuruRaporPage({ teacherId }: { teacherId?: string }) {
   const [students, setStudents] = useState<Student[]>([]);
@@ -12,6 +11,7 @@ export default function GuruRaporPage({ teacherId }: { teacherId?: string }) {
   const [search, setSearch] = useState('');
   const [viewingReport, setViewingReport] = useState<SemesterReport | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(-1);
   const [isLoading, setIsLoading] = useState(false);
 
   // Tahun ajaran default untuk pencarian rapor
@@ -30,16 +30,31 @@ export default function GuruRaporPage({ teacherId }: { teacherId?: string }) {
     setFilteredStudents(students.filter(s => s.name.toLowerCase().includes(search.toLowerCase())));
   }, [search, students]);
 
-  const handleViewReport = async (student: Student) => {
+  const handleViewReport = async (student: Student, index: number) => {
     setIsLoading(true);
     const report = await getSemesterReport(student.id, DEFAULT_YEAR, 'Ganjil');
     if (report) {
       setViewingReport(report);
       setSelectedStudent(student);
+      setCurrentIndex(index);
     } else {
-      alert(`Data rapor belum diinput untuk siswa ini pada tahun ajaran ${DEFAULT_YEAR}. Silakan input di menu 'Input Nilai Rapor'.`);
+      alert(`Data rapor belum diinput untuk ${student.name} pada tahun ajaran ${DEFAULT_YEAR}. Silakan input di menu 'Input Nilai Rapor'.`);
     }
     setIsLoading(false);
+  };
+
+  const goToNext = () => {
+    if (currentIndex < filteredStudents.length - 1) {
+      const nextIdx = currentIndex + 1;
+      handleViewReport(filteredStudents[nextIdx], nextIdx);
+    }
+  };
+
+  const goToPrev = () => {
+    if (currentIndex > 0) {
+      const prevIdx = currentIndex - 1;
+      handleViewReport(filteredStudents[prevIdx], prevIdx);
+    }
   };
 
   const getPredikatLetter = (letter: string) => {
@@ -60,18 +75,42 @@ export default function GuruRaporPage({ teacherId }: { teacherId?: string }) {
 
   if (viewingReport && selectedStudent) {
     return (
-      <div className="max-w-5xl mx-auto space-y-6 pb-20 print:p-0 print:m-0">
-        <div className="flex justify-between items-center print:hidden">
-           <button onClick={() => setViewingReport(null)} className="flex items-center text-gray-500 hover:text-primary-600 font-bold">
+      <div className="max-w-6xl mx-auto space-y-6 pb-20 print:p-0 print:m-0">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 print:hidden">
+           <button onClick={() => { setViewingReport(null); setSelectedStudent(null); }} className="flex items-center text-gray-500 hover:text-primary-600 font-bold">
              <ArrowLeft size={20} className="mr-2"/> Kembali ke Daftar
            </button>
-           <Button onClick={() => window.print()} className="bg-emerald-600 hover:bg-emerald-700">
+
+           <div className="flex items-center gap-2 bg-white p-1 rounded-xl shadow-sm border">
+              <button 
+                onClick={goToPrev} 
+                disabled={currentIndex === 0}
+                className="p-2 hover:bg-gray-100 rounded-lg disabled:opacity-30 transition-colors"
+                title="Siswa Sebelumnya"
+              >
+                <ChevronLeft size={24} />
+              </button>
+              <div className="px-4 text-sm font-bold text-gray-700 border-x">
+                Siswa {currentIndex + 1} dari {filteredStudents.length}
+              </div>
+              <button 
+                onClick={goToNext} 
+                disabled={currentIndex === filteredStudents.length - 1}
+                className="p-2 hover:bg-gray-100 rounded-lg disabled:opacity-30 transition-colors"
+                title="Siswa Berikutnya"
+              >
+                <ChevronRight size={24} />
+              </button>
+           </div>
+
+           <Button onClick={() => window.print()} className="bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-500/20">
              <Printer size={18} className="mr-2"/> Cetak Rapor
            </Button>
         </div>
 
-        {/* RAPOR PREVIEW - PDF STYLE */}
-        <div className="bg-white p-12 sm:p-16 shadow-2xl border border-gray-100 mx-auto w-full max-w-[210mm] print:shadow-none print:border-none print:p-8 min-h-[297mm]">
+        {/* RAPOR PREVIEW - PDF STYLE (LETTER FORMAT 8.5 x 11 inch) */}
+        {/* Width: 216mm, Height: 279mm */}
+        <div className="bg-white p-12 sm:p-16 shadow-2xl border border-gray-100 mx-auto w-full max-w-[216mm] print:shadow-none print:border-none print:p-10 min-h-[279mm] relative overflow-hidden">
            {/* Header Sekolah */}
            <div className="flex justify-between items-start mb-8">
               <div className="w-24 h-24">
@@ -120,7 +159,7 @@ export default function GuruRaporPage({ teacherId }: { teacherId?: string }) {
            {/* Tabel Aspek Penilaian */}
            <div className="mb-8">
               <table className="w-full border-2 border-gray-900 text-center text-sm font-bold">
-                 <thead className="bg-gray-200">
+                 <thead className="bg-gray-100">
                     <tr className="border-b-2 border-gray-900">
                        <th className="py-2 w-12 border-r-2 border-gray-900">No</th>
                        <th className="py-2 border-r-2 border-gray-900 px-4 text-left">Aspek Penilaian</th>
@@ -155,7 +194,7 @@ export default function GuruRaporPage({ teacherId }: { teacherId?: string }) {
            {/* Tabel Ujian */}
            <div className="mb-8">
               <table className="w-full border-2 border-gray-900 text-center text-sm font-bold">
-                 <thead className="bg-gray-200">
+                 <thead className="bg-gray-100">
                     <tr className="border-b-2 border-gray-900">
                        <th className="py-2 w-12 border-r-2 border-gray-900">No</th>
                        <th className="py-2 border-r-2 border-gray-900 px-4 text-left">Ujian-ujian</th>
@@ -184,12 +223,12 @@ export default function GuruRaporPage({ teacherId }: { teacherId?: string }) {
            <div className="mb-8">
               <div className="text-center font-bold text-sm mb-2 uppercase tracking-wide">Status Hafalan Siswa</div>
               <table className="w-full border-2 border-gray-900 text-center text-sm font-bold">
-                 <thead className="bg-gray-200">
+                 <thead className="bg-gray-100">
                     <tr className="border-b-2 border-gray-900">
                        <th className="py-2 w-12 border-r-2 border-gray-900">No</th>
                        <th className="py-2 border-r-2 border-gray-900 px-4 text-left">Kategori</th>
-                       <th className="py-2 border-r-2 border-gray-900">Jumlah</th>
-                       <th className="py-2 border-r-2 border-gray-900">Rincian</th>
+                       <th className="py-2 border-r-2 border-gray-900 w-32">Jumlah</th>
+                       <th className="py-2 border-r-2 border-gray-900 w-32">Rincian</th>
                        <th className="py-2">Status</th>
                     </tr>
                  </thead>
@@ -204,7 +243,7 @@ export default function GuruRaporPage({ teacherId }: { teacherId?: string }) {
                           <td className="py-2 border-r-2 border-gray-900 px-4 text-left">{item.label}</td>
                           <td className="py-2 border-r-2 border-gray-900">{item.data.jumlah}</td>
                           <td className="py-2 border-r-2 border-gray-900">{item.data.rincian}</td>
-                          <td className="py-2 uppercase">{item.data.status}</td>
+                          <td className="py-2 uppercase text-[12px]">{item.data.status}</td>
                        </tr>
                     ))}
                  </tbody>
@@ -212,12 +251,12 @@ export default function GuruRaporPage({ teacherId }: { teacherId?: string }) {
            </div>
 
            {/* Catatan */}
-           <div className="mb-12">
+           <div className="mb-8">
               <div className="text-center font-bold text-sm mb-2 uppercase tracking-wide">Catatan</div>
-              <div className="border-2 border-gray-900 p-6 text-center text-sm italic font-medium leading-relaxed">
+              <div className="border-2 border-gray-900 p-6 text-center text-[13px] italic font-medium leading-relaxed">
                  {viewingReport.notes}
-                 <div className="mt-4 not-italic font-bold">
-                    خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّMَهُ ( البخاري)<br/>
+                 <div className="mt-4 not-italic font-bold text-sm">
+                    خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ ( البخاري)<br/>
                     "Sebaik-baik kalian adalah yang mempelajari Al-Qur'an dan mengamalkannya." (HR. Bukhori)
                  </div>
               </div>
@@ -226,8 +265,8 @@ export default function GuruRaporPage({ teacherId }: { teacherId?: string }) {
            {/* Tanda Tangan */}
            <div className="text-sm font-bold text-gray-900">
               <div className="text-right mb-12">
-                 Bogor, {viewingReport.dateHijri}<br/>
-                 {viewingReport.dateStr}
+                 Bogor, {viewingReport.dateHijri || '... Hijriah'}<br/>
+                 {viewingReport.dateStr || '... Masehi'}
               </div>
               <div className="grid grid-cols-2 gap-40 text-center">
                  <div>
@@ -269,7 +308,7 @@ export default function GuruRaporPage({ teacherId }: { teacherId?: string }) {
         <div className="text-center py-12 text-gray-500">Memuat daftar siswa...</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredStudents.length > 0 ? filteredStudents.map(student => (
+          {filteredStudents.length > 0 ? filteredStudents.map((student, index) => (
             <div key={student.id} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all group">
               <div className="flex items-center gap-4 mb-6">
                   <div className="w-12 h-12 rounded-full bg-primary-50 text-primary-600 flex items-center justify-center font-bold text-lg">
@@ -293,7 +332,7 @@ export default function GuruRaporPage({ teacherId }: { teacherId?: string }) {
               </div>
 
               <Button 
-                onClick={() => handleViewReport(student)} 
+                onClick={() => handleViewReport(student, index)} 
                 variant="secondary" 
                 className="w-full font-bold text-xs uppercase tracking-widest border-primary-100 text-primary-600 hover:bg-primary-50"
               >

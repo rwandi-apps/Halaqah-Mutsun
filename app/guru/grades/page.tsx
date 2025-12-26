@@ -200,22 +200,37 @@ export default function GuruGradesPage({ teacherId }: { teacherId?: string }) {
                 { id: 'mutqin', label: 'Hafalan Mutqin' },
                 { id: 'semesterIni', label: 'Hafalan Semester Ini' },
               ].map(item => (
-                <div key={item.id} className="grid grid-cols-1 md:grid-cols-3 gap-3 p-3 bg-gray-50 rounded-xl">
+                <div key={item.id} className="grid grid-cols-1 md:grid-cols-4 gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
                   <div className="flex items-center">
                     <p className="text-xs font-bold text-gray-700">{item.label}</p>
                   </div>
-                  <input 
-                    placeholder="Jumlah (misal: 1 Juz 3 Hal)" 
-                    value={(report.statusHafalan as any)[item.id].jumlah}
-                    onChange={e => setReport({...report, statusHafalan: {...report.statusHafalan, [item.id]: {...(report.statusHafalan as any)[item.id], jumlah: e.target.value}}})}
-                    className="px-3 py-2 border border-gray-200 rounded-lg text-xs"
-                  />
-                  <input 
-                    placeholder="Rincian (misal: Juz 30 dan 29)" 
-                    value={(report.statusHafalan as any)[item.id].rincian}
-                    onChange={e => setReport({...report, statusHafalan: {...report.statusHafalan, [item.id]: {...(report.statusHafalan as any)[item.id], rincian: e.target.value}}})}
-                    className="px-3 py-2 border border-gray-200 rounded-lg text-xs"
-                  />
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase text-gray-400 font-bold ml-1">Jumlah</label>
+                    <input 
+                      placeholder="Misal: 1 Juz 3 Hal" 
+                      value={(report.statusHafalan as any)[item.id].jumlah}
+                      onChange={e => setReport({...report, statusHafalan: {...report.statusHafalan, [item.id]: {...(report.statusHafalan as any)[item.id], jumlah: e.target.value}}})}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase text-gray-400 font-bold ml-1">Rincian</label>
+                    <input 
+                      placeholder="Misal: Juz 30 dan 29" 
+                      value={(report.statusHafalan as any)[item.id].rincian}
+                      onChange={e => setReport({...report, statusHafalan: {...report.statusHafalan, [item.id]: {...(report.statusHafalan as any)[item.id], rincian: e.target.value}}})}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase text-gray-400 font-bold ml-1">Status</label>
+                    <input 
+                      placeholder="Misal: Baik / Cukup Baik" 
+                      value={(report.statusHafalan as any)[item.id].status}
+                      onChange={e => setReport({...report, statusHafalan: {...report.statusHafalan, [item.id]: {...(report.statusHafalan as any)[item.id], status: e.target.value}}})}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-bold text-primary-700"
+                    />
+                  </div>
                 </div>
               ))}
             </div>
@@ -228,7 +243,7 @@ export default function GuruGradesPage({ teacherId }: { teacherId?: string }) {
               value={report.notes}
               onChange={e => setReport({...report, notes: e.target.value})}
               rows={4}
-              className="w-full p-4 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 outline-none resize-none"
+              className="w-full p-4 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 outline-none resize-none font-medium text-gray-700"
             />
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
