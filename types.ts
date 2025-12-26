@@ -76,6 +76,7 @@ export interface SemesterReport {
   dateStr: string; // e.g., "22 Desember 2023"
   dateHijri: string; // e.g., "09 Jumadil Akhir 1445 H"
   
+  // Format Tabel (Kelas 4-6)
   assessments: {
     adab: string; // A, B, C
     murojaah: string;
@@ -83,17 +84,19 @@ export interface SemesterReport {
     makharij: string;
     pencapaianTarget: number; // percentage
   };
-  
   exams: {
     uts: number;
     uas: number;
   };
-  
   statusHafalan: {
     dimiliki: { jumlah: string; rincian: string; status: string };
     mutqin: { jumlah: string; rincian: string; status: string };
     semesterIni: { jumlah: string; rincian: string; status: string };
   };
+
+  // Format Deskripsi (Kelas 1-3)
+  narrativeTahfizh?: string;
+  narrativeTilawah?: string;
   
   notes: string;
   createdAt?: string;
