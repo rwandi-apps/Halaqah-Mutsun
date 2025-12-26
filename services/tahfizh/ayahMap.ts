@@ -8,7 +8,12 @@ interface AyahMapEntry extends AyahPointer {
   global_index: number;
 }
 
+/**
+ * Database koordinat ayat (Halaman & Baris) untuk perhitungan presisi.
+ * Data difokuskan pada Juz 26 - 30 sesuai permintaan.
+ */
 export const AYAH_MAP: AyahMapEntry[] = [
+  // JUZ 30
   { "juz": 30, "surah": "An-Naba’", "ayah": 1, "page": 582, "line": 3, "global_index": 5672 },
   { "juz": 30, "surah": "An-Naba’", "ayah": 2, "page": 582, "line": 3, "global_index": 5673 },
   { "juz": 30, "surah": "An-Naba’", "ayah": 3, "page": 582, "line": 3, "global_index": 5674 },
@@ -65,37 +70,6 @@ export const AYAH_MAP: AyahMapEntry[] = [
   { "juz": 30, "surah": "An-Nazi'at", "ayah": 13, "page": 583, "line": 15, "global_index": 5725 },
   { "juz": 30, "surah": "An-Nazi'at", "ayah": 14, "page": 583, "line": 15, "global_index": 5726 },
   { "juz": 30, "surah": "An-Nazi'at", "ayah": 15, "page": 583, "line": 15, "global_index": 5727 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 16, "page": 584, "line": 1, "global_index": 5728 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 17, "page": 584, "line": 1, "global_index": 5729 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 18, "page": 584, "line": 2, "global_index": 5730 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 19, "page": 584, "line": 2, "global_index": 5731 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 20, "page": 584, "line": 3, "global_index": 5732 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 21, "page": 584, "line": 3, "global_index": 5733 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 22, "page": 584, "line": 3, "global_index": 5734 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 23, "page": 584, "line": 3, "global_index": 5735 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 24, "page": 584, "line": 4, "global_index": 5736 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 25, "page": 584, "line": 4, "global_index": 5737 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 26, "page": 584, "line": 5, "global_index": 5738 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 27, "page": 584, "line": 5, "global_index": 5739 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 28, "page": 584, "line": 6, "global_index": 5740 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 29, "page": 584, "line": 6, "global_index": 5741 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 30, "page": 584, "line": 7, "global_index": 5742 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 31, "page": 584, "line": 7, "global_index": 5743 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 32, "page": 584, "line": 8, "global_index": 5744 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 33, "page": 584, "line": 8, "global_index": 5745 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 34, "page": 584, "line": 8, "global_index": 5746 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 35, "page": 584, "line": 9, "global_index": 5747 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 36, "page": 584, "line": 9, "global_index": 5748 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 37, "page": 584, "line": 10, "global_index": 5749 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 38, "page": 584, "line": 10, "global_index": 5750 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 39, "page": 584, "line": 10, "global_index": 5751 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 40, "page": 584, "line": 11, "global_index": 5752 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 41, "page": 584, "line": 12, "global_index": 5753 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 42, "page": 584, "line": 12, "global_index": 5754 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 43, "page": 584, "line": 13, "global_index": 5755 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 44, "page": 584, "line": 13, "global_index": 5756 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 45, "page": 584, "line": 14, "global_index": 5757 },
-  { "juz": 30, "surah": "An-Nazi'at", "ayah": 46, "page": 584, "line": 14, "global_index": 5758 },
   { "juz": 30, "surah": "Abasa", "ayah": 1, "page": 585, "line": 1, "global_index": 5759 },
   { "juz": 30, "surah": "Abasa", "ayah": 2, "page": 585, "line": 1, "global_index": 5760 },
   { "juz": 30, "surah": "Abasa", "ayah": 3, "page": 585, "line": 1, "global_index": 5761 },
@@ -138,6 +112,8 @@ export const AYAH_MAP: AyahMapEntry[] = [
   { "juz": 30, "surah": "Abasa", "ayah": 40, "page": 585, "line": 14, "global_index": 5798 },
   { "juz": 30, "surah": "Abasa", "ayah": 41, "page": 585, "line": 14, "global_index": 5799 },
   { "juz": 30, "surah": "Abasa", "ayah": 42, "page": 585, "line": 14, "global_index": 5800 },
+  { "juz": 30, "surah": "At-Takwir", "ayah": 1, "page": 586, "line": 3, "global_index": 5801 },
+  // JUZ 29
   { "juz": 29, "surah": "Al-Mulk", "ayah": 1, "page": 562, "line": 3, "global_index": 5241 },
   { "juz": 29, "surah": "Al-Mulk", "ayah": 2, "page": 562, "line": 4, "global_index": 5242 },
   { "juz": 29, "surah": "Al-Mulk", "ayah": 3, "page": 562, "line": 6, "global_index": 5243 },
@@ -168,7 +144,12 @@ export const AYAH_MAP: AyahMapEntry[] = [
   { "juz": 29, "surah": "Al-Mulk", "ayah": 28, "page": 564, "line": 3, "global_index": 5268 },
   { "juz": 29, "surah": "Al-Mulk", "ayah": 29, "page": 564, "line": 4, "global_index": 5269 },
   { "juz": 29, "surah": "Al-Mulk", "ayah": 30, "page": 564, "line": 5, "global_index": 5270 },
+  // JUZ 28
   { "juz": 28, "surah": "Al-Mujadillah", "ayah": 1, "page": 542, "line": 4, "global_index": 5104 },
+  // JUZ 27
   { "juz": 27, "surah": "Adz-Dzariyat", "ayah": 31, "page": 522, "line": 1, "global_index": 4699 },
-  { "juz": 26, "surah": "Al-Ahqaf", "ayah": 1, "page": 502, "line": 9, "global_index": 4504 }
+  { "juz": 27, "surah": "Ath-Thur", "ayah": 42, "page": 525, "line": 8, "global_index": 4770 },
+  // JUZ 26
+  { "juz": 26, "surah": "Al-Ahqaf", "ayah": 1, "page": 502, "line": 9, "global_index": 4504 },
+  { "juz": 26, "surah": "Adz-Dzariyat", "ayah": 30, "page": 521, "line": 15, "global_index": 4698 }
 ];

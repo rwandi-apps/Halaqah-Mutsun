@@ -20,8 +20,14 @@ import { getStoredUser, simpleLogout } from './services/simpleAuth';
 import { User } from './types';
 
 function App() {
-  // Mengambil user dari storage saat pertama kali load
-  const [user, setUser] = useState<User | null>(getStoredUser());
+  // DISABLING LOGIN: Menginisialisasi user otomatis sebagai GURU jika storage kosong
+  const [user, setUser] = useState<User | null>(getStoredUser() || {
+    id: 'u2',
+    name: 'Ust. Hasan (Auto-Login)',
+    nickname: 'Ustadz Hasan',
+    email: 'guru@sdq.com',
+    role: 'GURU'
+  });
 
   const handleLogin = (newUser: User) => {
     setUser(newUser);
@@ -33,7 +39,6 @@ function App() {
       setUser(null);
     } catch (error) {
       console.error("Gagal logout:", error);
-      // Tetap paksa hapus state jika terjadi error network
       setUser(null);
     }
   };
@@ -41,7 +46,7 @@ function App() {
   return (
     <HashRouter>
       <Routes>
-        {/* Login Page */}
+        {/* Login Page - Tetap ada rutenya tapi user otomatis redirect ke "/" jika sudah set user */}
         <Route path="/login" element={
           !user ? <LoginPage onLogin={handleLogin} /> : <Navigate to="/" replace />
         } />

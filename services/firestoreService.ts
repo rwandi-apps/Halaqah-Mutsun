@@ -12,10 +12,11 @@ import {
   serverTimestamp,
   writeBatch,
   onSnapshot,
-  Unsubscribe
+  Unsubscribe,
+  setDoc
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { User, Student, Report, Role } from '../types';
+import { User, Student, Report, Role, SemesterReport } from '../types';
 import { extractClassLevel } from './sdqTargets';
 
 export const getAllTeachers = async (): Promise<User[]> => {
@@ -85,6 +86,32 @@ export const subscribeToReportsByTeacher = (
   });
 };
 
+// --- SEMESTER REPORT FUNCTIONS ---
+
+export const saveSemesterReport = async (report: SemesterReport): Promise<void> => {
+  if (!db) throw new Error("Firestore not initialized");
+  // ID unik berdasarkan studentId + tahun + semester agar tidak duplikat
+  const reportId = `${report.studentId}_${report.academicYear.replace(/\//g, '-')}_${report.semester}`;
+  const docRef = doc(db, 'rapor_semester', reportId);
+  await setDoc(docRef, { ...report, updatedAt: serverTimestamp() });
+};
+
+export const getSemesterReport = async (studentId: string, academicYear: string, semester: string): Promise<SemesterReport | null> => {
+  if (!db) return null;
+  const reportId = `${studentId}_${academicYear.replace(/\//g, '-')}_${semester}`;
+  const docSnap = await getDoc(doc(db, 'rapor_semester', reportId));
+  return docSnap.exists() ? docSnap.data() as SemesterReport : null;
+};
+
+export const subscribeToSemesterReports = (teacherId: string, onUpdate: (reports: SemesterReport[]) => void): Unsubscribe => {
+  if (!db) return () => {};
+  const q = query(collection(db, 'rapor_semester'), where('teacherId', '==', teacherId));
+  return onSnapshot(q, (snapshot) => {
+    const reports = snapshot.docs.map(doc => ({ ...doc.data() } as SemesterReport));
+    onUpdate(reports);
+  });
+};
+
 export const addStudent = async (student: Omit<Student, 'id' | 'attendance' | 'behaviorScore'>): Promise<Student> => {
   if (!db) throw new Error("Firestore not initialized");
   const level = extractClassLevel(student.className);
@@ -122,18 +149,12 @@ export const addReport = async (report: Omit<Report, 'id' | 'createdAt'>): Promi
   return { id: newReportRef.id, ...report, createdAt } as Report;
 };
 
-/**
- * Memperbarui data laporan yang sudah ada
- */
 export const updateReport = async (reportId: string, data: Partial<Report>): Promise<void> => {
   if (!db) throw new Error("Firestore not initialized");
   const docRef = doc(db, 'laporan', reportId);
   await updateDoc(docRef, { ...data, updatedAt: serverTimestamp() });
 };
 
-/**
- * Menghapus data laporan
- */
 export const deleteReport = async (reportId: string): Promise<void> => {
   if (!db) throw new Error("Firestore not initialized");
   const docRef = doc(db, 'laporan', reportId);

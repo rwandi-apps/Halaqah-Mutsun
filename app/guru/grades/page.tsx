@@ -1,66 +1,246 @@
 
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { BookOpen, ArrowLeft, Sparkles } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Student, SemesterReport } from '../../../types';
+import { getStudentsByTeacher, saveSemesterReport, getSemesterReport } from '../../../services/firestoreService';
 import { Button } from '../../../components/Button';
+import { Save, User, BookOpen, ClipboardCheck, GraduationCap } from 'lucide-react';
 
-export default function GuruGradesPage() {
-  const navigate = useNavigate();
+export default function GuruGradesPage({ teacherId = 'u2' }: { teacherId?: string }) {
+  const [students, setStudents] = useState<Student[]>([]);
+  const [selectedStudentId, setSelectedStudentId] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Form State
+  const [report, setReport] = useState<SemesterReport>({
+    studentId: '',
+    teacherId: teacherId || '',
+    academicYear: '2023 / 2024',
+    semester: 'Ganjil',
+    targetHafalan: '10 Halaman',
+    dateStr: '22 Desember 2023',
+    dateHijri: '09 Jumadil Akhir 1445 H',
+    assessments: { adab: 'B', murojaah: 'B', tajwid: 'B', makharij: 'A', pencapaianTarget: 85 },
+    exams: { uts: 80, uas: 80 },
+    statusHafalan: {
+      dimiliki: { jumlah: '', rincian: '', status: '' },
+      mutqin: { jumlah: '', rincian: '', status: '' },
+      semesterIni: { jumlah: '', rincian: '', status: '' }
+    },
+    notes: ''
+  });
+
+  useEffect(() => {
+    if (teacherId) getStudentsByTeacher(teacherId).then(setStudents);
+  }, [teacherId]);
+
+  const handleStudentChange = async (id: string) => {
+    setSelectedStudentId(id);
+    if (!id) return;
+    
+    setIsLoading(true);
+    const existing = await getSemesterReport(id, report.academicYear, report.semester);
+    if (existing) {
+      setReport(existing);
+    } else {
+      const student = students.find(s => s.id === id);
+      setReport(prev => ({
+        ...prev,
+        studentId: id,
+        notes: `Tingkatkan kembali semangat Ananda ${student?.name || ''} dalam menghafal...`
+      }));
+    }
+    setIsLoading(false);
+  };
+
+  const handleSave = async () => {
+    if (!selectedStudentId) return alert("Pilih siswa!");
+    setIsSaving(true);
+    try {
+      await saveSemesterReport({ ...report, studentId: selectedStudentId, teacherId: teacherId || '' });
+      alert("Data rapor berhasil disimpan.");
+    } catch (e) {
+      alert("Gagal menyimpan data.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const getPredikatLetter = (letter: string) => {
+    if (letter === 'A') return 'Mumtaz';
+    if (letter === 'B') return 'Jayyid Jiddan';
+    if (letter === 'C') return 'Jayyid';
+    return '-';
+  };
+
+  const getPredikatScore = (score: number) => {
+    if (score === 100) return "Mumtaz Murtafi'";
+    if (score >= 90) return "Mumtaz";
+    if (score >= 80) return "Jayyid Jiddan";
+    if (score >= 70) return "Jayyid";
+    if (score >= 60) return "Maqbul";
+    return "Rosib";
+  };
 
   return (
-    <div className="min-h-[75vh] flex items-center justify-center p-6">
-      <div className="max-w-md w-full bg-white rounded-[2rem] shadow-sm border border-gray-100 p-12 text-center relative overflow-hidden animate-in fade-in slide-in-from-bottom-6 duration-1000">
-        
-        {/* Background Decorative Element */}
-        <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-emerald-50 rounded-full blur-3xl opacity-50"></div>
-        <div className="absolute bottom-0 left-0 -ml-8 -mb-8 w-32 h-32 bg-amber-50 rounded-full blur-3xl opacity-50"></div>
-
-        {/* Ilustrasi Islami Sederhana: Mushaf Al-Qur'an */}
-        <div className="mb-10 flex justify-center relative">
-          <div className="relative z-10 w-28 h-28 bg-white rounded-3xl shadow-[0_10px_40px_-10px_rgba(16,185,129,0.2)] border border-emerald-50 flex items-center justify-center text-emerald-600 transform -rotate-2 hover:rotate-0 transition-transform duration-500">
-            <BookOpen size={56} strokeWidth={1.2} />
-          </div>
-          <div className="absolute -top-4 -right-2 z-20">
-            <div className="bg-amber-100/80 backdrop-blur-sm p-2 rounded-2xl border border-amber-200 text-amber-600 shadow-sm animate-pulse">
-              <Sparkles size={24} />
-            </div>
-          </div>
-        </div>
-
-        {/* Status Badge */}
-        <div className="inline-flex items-center px-5 py-2 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-bold uppercase tracking-[0.2em] mb-8 border border-emerald-100/50 shadow-inner">
-          Dalam Pengembangan
-        </div>
-
-        {/* Judul Utama */}
-        <h2 className="text-3xl font-bold text-gray-900 mb-4 tracking-tight">
-          Fitur Evaluasi Sedang Dalam Pengembangan
+    <div className="max-w-4xl mx-auto space-y-6 pb-20">
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <GraduationCap className="text-primary-600" /> Input Nilai Rapor Semester
         </h2>
-
-        {/* Subjudul Islami */}
-        <p className="text-sm text-gray-500 leading-relaxed mb-10 px-4">
-          InsyaAllah fitur ini sedang dipersiapkan untuk mendukung proses pembinaan santri secara lebih optimal.
-        </p>
-
-        {/* Pesan Motivatif Islami Singkat */}
-        <div className="relative py-6 px-6 mb-10 bg-emerald-50/30 rounded-[1.5rem] border border-emerald-100/50">
-          <p className="text-xs italic text-emerald-700 font-semibold tracking-wide">
-            "Setiap kebaikan memiliki waktu terbaiknya."
-          </p>
-        </div>
-
-        {/* Tombol Navigasi */}
-        <div className="px-2">
-          <Button 
-            variant="secondary" 
-            onClick={() => navigate('/guru/dashboard')}
-            className="w-full py-5 rounded-[1.25rem] border-emerald-100 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 transition-all shadow-sm group font-bold text-sm"
-          >
-            <ArrowLeft size={18} className="mr-2 group-hover:-translate-x-1 transition-transform duration-300" />
-            Kembali ke Dashboard
-          </Button>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="md:col-span-1">
+            <label className="block text-xs font-bold text-gray-400 uppercase mb-1 ml-1">Pilih Siswa</label>
+            <select 
+              value={selectedStudentId} 
+              onChange={(e) => handleStudentChange(e.target.value)}
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-primary-500 outline-none text-sm"
+            >
+              <option value="">-- Pilih Siswa --</option>
+              {students.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-400 uppercase mb-1 ml-1">Tahun Ajaran</label>
+            <input type="text" value={report.academicYear} onChange={e => setReport({...report, academicYear: e.target.value})} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm" />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-400 uppercase mb-1 ml-1">Semester</label>
+            <select value={report.semester} onChange={e => setReport({...report, semester: e.target.value as any})} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm">
+              <option value="Ganjil">Ganjil</option>
+              <option value="Genap">Genap</option>
+            </select>
+          </div>
         </div>
       </div>
+
+      {selectedStudentId && (
+        <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
+          {/* Aspek Penilaian */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-gray-50 px-6 py-3 border-b border-gray-100 flex items-center gap-2">
+              <ClipboardCheck size={18} className="text-primary-600" />
+              <h3 className="font-bold text-gray-800 text-sm">ASPEK PENILAIAN (A/B/C)</h3>
+            </div>
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[
+                { id: 'adab', label: 'Adab di Halaqah' },
+                { id: 'murojaah', label: 'Muroja\'ah' },
+                { id: 'tajwid', label: 'Tajwid' },
+                { id: 'makharij', label: 'Makharijul Huruf' },
+              ].map(item => (
+                <div key={item.id}>
+                  <label className="block text-xs font-bold text-gray-500 mb-1">{item.label}</label>
+                  <div className="flex items-center gap-3">
+                    <select 
+                      value={(report.assessments as any)[item.id]} 
+                      onChange={e => setReport({...report, assessments: {...report.assessments, [item.id]: e.target.value}})}
+                      className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                    >
+                      <option value="A">A</option>
+                      <option value="B">B</option>
+                      <option value="C">C</option>
+                    </select>
+                    <span className="text-[10px] font-bold text-gray-400 italic">{getPredikatLetter((report.assessments as any)[item.id])}</span>
+                  </div>
+                </div>
+              ))}
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">Target Hafalan</label>
+                <input type="text" value={report.targetHafalan} onChange={e => setReport({...report, targetHafalan: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">Pencapaian Target (%)</label>
+                <input type="number" value={report.assessments.pencapaianTarget} onChange={e => setReport({...report, assessments: {...report.assessments, pencapaianTarget: parseInt(e.target.value) || 0}})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              </div>
+            </div>
+          </div>
+
+          {/* Ujian */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-gray-50 px-6 py-3 border-b border-gray-100 flex items-center gap-2">
+              <BookOpen size={18} className="text-primary-600" />
+              <h3 className="font-bold text-gray-800 text-sm">UJIAN-UJIAN (ANGKA 0-100)</h3>
+            </div>
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">Ujian Tengah Semester (UTS)</label>
+                <div className="flex items-center gap-3">
+                  <input type="number" value={report.exams.uts} onChange={e => setReport({...report, exams: {...report.exams, uts: parseInt(e.target.value) || 0}})} className="w-32 px-3 py-2 border border-gray-200 rounded-lg text-sm font-bold" />
+                  <span className="text-xs font-semibold text-primary-600">{getPredikatScore(report.exams.uts)}</span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">Ujian Akhir Semester (UAS)</label>
+                <div className="flex items-center gap-3">
+                  <input type="number" value={report.exams.uas} onChange={e => setReport({...report, exams: {...report.exams, uas: parseInt(e.target.value) || 0}})} className="w-32 px-3 py-2 border border-gray-200 rounded-lg text-sm font-bold" />
+                  <span className="text-xs font-semibold text-primary-600">{getPredikatScore(report.exams.uas)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Status Hafalan */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-gray-50 px-6 py-3 border-b border-gray-100 flex items-center gap-2">
+              <User size={18} className="text-primary-600" />
+              <h3 className="font-bold text-gray-800 text-sm">STATUS HAFALAN SISWA</h3>
+            </div>
+            <div className="p-6 space-y-4">
+              {[
+                { id: 'dimiliki', label: 'Total Hafalan Dimiliki' },
+                { id: 'mutqin', label: 'Hafalan Mutqin' },
+                { id: 'semesterIni', label: 'Hafalan Semester Ini' },
+              ].map(item => (
+                <div key={item.id} className="grid grid-cols-1 md:grid-cols-3 gap-3 p-3 bg-gray-50 rounded-xl">
+                  <div className="flex items-center">
+                    <p className="text-xs font-bold text-gray-700">{item.label}</p>
+                  </div>
+                  <input 
+                    placeholder="Jumlah (misal: 1 Juz 3 Hal)" 
+                    value={(report.statusHafalan as any)[item.id].jumlah}
+                    onChange={e => setReport({...report, statusHafalan: {...report.statusHafalan, [item.id]: {...(report.statusHafalan as any)[item.id], jumlah: e.target.value}}})}
+                    className="px-3 py-2 border border-gray-200 rounded-lg text-xs"
+                  />
+                  <input 
+                    placeholder="Rincian (misal: Juz 30 dan 29)" 
+                    value={(report.statusHafalan as any)[item.id].rincian}
+                    onChange={e => setReport({...report, statusHafalan: {...report.statusHafalan, [item.id]: {...(report.statusHafalan as any)[item.id], rincian: e.target.value}}})}
+                    className="px-3 py-2 border border-gray-200 rounded-lg text-xs"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Catatan & Footer */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <label className="block text-xs font-bold text-gray-400 uppercase mb-2 ml-1">Catatan Guru</label>
+            <textarea 
+              value={report.notes}
+              onChange={e => setReport({...report, notes: e.target.value})}
+              rows={4}
+              className="w-full p-4 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 outline-none resize-none"
+            />
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Tanggal (Masehi)</label>
+                <input type="text" value={report.dateStr} onChange={e => setReport({...report, dateStr: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Tanggal (Hijriah)</label>
+                <input type="text" value={report.dateHijri} onChange={e => setReport({...report, dateHijri: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              </div>
+            </div>
+          </div>
+
+          <Button onClick={handleSave} isLoading={isSaving} className="w-full py-4 rounded-2xl shadow-xl shadow-primary-500/20 font-bold">
+            <Save size={20} /> Simpan Seluruh Data Rapor
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
