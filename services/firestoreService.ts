@@ -90,7 +90,6 @@ export const subscribeToReportsByTeacher = (
 
 export const saveSemesterReport = async (report: SemesterReport): Promise<void> => {
   if (!db) throw new Error("Firestore not initialized");
-  // ID unik berdasarkan studentId + tahun + semester agar tidak duplikat
   const reportId = `${report.studentId}_${report.academicYear.replace(/\//g, '-')}_${report.semester}`;
   const docRef = doc(db, 'rapor_semester', reportId);
   await setDoc(docRef, { ...report, updatedAt: serverTimestamp() });
@@ -101,6 +100,18 @@ export const getSemesterReport = async (studentId: string, academicYear: string,
   const reportId = `${studentId}_${academicYear.replace(/\//g, '-')}_${semester}`;
   const docSnap = await getDoc(doc(db, 'rapor_semester', reportId));
   return docSnap.exists() ? docSnap.data() as SemesterReport : null;
+};
+
+export const deleteSemesterReport = async (studentId: string, academicYear: string, semester: string): Promise<void> => {
+  if (!db) throw new Error("Firestore not initialized");
+  const reportId = `${studentId}_${academicYear.replace(/\//g, '-')}_${semester}`;
+  await deleteDoc(doc(db, 'rapor_semester', reportId));
+};
+
+export const getAllSemesterReports = async (): Promise<SemesterReport[]> => {
+  if (!db) return [];
+  const snapshot = await getDocs(collection(db, 'rapor_semester'));
+  return snapshot.docs.map(doc => ({ ...doc.data() } as SemesterReport));
 };
 
 export const subscribeToSemesterReports = (teacherId: string, onUpdate: (reports: SemesterReport[]) => void): Unsubscribe => {

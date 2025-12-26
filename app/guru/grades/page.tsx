@@ -1,17 +1,20 @@
 
 import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Student, SemesterReport } from '../../../types';
 import { getStudentsByTeacher, saveSemesterReport, getSemesterReport } from '../../../services/firestoreService';
 import { Button } from '../../../components/Button';
-import { Save, User, BookOpen, ClipboardCheck, GraduationCap } from 'lucide-react';
+// Fix: Added missing 'User' icon import from lucide-react
+import { Save, BookOpen, ClipboardCheck, GraduationCap, User } from 'lucide-react';
 
 export default function GuruGradesPage({ teacherId }: { teacherId?: string }) {
+  const location = useLocation();
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Form State - Tahun Ajaran mulai 2025 / 2026
+  // Form State
   const [report, setReport] = useState<SemesterReport>({
     studentId: '',
     teacherId: teacherId || '',
@@ -34,9 +37,15 @@ export default function GuruGradesPage({ teacherId }: { teacherId?: string }) {
     if (teacherId) {
       getStudentsByTeacher(teacherId).then(data => {
         setStudents(data);
+        
+        // Cek jika ada navigasi dari tombol edit di Rapor
+        const stateId = location.state?.studentId;
+        if (stateId) {
+          handleStudentChange(stateId);
+        }
       });
     }
-  }, [teacherId]);
+  }, [teacherId, location]);
 
   const handleStudentChange = async (id: string) => {
     setSelectedStudentId(id);
@@ -108,7 +117,16 @@ export default function GuruGradesPage({ teacherId }: { teacherId?: string }) {
           </div>
           <div>
             <label className="block text-xs font-bold text-gray-400 uppercase mb-1 ml-1">Tahun Ajaran</label>
-            <input type="text" value={report.academicYear} onChange={e => setReport({...report, academicYear: e.target.value})} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm" />
+            <select 
+              value={report.academicYear} 
+              onChange={e => setReport({...report, academicYear: e.target.value})} 
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-white"
+            >
+              <option value="2024 / 2025">2024 / 2025</option>
+              <option value="2025 / 2026">2025 / 2026</option>
+              <option value="2026 / 2027">2026 / 2027</option>
+              <option value="2027 / 2028">2027 / 2028</option>
+            </select>
           </div>
           <div>
             <label className="block text-xs font-bold text-gray-400 uppercase mb-1 ml-1">Semester</label>
@@ -219,7 +237,7 @@ export default function GuruGradesPage({ teacherId }: { teacherId?: string }) {
                       placeholder="Misal: Juz 30 dan 29" 
                       value={(report.statusHafalan as any)[item.id].rincian}
                       onChange={e => setReport({...report, statusHafalan: {...report.statusHafalan, [item.id]: {...(report.statusHafalan as any)[item.id], rincian: e.target.value}}})}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs"
                     />
                   </div>
                   <div className="space-y-1">
@@ -228,7 +246,7 @@ export default function GuruGradesPage({ teacherId }: { teacherId?: string }) {
                       placeholder="Misal: Baik / Cukup Baik" 
                       value={(report.statusHafalan as any)[item.id].status}
                       onChange={e => setReport({...report, statusHafalan: {...report.statusHafalan, [item.id]: {...(report.statusHafalan as any)[item.id], status: e.target.value}}})}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-bold text-primary-700"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs font-bold text-primary-700"
                     />
                   </div>
                 </div>

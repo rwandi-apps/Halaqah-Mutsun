@@ -165,14 +165,14 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
       <div className="flex justify-between items-center mt-2">
         <div>
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">Dashboard Halaqah</h2>
-          <p className="text-xs sm:text-sm text-gray-500 mt-0.5">Pantau target santri Anda.</p>
+          <p className="text-xs sm:text-sm text-gray-500 mt-0.5">Pantau target siswa Anda.</p>
         </div>
       </div>
 
       {/* Summary Cards - Grid-cols-2 is good for mobile */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-white p-4 sm:p-6 rounded-2xl border border-gray-100 shadow-sm">
-          <p className="text-[9px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Santri</p>
+          <p className="text-[9px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Siswa</p>
           <p className="text-2xl sm:text-3xl font-black text-gray-800">{metrics.total}</p>
         </div>
         <div className="bg-white p-4 sm:p-6 rounded-2xl border border-gray-100 shadow-sm">
@@ -258,7 +258,7 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
               </div>
             ))
           ) : (
-            <div className="text-center py-12 text-gray-400 text-sm">Belum ada data santri ditemukan.</div>
+            <div className="text-center py-12 text-gray-400 text-sm">Belum ada data siswa ditemukan.</div>
           )}
         </div>
       </div>
@@ -269,7 +269,7 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
           <div className="bg-white rounded-t-[2rem] sm:rounded-[2.5rem] max-w-lg w-full p-6 sm:p-10 shadow-2xl animate-in slide-in-from-bottom sm:zoom-in duration-300">
              <div className="flex justify-between items-start mb-6 sm:mb-8">
                <div>
-                 <h3 className="text-xl sm:text-2xl font-black text-gray-900 uppercase tracking-tighter">Evaluasi Santri</h3>
+                 <h3 className="text-xl sm:text-2xl font-black text-gray-900 uppercase tracking-tighter">Evaluasi Siswa</h3>
                  <p className="text-xs sm:text-sm text-gray-500 font-bold">{selectedStudent.name}</p>
                </div>
                <button onClick={() => { setSelectedStudent(null); setAiEvaluation(null); }} className="p-2 bg-gray-100 hover:bg-gray-200 rounded-xl sm:rounded-2xl transition-all">

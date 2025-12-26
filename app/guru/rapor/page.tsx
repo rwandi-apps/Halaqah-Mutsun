@@ -1,11 +1,13 @@
 
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Student, SemesterReport } from '../../../types';
-import { getStudentsByTeacher, getSemesterReport } from '../../../services/firestoreService';
+import { getStudentsByTeacher, getSemesterReport, deleteSemesterReport } from '../../../services/firestoreService';
 import { Button } from '../../../components/Button';
-import { FileText, Printer, ArrowLeft, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { FileText, Printer, ArrowLeft, Search, ChevronLeft, ChevronRight, Edit2, Trash2 } from 'lucide-react';
 
-export default function GuruRaporPage({ teacherId }: { teacherId?: string }) {
+export default function GuruRaporPage({ teacherId, teacherName }: { teacherId?: string, teacherName?: string }) {
+  const navigate = useNavigate();
   const [students, setStudents] = useState<Student[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
   const [search, setSearch] = useState('');
@@ -41,6 +43,25 @@ export default function GuruRaporPage({ teacherId }: { teacherId?: string }) {
       alert(`Data rapor belum diinput untuk ${student.name} pada tahun ajaran ${DEFAULT_YEAR}. Silakan input di menu 'Input Nilai Rapor'.`);
     }
     setIsLoading(false);
+  };
+
+  const handleEditReport = (student: Student) => {
+    navigate('/guru/grades', { state: { studentId: student.id } });
+  };
+
+  const handleDeleteReport = async (student: Student) => {
+    if (!window.confirm(`Apakah Anda yakin ingin menghapus rapor ${student.name}?`)) return;
+    setIsLoading(true);
+    try {
+      await deleteSemesterReport(student.id, DEFAULT_YEAR, 'Ganjil');
+      alert("Rapor berhasil dihapus.");
+      setViewingReport(null);
+      setSelectedStudent(null);
+    } catch (e) {
+      alert("Gagal menghapus rapor.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const goToNext = () => {
@@ -103,13 +124,20 @@ export default function GuruRaporPage({ teacherId }: { teacherId?: string }) {
               </button>
            </div>
 
-           <Button onClick={() => window.print()} className="bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-500/20">
-             <Printer size={18} className="mr-2"/> Cetak Rapor
-           </Button>
+           <div className="flex gap-2">
+             <Button variant="outline" onClick={() => handleEditReport(selectedStudent)} className="border-blue-200 text-blue-600 hover:bg-blue-50">
+               <Edit2 size={18} className="mr-1"/> Edit
+             </Button>
+             <Button variant="danger" onClick={() => handleDeleteReport(selectedStudent)}>
+               <Trash2 size={18} className="mr-1"/> Hapus
+             </Button>
+             <Button onClick={() => window.print()} className="bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-500/20">
+               <Printer size={18} className="mr-2"/> Cetak Rapor
+             </Button>
+           </div>
         </div>
 
         {/* RAPOR PREVIEW - PDF STYLE (LETTER FORMAT 8.5 x 11 inch) */}
-        {/* Width: 216mm, Height: 279mm */}
         <div className="bg-white p-12 sm:p-16 shadow-2xl border border-gray-100 mx-auto w-full max-w-[216mm] print:shadow-none print:border-none print:p-10 min-h-[279mm] relative overflow-hidden">
            {/* Header Sekolah */}
            <div className="flex justify-between items-start mb-8">
@@ -135,9 +163,9 @@ export default function GuruRaporPage({ teacherId }: { teacherId?: string }) {
                  <span>{viewingReport.academicYear}</span>
               </div>
               <div className="flex border-b border-gray-100 pb-1">
-                 <span className="w-36">Nomor Induk / NISN</span>
+                 <span className="w-36 shrink-0">Nomor Induk / NISN</span>
                  <span className="mr-2">:</span>
-                 <span>{selectedStudent.nis || '-'} / {selectedStudent.nisn || '-'}</span>
+                 <span className="truncate">{selectedStudent.nis || '-'} / {selectedStudent.nisn || '-'}</span>
               </div>
               <div className="flex border-b border-gray-100 pb-1">
                  <span className="w-36">Semester</span>
@@ -219,7 +247,7 @@ export default function GuruRaporPage({ teacherId }: { teacherId?: string }) {
               </table>
            </div>
 
-           {/* Status Hafalan */}
+           {/* Status Hafalan Siswa */}
            <div className="mb-8">
               <div className="text-center font-bold text-sm mb-2 uppercase tracking-wide">Status Hafalan Siswa</div>
               <table className="w-full border-2 border-gray-900 text-center text-sm font-bold">
@@ -276,6 +304,7 @@ export default function GuruRaporPage({ teacherId }: { teacherId?: string }) {
                  <div>
                     <div className="mb-20">Wali Kelas</div>
                     <div className="border-b border-gray-900 mx-12"></div>
+                    <div className="mt-1">( {teacherName || '...'} )</div>
                  </div>
               </div>
            </div>
@@ -289,7 +318,7 @@ export default function GuruRaporPage({ teacherId }: { teacherId?: string }) {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Laporan Rapor</h2>
-          <p className="text-gray-500 mt-1">Lihat dan cetak rapor semester santri.</p>
+          <p className="text-gray-500 mt-1">Lihat dan cetak rapor semester siswa.</p>
         </div>
       </div>
 
@@ -297,7 +326,7 @@ export default function GuruRaporPage({ teacherId }: { teacherId?: string }) {
         <Search className="text-gray-400" size={20} />
         <input 
           type="text" 
-          placeholder="Cari nama santri..." 
+          placeholder="Cari nama siswa..." 
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="flex-1 outline-none bg-transparent text-sm"
@@ -331,13 +360,29 @@ export default function GuruRaporPage({ teacherId }: { teacherId?: string }) {
                   </div>
               </div>
 
-              <Button 
-                onClick={() => handleViewReport(student, index)} 
-                variant="secondary" 
-                className="w-full font-bold text-xs uppercase tracking-widest border-primary-100 text-primary-600 hover:bg-primary-50"
-              >
-                <FileText size={16} /> Lihat Rapor Semester
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => handleViewReport(student, index)} 
+                  variant="secondary" 
+                  className="flex-1 font-bold text-xs uppercase tracking-widest border-primary-100 text-primary-600 hover:bg-primary-50"
+                >
+                  <FileText size={16} /> Lihat Rapor
+                </Button>
+                <button 
+                  onClick={() => handleEditReport(student)}
+                  className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-gray-100"
+                  title="Edit Data Rapor"
+                >
+                  <Edit2 size={16} />
+                </button>
+                <button 
+                   onClick={() => handleDeleteReport(student)}
+                   className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-gray-100"
+                   title="Hapus Rapor"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
             </div>
           )) : (
             <div className="col-span-full py-12 text-center text-gray-400 bg-white rounded-2xl border border-dashed">

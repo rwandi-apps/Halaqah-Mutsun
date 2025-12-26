@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { User, Student } from '../types';
@@ -69,7 +70,7 @@ export const CoordinatorTeacherDetail: React.FC = () => {
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Total Santri" value={students.length} icon={Users} color="bg-blue-50/50" />
+        <StatCard title="Total Siswa" value={students.length} icon={Users} color="bg-blue-50/50" />
         <StatCard title="Rata-rata Kehadiran" value={`${avgAttendance}%`} icon={UserCheck} trend={avgAttendance > 90 ? "Sangat Baik" : "Perlu ditingkatkan"} />
         <StatCard title="Nilai Perilaku Rata-rata" value={avgBehavior} icon={Star} color="bg-yellow-50/50" />
         <StatCard title="Total Hafalan (Juz)" value="N/A" icon={BookOpen} color="bg-primary-50/50" />
@@ -78,7 +79,7 @@ export const CoordinatorTeacherDetail: React.FC = () => {
       {/* Student List Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-          <h3 className="font-semibold text-gray-800">Daftar Santri Binaan</h3>
+          <h3 className="font-semibold text-gray-800">Daftar Siswa Binaan</h3>
           <Button variant="outline" className="text-xs py-1.5 h-8">Download Excel</Button>
         </div>
         <div className="overflow-x-auto">
@@ -123,7 +124,7 @@ export const CoordinatorTeacherDetail: React.FC = () => {
               ) : (
                 <tr>
                   <td colSpan={6} className="px-6 py-8 text-center text-gray-400">
-                    Belum ada data santri untuk guru ini.
+                    Belum ada data siswa untuk guru ini.
                   </td>
                 </tr>
               )}

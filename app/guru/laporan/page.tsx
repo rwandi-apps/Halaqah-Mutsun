@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Student } from '../../../types';
 import { getStudentsByTeacher, addReport } from '../../../services/firestoreService';
@@ -112,7 +113,6 @@ const SourceSelect = ({
 );
 
 // Row Container to ensure label is above and components are aligned
-// Fix: Modified children prop to be optional to resolve TypeScript "missing children" error when used in JSX tags.
 const InputRow = ({ label, children }: { label: string, children?: React.ReactNode }) => (
   <div className="space-y-1.5 sm:space-y-2">
     <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">{label}</p>
@@ -399,7 +399,7 @@ export default function GuruLaporanPage({ teacherId = '1' }: GuruLaporanPageProp
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="Tuliskan catatan perkembangan hafalan santri bulan ini..."
+          placeholder="Tuliskan catatan perkembangan hafalan siswa bulan ini..."
           className="w-full h-28 p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none resize-none text-sm placeholder:text-gray-300 shadow-sm"
         ></textarea>
       </div>

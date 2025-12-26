@@ -9,6 +9,7 @@ import CoordinatorTeacherDetail from './app/coordinator/guru/[id]/page';
 import CoordinatorSiswaPage from './app/coordinator/siswa/page';
 import CoordinatorKelasPage from './app/coordinator/kelas/page';
 import CoordinatorReportsPage from './app/coordinator/reports/page';
+import CoordinatorRaporPage from './app/coordinator/rapor/page';
 import GuruDashboard from './app/guru/dashboard/page';
 import GuruHalaqahPage from './app/guru/halaqah/page';
 import GuruLaporanPage from './app/guru/laporan/page';
@@ -68,6 +69,7 @@ function App() {
           <Route path="/coordinator/siswa" element={<CoordinatorSiswaPage />} />
           <Route path="/coordinator/kelas" element={<CoordinatorKelasPage />} />
           <Route path="/coordinator/reports" element={<CoordinatorReportsPage />} />
+          <Route path="/coordinator/rapor" element={<CoordinatorRaporPage />} />
           
           {/* Guru Pages */}
           <Route path="/guru/dashboard" element={<GuruDashboard teacherId={user?.id} />} />
@@ -76,7 +78,7 @@ function App() {
           <Route path="/guru/view-report" element={<GuruViewReportPage teacherId={user?.id} />} />
           <Route path="/guru/evaluation" element={<GuruEvaluationPage />} />
           <Route path="/guru/grades" element={<GuruGradesPage teacherId={user?.id} />} />
-          <Route path="/guru/rapor" element={<GuruRaporPage teacherId={user?.id} />} />
+          <Route path="/guru/rapor" element={<GuruRaporPage teacherId={user?.id} teacherName={user?.nickname || user?.name} />} />
         </Route>
 
         {/* Catch-all */}
