@@ -4396,7 +4396,7 @@ export const AYAH_MAP: AyahMapEntry[] = [
 {"juz": 17, "surah": "Al-Hajj", "ayah": 62, "page": 339, "line": 12, "global_index": 2658},
 {"juz": 17, "surah": "Al-Hajj", "ayah": 63, "page": 339, "line": 14, "global_index": 2659},
 {"juz": 17, "surah": "Al-Hajj", "ayah": 64, "page": 339, "line": 15, "global_index": 2660},
-
+]
 
 // Helper untuk estimasi jika data map tidak tersedia ( fallback )
 export const getAyahLocation = (surah: string, ayah: number): { page: number, line: number } => {
