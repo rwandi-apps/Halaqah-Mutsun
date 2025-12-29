@@ -21,6 +21,9 @@ export const IQRA_MAPPING = [
   { volume: 6, pages: 31 },
 ];
 
+/**
+ * Menghitung selisih hafalan secara fisik (Halaman/Baris Mushaf Madinah).
+ */
 export const calculateHafalan = (
   fromSurah: string, 
   fromAyat: number, 
@@ -37,6 +40,9 @@ export const calculateHafalan = (
   return { pages: result.pages, lines: result.lines };
 };
 
+/**
+ * Parsing string range (contoh: "An-Naba: 1 - An-Naba: 24") ke hasil fisik.
+ */
 export const calculateFromRangeString = (rangeStr: string): { pages: number, lines: number } => {
   if (!rangeStr || rangeStr.trim() === '-' || rangeStr.trim() === '') return { pages: 0, lines: 0 };
   
@@ -48,6 +54,7 @@ export const calculateFromRangeString = (rangeStr: string): { pages: number, lin
   }
 
   const parseLocation = (s: string) => {
+    // Mencocokkan "Surah: Ayat" atau "Surah:Ayat"
     const match = s.match(/^(.*?)[:\s]+(\d+)$/);
     if (match) return { surah: match[1].trim(), ayah: parseInt(match[2]) };
     return null;
