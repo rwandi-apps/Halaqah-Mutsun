@@ -78,7 +78,8 @@ function App() {
           <Route path="/guru/view-report" element={<GuruViewReportPage teacherId={user?.id} />} />
           <Route path="/guru/evaluation" element={<GuruEvaluationPage />} />
           <Route path="/guru/grades" element={<GuruGradesPage teacherId={user?.id} />} />
-          <Route path="/guru/rapor" element={<GuruRaporPage teacherId={user?.id} teacherName={user?.nickname || user?.name} />} />
+          {/* Pass user.name for signature requirements */}
+          <Route path="/guru/rapor" element={<GuruRaporPage teacherId={user?.id} teacherName={user?.name} />} />
         </Route>
 
         {/* Catch-all */}

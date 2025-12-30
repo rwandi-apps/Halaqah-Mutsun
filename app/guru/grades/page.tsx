@@ -261,15 +261,7 @@ export default function GuruGradesPage({ teacherId }: { teacherId?: string }) {
 
           {/* Catatan & Footer (Shared) */}
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <label className="block text-xs font-bold text-gray-400 uppercase mb-2 ml-1">Catatan Wali Kelas</label>
-            <textarea 
-              value={report.notes}
-              onChange={e => setReport({...report, notes: e.target.value})}
-              rows={4}
-              className="w-full p-4 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 outline-none resize-none"
-            />
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Tanggal (Masehi)</label>
                 <input type="text" placeholder="Contoh: 22 Desember 2025" value={report.dateStr} onChange={e => setReport({...report, dateStr: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />

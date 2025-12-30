@@ -95,11 +95,20 @@ export default function GuruRaporPage({ teacherId, teacherName }: { teacherId?: 
     return "Rosib";
   };
 
+  /**
+   * Cleans teacher name from titles like Ust., Ustadz, etc.
+   */
+  const cleanTeacherName = (name: string = '') => {
+    return name.replace(/^(Ust\.|Ustadz|Ustadzah|Uzh\.|Ust)\s+/i, '').trim();
+  };
+
   // Logic to determine format
   const level = selectedStudent ? extractClassLevel(selectedStudent.className) : 0;
   const isDescriptionFormat = level >= 1 && level <= 3;
 
   if (viewingReport && selectedStudent) {
+    const signatureName = cleanTeacherName(teacherName);
+
     return (
       <div className="max-w-6xl mx-auto space-y-6 pb-20 print:p-0 print:m-0">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 print:hidden">
@@ -126,41 +135,42 @@ export default function GuruRaporPage({ teacherId, teacherName }: { teacherId?: 
            </div>
         </div>
 
-        {/* --- PDF CONTENT --- */}
-        <div className="bg-white p-12 sm:p-16 shadow-2xl border border-gray-100 mx-auto w-full max-w-[216mm] print:shadow-none print:border-none print:p-10 min-h-[279mm] font-serif">
+        {/* --- PDF CONTENT (A4 Optimized) --- */}
+        <div className="bg-white p-12 sm:p-16 shadow-2xl border border-gray-100 mx-auto w-full max-w-[210mm] print:shadow-none print:border-none print:p-0 print:mx-0 min-h-[297mm] font-serif text-gray-900 overflow-hidden">
            
            {isDescriptionFormat ? (
-             /* FORMAT DESKRIPSI (KELAS 1-3) AS PER SCREENSHOT */
-             <div className="space-y-6 text-gray-900">
+             /* FORMAT DESKRIPSI (KELAS 1-3) */
+             <div className="space-y-6">
                 <div className="text-center space-y-1 mb-10">
                    <h1 className="text-xl font-bold uppercase tracking-widest">Laporan Perkembangan Belajar</h1>
                    <h2 className="text-2xl font-black uppercase">SDQ Mutiara Sunnah</h2>
                    <h3 className="text-lg font-bold uppercase pt-1">Tahun Pelajaran {viewingReport.academicYear.replace(/\s/g, '')}</h3>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 text-sm font-bold mb-8">
-                   <div className="flex"><span className="w-32">Nama Siswa</span><span className="mr-2">:</span><span className="uppercase">{selectedStudent.name}</span></div>
-                   <div className="flex"><span className="w-32">Kelas</span><span className="mr-2">:</span><span>{selectedStudent.className}</span></div>
-                   <div className="flex"><span className="w-32">Semester</span><span className="mr-2">:</span><span>{viewingReport.semester}</span></div>
+                {/* Header Information: Stacked Vertically */}
+                <div className="space-y-1 text-sm font-bold mb-8">
+                   <div className="flex"><span className="w-36">Nama Siswa</span><span className="mr-2">:</span><span className="uppercase">{selectedStudent.name}</span></div>
+                   <div className="flex"><span className="w-36">Kelas</span><span className="mr-2">:</span><span className="uppercase">{selectedStudent.className}</span></div>
+                   <div className="flex"><span className="w-36">Semester</span><span className="mr-2">:</span><span>{viewingReport.semester}</span></div>
                 </div>
 
-                <div className="space-y-8">
+                <div className="space-y-6">
                    <div>
                       <h4 className="font-bold mb-2">A. Tahfizh</h4>
-                      <div className="border-2 border-gray-900 p-6 min-h-[250px] text-sm leading-relaxed text-justify">
+                      <div className="border-2 border-gray-900 p-6 min-h-[220px] text-sm leading-relaxed text-justify">
                          {viewingReport.narrativeTahfizh}
                       </div>
                    </div>
 
                    <div>
                       <h4 className="font-bold mb-2">B. Tilawah</h4>
-                      <div className="border-2 border-gray-900 p-6 min-h-[250px] text-sm leading-relaxed text-justify">
+                      <div className="border-2 border-gray-900 p-6 min-h-[220px] text-sm leading-relaxed text-justify">
                          {viewingReport.narrativeTilawah}
                       </div>
                    </div>
                 </div>
 
-                <div className="mt-12 text-sm font-bold">
+                <div className="mt-10 text-sm font-bold">
                    <div className="text-right mb-16">
                       Bogor, {viewingReport.dateHijri || '... Hijriah'}<br/>
                       {viewingReport.dateStr || '... Masehi'}
@@ -172,29 +182,28 @@ export default function GuruRaporPage({ teacherId, teacherName }: { teacherId?: 
                       </div>
                       <div>
                          <p className="mb-24">Pengampu Al Qur'an</p>
-                         <p className="font-bold">({teacherName || '...'})</p>
+                         <p className="font-bold border-b border-gray-900 inline-block w-48">{signatureName}</p>
                       </div>
                    </div>
                 </div>
              </div>
            ) : (
-             /* FORMAT TABEL (KELAS 4-6) EXISTING */
+             /* FORMAT TABEL (KELAS 4-6) */
              <div className="space-y-6">
-                <div className="flex justify-between items-start mb-8">
-                   <div className="w-24 h-24 bg-gray-100 flex items-center justify-center text-xs text-gray-400">LOGO</div>
-                   <div className="text-center flex-1 pr-24">
-                      <h1 className="text-xl font-bold uppercase tracking-widest text-gray-900 mb-1">Laporan Penilaian Al-Quran</h1>
-                      <h2 className="text-2xl font-black uppercase text-gray-900">SDQ Mutiara Sunnah</h2>
-                   </div>
+                <div className="text-center space-y-1 mb-10">
+                   <h1 className="text-xl font-bold uppercase tracking-widest">Laporan Penilaian Al-Quran</h1>
+                   <h2 className="text-2xl font-black uppercase">SDQ Mutiara Sunnah</h2>
+                   <h3 className="text-lg font-bold uppercase pt-1">Tahun Pelajaran {viewingReport.academicYear.replace(/\s/g, '')}</h3>
                 </div>
 
-                <div className="grid grid-cols-2 gap-x-12 gap-y-2 mb-8 text-sm font-bold text-gray-800">
-                   <div className="flex border-b pb-1"><span className="w-36">Nama Siswa</span><span className="mr-2">:</span><span className="uppercase">{selectedStudent.name}</span></div>
-                   <div className="flex border-b pb-1"><span className="w-36">Tahun Ajaran</span><span className="mr-2">:</span><span>{viewingReport.academicYear}</span></div>
-                   <div className="flex border-b pb-1"><span className="w-36 shrink-0">Induk / NISN</span><span className="mr-2">:</span><span>{selectedStudent.nis || '-'} / {selectedStudent.nisn || '-'}</span></div>
-                   <div className="flex border-b pb-1"><span className="w-36">Semester</span><span className="mr-2">:</span><span>{viewingReport.semester}</span></div>
-                   <div className="flex border-b pb-1"><span className="w-36">Kelas</span><span className="mr-2">:</span><span className="uppercase">{selectedStudent.className}</span></div>
-                   <div className="flex border-b pb-1"><span className="w-36">Target Hafalan</span><span className="mr-2">:</span><span>{viewingReport.targetHafalan}</span></div>
+                {/* Header Information: Stacked Vertically & Fixed NISN Row */}
+                <div className="space-y-1 mb-8 text-sm font-bold text-gray-800">
+                   <div className="flex border-b border-gray-300 pb-1"><span className="w-44">Nama Siswa</span><span className="mr-2">:</span><span className="uppercase">{selectedStudent.name}</span></div>
+                   <div className="flex border-b border-gray-300 pb-1"><span className="w-44">Kelas</span><span className="mr-2">:</span><span className="uppercase">{selectedStudent.className}</span></div>
+                   <div className="flex border-b border-gray-300 pb-1"><span className="w-44">Semester</span><span className="mr-2">:</span><span>{viewingReport.semester}</span></div>
+                   <div className="flex border-b border-gray-300 pb-1"><span className="w-44">Tahun Ajaran</span><span className="mr-2">:</span><span>{viewingReport.academicYear}</span></div>
+                   <div className="flex border-b border-gray-300 pb-1"><span className="w-44 shrink-0">Nomor Induk / NISN</span><span className="mr-2">:</span><span>{selectedStudent.nis || '-'} / {selectedStudent.nisn || '-'}</span></div>
+                   <div className="flex border-b border-gray-300 pb-1"><span className="w-44">Target Hafalan</span><span className="mr-2">:</span><span>{viewingReport.targetHafalan}</span></div>
                 </div>
 
                 <table className="w-full border-2 border-gray-900 text-center text-sm font-bold">
@@ -220,11 +229,21 @@ export default function GuruRaporPage({ teacherId, teacherName }: { teacherId?: 
                    </tbody>
                 </table>
 
-                <div className="mt-12 text-sm font-bold">
+                {/* Status Hafalan Section (if needed) */}
+                <div className="border-2 border-gray-900 p-4">
+                  <h4 className="text-xs font-bold uppercase mb-2">Status Hafalan Siswa</h4>
+                  <div className="grid grid-cols-1 gap-2 text-xs">
+                    <div className="flex border-b border-gray-100 pb-1"><span className="w-32">Dimiliki</span><span className="mr-2">:</span><span>{viewingReport.statusHafalan.dimiliki.jumlah} {viewingReport.statusHafalan.dimiliki.rincian}</span></div>
+                    <div className="flex border-b border-gray-100 pb-1"><span className="w-32">Mutqin</span><span className="mr-2">:</span><span>{viewingReport.statusHafalan.mutqin.jumlah} {viewingReport.statusHafalan.mutqin.rincian}</span></div>
+                    <div className="flex border-b border-gray-100 pb-1"><span className="w-32">Semester Ini</span><span className="mr-2">:</span><span>{viewingReport.statusHafalan.semesterIni.jumlah} {viewingReport.statusHafalan.semesterIni.rincian}</span></div>
+                  </div>
+                </div>
+
+                <div className="mt-10 text-sm font-bold">
                    <div className="text-right mb-16">Bogor, {viewingReport.dateHijri}<br/>{viewingReport.dateStr}</div>
                    <div className="grid grid-cols-2 text-center">
-                      <div><p className="mb-20">Orang Tua/Wali</p><p className="border-b border-gray-900 mx-12"></p></div>
-                      <div><p className="mb-20">Wali Kelas</p><p className="font-bold">({teacherName})</p></div>
+                      <div><p className="mb-20">Orang Tua/Wali</p><p className="border-b border-gray-900 inline-block w-48"></p></div>
+                      <div><p className="mb-20">Wali Kelas</p><p className="font-bold border-b border-gray-900 inline-block w-48">{signatureName}</p></div>
                    </div>
                 </div>
              </div>
