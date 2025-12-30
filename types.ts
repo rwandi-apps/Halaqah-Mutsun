@@ -73,16 +73,16 @@ export interface SemesterReport {
   academicYear: string;
   semester: 'Ganjil' | 'Genap';
   targetHafalan: string;
-  dateStr: string; // e.g., "22 Desember 2023"
-  dateHijri: string; // e.g., "09 Jumadil Akhir 1445 H"
+  dateStr: string;
+  dateHijri: string;
   
   // Format Tabel (Kelas 4-6)
   assessments: {
-    adab: string; // A, B, C
+    adab: string;
     murojaah: string;
     tajwid: string;
     makharij: string;
-    pencapaianTarget: number; // percentage
+    pencapaianTarget: number;
   };
   exams: {
     uts: number;

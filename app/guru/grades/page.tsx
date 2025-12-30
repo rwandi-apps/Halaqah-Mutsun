@@ -25,13 +25,13 @@ export default function GuruGradesPage({ teacherId }: { teacherId?: string }) {
     assessments: { adab: 'B', murojaah: 'B', tajwid: 'B', makharij: 'A', pencapaianTarget: 85 },
     exams: { uts: 80, uas: 80 },
     statusHafalan: {
-      dimiliki: { jumlah: '', rincian: '', status: '' },
-      mutqin: { jumlah: '', rincian: '', status: '' },
-      semesterIni: { jumlah: '', rincian: '', status: '' }
+      dimiliki: { jumlah: '', rincian: '', status: 'Cukup Baik' },
+      mutqin: { jumlah: '', rincian: '', status: 'Cukup Baik' },
+      semesterIni: { jumlah: '', rincian: '', status: 'Baik' }
     },
     narrativeTahfizh: '',
     narrativeTilawah: '',
-    notes: '' // This field is technically shared but UI field "Catatan Wali Kelas" is removed
+    notes: ''
   });
 
   useEffect(() => {
@@ -147,7 +147,6 @@ export default function GuruGradesPage({ teacherId }: { teacherId?: string }) {
         <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
           
           {isDescriptionFormat ? (
-            /* FORMAT DESKRIPSI (KELAS 1-3) */
             <div className="space-y-6">
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="bg-gray-50 px-6 py-3 border-b border-gray-100 flex items-center gap-2">
@@ -163,7 +162,6 @@ export default function GuruGradesPage({ teacherId }: { teacherId?: string }) {
                    />
                 </div>
               </div>
-
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="bg-gray-50 px-6 py-3 border-b border-gray-100 flex items-center gap-2">
                   <BookOpen size={18} className="text-primary-600" />
@@ -180,7 +178,6 @@ export default function GuruGradesPage({ teacherId }: { teacherId?: string }) {
               </div>
             </div>
           ) : (
-            /* FORMAT TABEL (KELAS 4-6) */
             <>
               {/* Aspek Penilaian */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -240,18 +237,38 @@ export default function GuruGradesPage({ teacherId }: { teacherId?: string }) {
                 </div>
               </div>
 
-              {/* Status Hafalan */}
+              {/* Status Hafalan (Updated to include Status field) */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="bg-gray-50 px-6 py-3 border-b border-gray-100 flex items-center gap-2">
                   <User size={18} className="text-primary-600" />
                   <h3 className="font-bold text-gray-800 text-sm">STATUS HAFALAN SISWA</h3>
                 </div>
                 <div className="p-6 space-y-4">
-                  {['dimiliki', 'mutqin', 'semesterIni'].map(k => (
-                    <div key={k} className="grid grid-cols-4 gap-4 items-center">
-                       <p className="text-xs font-bold text-gray-600 uppercase">{k}</p>
-                       <input value={(report.statusHafalan as any)[k].jumlah} onChange={e => setReport({...report, statusHafalan: {...report.statusHafalan, [k]: {...(report.statusHafalan as any)[k], jumlah: e.target.value}}})} className="col-span-1 p-2 border rounded-lg text-xs" placeholder="Jumlah" />
-                       <input value={(report.statusHafalan as any)[k].rincian} onChange={e => setReport({...report, statusHafalan: {...report.statusHafalan, [k]: {...(report.statusHafalan as any)[k], rincian: e.target.value}}})} className="col-span-2 p-2 border rounded-lg text-xs" placeholder="Rincian" />
+                  {['dimiliki', 'mutqin', 'semesterIni'].map((k, idx) => (
+                    <div key={k} className="flex flex-col md:flex-row gap-4 md:items-center">
+                       <p className="w-44 text-xs font-bold text-gray-600 uppercase">
+                          {idx === 0 ? "Total Hafalan Dimiliki" : idx === 1 ? "Hafalan Mutqin" : "Hafalan Semester Ini"}
+                       </p>
+                       <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2">
+                          <input 
+                            value={(report.statusHafalan as any)[k].jumlah} 
+                            onChange={e => setReport({...report, statusHafalan: {...report.statusHafalan, [k]: {...(report.statusHafalan as any)[k], jumlah: e.target.value}}})} 
+                            className="p-2 border rounded-lg text-xs" 
+                            placeholder="Jumlah (Contoh: 1 Juz 3 Hal)" 
+                          />
+                          <input 
+                            value={(report.statusHafalan as any)[k].rincian} 
+                            onChange={e => setReport({...report, statusHafalan: {...report.statusHafalan, [k]: {...(report.statusHafalan as any)[k], rincian: e.target.value}}})} 
+                            className="p-2 border rounded-lg text-xs" 
+                            placeholder="Rincian (Contoh: 30 dan 29)" 
+                          />
+                          <input 
+                            value={(report.statusHafalan as any)[k].status} 
+                            onChange={e => setReport({...report, statusHafalan: {...report.statusHafalan, [k]: {...(report.statusHafalan as any)[k], status: e.target.value}}})} 
+                            className="p-2 border rounded-lg text-xs" 
+                            placeholder="Status (Contoh: Baik)" 
+                          />
+                       </div>
                     </div>
                   ))}
                 </div>
@@ -259,7 +276,6 @@ export default function GuruGradesPage({ teacherId }: { teacherId?: string }) {
             </>
           )}
 
-          {/* Catatan & Footer (Shared) */}
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>

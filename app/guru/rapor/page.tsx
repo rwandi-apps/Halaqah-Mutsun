@@ -17,7 +17,6 @@ export default function GuruRaporPage({ teacherId, teacherName }: { teacherId?: 
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Tahun ajaran default untuk pencarian rapor
   const DEFAULT_YEAR = '2025 / 2026';
 
   useEffect(() => {
@@ -95,14 +94,10 @@ export default function GuruRaporPage({ teacherId, teacherName }: { teacherId?: 
     return "Rosib";
   };
 
-  /**
-   * Cleans teacher name from titles like Ust., Ustadz, etc.
-   */
   const cleanTeacherName = (name: string = '') => {
     return name.replace(/^(Ust\.|Ustadz|Ustadzah|Uzh\.|Ust)\s+/i, '').trim();
   };
 
-  // Logic to determine format
   const level = selectedStudent ? extractClassLevel(selectedStudent.className) : 0;
   const isDescriptionFormat = level >= 1 && level <= 3;
 
@@ -115,7 +110,6 @@ export default function GuruRaporPage({ teacherId, teacherName }: { teacherId?: 
            <button onClick={() => { setViewingReport(null); setSelectedStudent(null); }} className="flex items-center text-gray-500 hover:text-primary-600 font-bold">
              <ArrowLeft size={20} className="mr-2"/> Kembali
            </button>
-
            <div className="flex items-center gap-2 bg-white p-1 rounded-xl shadow-sm border">
               <button onClick={goToPrev} disabled={currentIndex === 0} className="p-2 hover:bg-gray-100 rounded-lg disabled:opacity-30 transition-colors">
                 <ChevronLeft size={24} />
@@ -127,7 +121,6 @@ export default function GuruRaporPage({ teacherId, teacherName }: { teacherId?: 
                 <ChevronRight size={24} />
               </button>
            </div>
-
            <div className="flex gap-2">
              <Button variant="outline" onClick={() => handleEditReport(selectedStudent)} className="text-blue-600"><Edit2 size={16}/></Button>
              <Button variant="danger" onClick={() => handleDeleteReport(selectedStudent)}><Trash2 size={16}/></Button>
@@ -135,25 +128,20 @@ export default function GuruRaporPage({ teacherId, teacherName }: { teacherId?: 
            </div>
         </div>
 
-        {/* --- PDF CONTENT (A4 Optimized) --- */}
         <div className="bg-white p-12 sm:p-16 shadow-2xl border border-gray-100 mx-auto w-full max-w-[210mm] print:shadow-none print:border-none print:p-0 print:mx-0 min-h-[297mm] font-serif text-gray-900 overflow-hidden">
            
            {isDescriptionFormat ? (
-             /* FORMAT DESKRIPSI (KELAS 1-3) */
              <div className="space-y-6">
                 <div className="text-center space-y-1 mb-10">
                    <h1 className="text-xl font-bold uppercase tracking-widest">Laporan Perkembangan Belajar</h1>
                    <h2 className="text-2xl font-black uppercase">SDQ Mutiara Sunnah</h2>
                    <h3 className="text-lg font-bold uppercase pt-1">Tahun Pelajaran {viewingReport.academicYear.replace(/\s/g, '')}</h3>
                 </div>
-
-                {/* Header Information: Stacked Vertically for Class 1-3 as requested */}
                 <div className="space-y-1 text-sm font-bold mb-8">
                    <div className="flex"><span className="w-32">Nama Siswa</span><span className="mr-2">:</span><span className="uppercase">{selectedStudent.name}</span></div>
                    <div className="flex"><span className="w-32">Kelas</span><span className="mr-2">:</span><span className="uppercase">{selectedStudent.className}</span></div>
                    <div className="flex"><span className="w-32">Semester</span><span className="mr-2">:</span><span>{viewingReport.semester}</span></div>
                 </div>
-
                 <div className="space-y-6">
                    <div>
                       <h4 className="font-bold mb-2 uppercase">A. Tahfizh</h4>
@@ -161,7 +149,6 @@ export default function GuruRaporPage({ teacherId, teacherName }: { teacherId?: 
                          {viewingReport.narrativeTahfizh}
                       </div>
                    </div>
-
                    <div>
                       <h4 className="font-bold mb-2 uppercase">B. Tilawah</h4>
                       <div className="border-2 border-gray-900 p-6 min-h-[220px] text-sm leading-relaxed text-justify">
@@ -169,26 +156,15 @@ export default function GuruRaporPage({ teacherId, teacherName }: { teacherId?: 
                       </div>
                    </div>
                 </div>
-
                 <div className="mt-10 text-sm font-bold">
-                   <div className="text-right mb-16">
-                      Bogor, {viewingReport.dateHijri || '... Hijriah'}<br/>
-                      {viewingReport.dateStr || '... Masehi'}
-                   </div>
+                   <div className="text-right mb-16">Bogor, {viewingReport.dateHijri || '... Hijriah'}<br/>{viewingReport.dateStr || '... Masehi'}</div>
                    <div className="grid grid-cols-2 text-center">
-                      <div>
-                         <p className="mb-24">Orang Tua/Wali</p>
-                         <p className="border-b border-gray-900 inline-block w-48"></p>
-                      </div>
-                      <div>
-                         <p className="mb-24">Pengampu Al Qur'an</p>
-                         <p className="font-bold border-b border-gray-900 inline-block w-48 uppercase">{signatureName}</p>
-                      </div>
+                      <div><p className="mb-24">Orang Tua/Wali</p><p className="border-b border-gray-900 inline-block w-48"></p></div>
+                      <div><p className="mb-24">Pengampu Al Qur'an</p><p className="font-bold border-b border-gray-900 inline-block w-48 uppercase">{signatureName}</p></div>
                    </div>
                 </div>
              </div>
            ) : (
-             /* FORMAT TABEL (KELAS 4-6) */
              <div className="space-y-6">
                 <div className="text-center space-y-1 mb-10">
                    <h1 className="text-xl font-bold uppercase tracking-widest">Laporan Penilaian Al-Quran</h1>
@@ -196,18 +172,17 @@ export default function GuruRaporPage({ teacherId, teacherName }: { teacherId?: 
                    <h3 className="text-lg font-bold uppercase pt-1">Tahun Pelajaran {viewingReport.academicYear.replace(/\s/g, '')}</h3>
                 </div>
 
-                {/* Header Information: 4-6 Parallel layout kept as original, fixed NISN row alignment */}
-                <div className="grid grid-cols-2 gap-x-8 mb-8 text-[13px] font-bold text-gray-800">
+                {/* Updated Grid for Class 4-6 as requested: Name/Year, NISN/Semester, Class/Target */}
+                <div className="grid grid-cols-2 gap-x-12 mb-8 text-[13px] font-bold text-gray-800">
                    <div className="space-y-1">
-                      <div className="flex"><span className="w-32">Nama Siswa</span><span className="mr-2">:</span><span className="uppercase">{selectedStudent.name}</span></div>
-                      {/* NISN Sejajar (one line, no cut) */}
-                      <div className="flex whitespace-nowrap"><span className="w-32 shrink-0">Nomor Induk / NISN</span><span className="mr-2">:</span><span>{selectedStudent.nis || '-'} / {selectedStudent.nisn || '-'}</span></div>
-                      <div className="flex"><span className="w-32">Target Hafalan</span><span className="mr-2">:</span><span>{viewingReport.targetHafalan}</span></div>
+                      <div className="flex"><span className="w-40 shrink-0">Nama Siswa</span><span className="mr-2">:</span><span className="uppercase">{selectedStudent.name}</span></div>
+                      <div className="flex whitespace-nowrap"><span className="w-40 shrink-0">Nomor Induk / NISN</span><span className="mr-2">:</span><span>{selectedStudent.nis || '-'} / {selectedStudent.nisn || '-'}</span></div>
+                      <div className="flex"><span className="w-40 shrink-0">Kelas</span><span className="mr-2">:</span><span className="uppercase">{selectedStudent.className}</span></div>
                    </div>
                    <div className="space-y-1">
-                      <div className="flex"><span className="w-32">Kelas</span><span className="mr-2">:</span><span className="uppercase">{selectedStudent.className}</span></div>
-                      <div className="flex"><span className="w-32">Semester</span><span className="mr-2">:</span><span>{viewingReport.semester}</span></div>
-                      <div className="flex"><span className="w-32">Tahun Ajaran</span><span className="mr-2">:</span><span>{viewingReport.academicYear}</span></div>
+                      <div className="flex"><span className="w-32 shrink-0">Tahun Ajaran</span><span className="mr-2">:</span><span>{viewingReport.academicYear}</span></div>
+                      <div className="flex"><span className="w-32 shrink-0">Semester</span><span className="mr-2">:</span><span>{viewingReport.semester}</span></div>
+                      <div className="flex"><span className="w-32 shrink-0">Target Hafalan</span><span className="mr-2">:</span><span>{viewingReport.targetHafalan}</span></div>
                    </div>
                 </div>
 
@@ -234,14 +209,36 @@ export default function GuruRaporPage({ teacherId, teacherName }: { teacherId?: 
                    </tbody>
                 </table>
 
-                <div className="border-2 border-gray-900 p-4">
-                  <h4 className="text-xs font-bold uppercase mb-2">Status Hafalan Siswa</h4>
-                  <div className="grid grid-cols-1 gap-1 text-[12px]">
-                    <div className="flex"><span className="w-32">Dimiliki</span><span className="mr-2">:</span><span>{viewingReport.statusHafalan.dimiliki.jumlah} {viewingReport.statusHafalan.dimiliki.rincian}</span></div>
-                    <div className="flex"><span className="w-32">Mutqin</span><span className="mr-2">:</span><span>{viewingReport.statusHafalan.mutqin.jumlah} {viewingReport.statusHafalan.mutqin.rincian}</span></div>
-                    <div className="flex"><span className="w-32">Semester Ini</span><span className="mr-2">:</span><span>{viewingReport.statusHafalan.semesterIni.jumlah} {viewingReport.statusHafalan.semesterIni.rincian}</span></div>
-                  </div>
-                </div>
+                {/* Updated Status Hafalan Table matching screenshot exactly */}
+                <table className="w-full border-2 border-gray-900 text-center text-[12px] font-bold border-collapse">
+                   <thead>
+                      <tr className="border-b-2 border-gray-900">
+                         <th colSpan={5} className="py-2 uppercase">Status Hafalan Siswa</th>
+                      </tr>
+                      <tr className="bg-gray-50 border-b-2 border-gray-900">
+                         <th className="py-2 w-10 border-r-2 border-gray-900">No</th>
+                         <th className="py-2 text-left px-4 border-r-2 border-gray-900">Kategori</th>
+                         <th className="py-2 w-40 border-r-2 border-gray-900">Jumlah</th>
+                         <th className="py-2 w-40 border-r-2 border-gray-900">Rincian</th>
+                         <th className="py-2 w-32">Status</th>
+                      </tr>
+                   </thead>
+                   <tbody>
+                      {[
+                         { id: 1, label: 'Total Hafalan Dimiliki', key: 'dimiliki' },
+                         { id: 2, label: 'Hafalan Mutqin', key: 'mutqin' },
+                         { id: 3, label: 'Hafalan Semester Ini', key: 'semesterIni' },
+                      ].map((item, idx) => (
+                         <tr key={idx} className="border-b border-gray-900 last:border-b-0">
+                            <td className="py-2 border-r-2 border-gray-900">{item.id}</td>
+                            <td className="py-2 text-left px-4 border-r-2 border-gray-900">{item.label}</td>
+                            <td className="py-2 border-r-2 border-gray-900">{(viewingReport.statusHafalan as any)[item.key].jumlah}</td>
+                            <td className="py-2 border-r-2 border-gray-900">{(viewingReport.statusHafalan as any)[item.key].rincian}</td>
+                            <td className="py-2">{(viewingReport.statusHafalan as any)[item.key].status}</td>
+                         </tr>
+                      ))}
+                   </tbody>
+                </table>
 
                 <div className="mt-10 text-sm font-bold">
                    <div className="text-right mb-16">Bogor, {viewingReport.dateHijri}<br/>{viewingReport.dateStr}</div>
@@ -265,12 +262,10 @@ export default function GuruRaporPage({ teacherId, teacherName }: { teacherId?: 
           <p className="text-gray-500 mt-1">Format deskripsi untuk kelas 1-3 dan format tabel untuk kelas 4-6.</p>
         </div>
       </div>
-
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex items-center gap-4">
         <Search className="text-gray-400" size={20} />
         <input type="text" placeholder="Cari nama siswa..." value={search} onChange={(e) => setSearch(e.target.value)} className="flex-1 outline-none bg-transparent text-sm"/>
       </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredStudents.map((student, index) => (
           <div key={student.id} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all group">
