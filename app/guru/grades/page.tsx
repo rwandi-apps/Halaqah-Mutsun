@@ -31,7 +31,7 @@ export default function GuruGradesPage({ teacherId }: { teacherId?: string }) {
     },
     narrativeTahfizh: '',
     narrativeTilawah: '',
-    notes: ''
+    notes: '' // This field is technically shared but UI field "Catatan Wali Kelas" is removed
   });
 
   useEffect(() => {

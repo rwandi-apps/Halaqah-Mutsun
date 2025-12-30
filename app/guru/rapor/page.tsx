@@ -147,23 +147,23 @@ export default function GuruRaporPage({ teacherId, teacherName }: { teacherId?: 
                    <h3 className="text-lg font-bold uppercase pt-1">Tahun Pelajaran {viewingReport.academicYear.replace(/\s/g, '')}</h3>
                 </div>
 
-                {/* Header Information: Stacked Vertically */}
+                {/* Header Information: Stacked Vertically for Class 1-3 as requested */}
                 <div className="space-y-1 text-sm font-bold mb-8">
-                   <div className="flex"><span className="w-36">Nama Siswa</span><span className="mr-2">:</span><span className="uppercase">{selectedStudent.name}</span></div>
-                   <div className="flex"><span className="w-36">Kelas</span><span className="mr-2">:</span><span className="uppercase">{selectedStudent.className}</span></div>
-                   <div className="flex"><span className="w-36">Semester</span><span className="mr-2">:</span><span>{viewingReport.semester}</span></div>
+                   <div className="flex"><span className="w-32">Nama Siswa</span><span className="mr-2">:</span><span className="uppercase">{selectedStudent.name}</span></div>
+                   <div className="flex"><span className="w-32">Kelas</span><span className="mr-2">:</span><span className="uppercase">{selectedStudent.className}</span></div>
+                   <div className="flex"><span className="w-32">Semester</span><span className="mr-2">:</span><span>{viewingReport.semester}</span></div>
                 </div>
 
                 <div className="space-y-6">
                    <div>
-                      <h4 className="font-bold mb-2">A. Tahfizh</h4>
+                      <h4 className="font-bold mb-2 uppercase">A. Tahfizh</h4>
                       <div className="border-2 border-gray-900 p-6 min-h-[220px] text-sm leading-relaxed text-justify">
                          {viewingReport.narrativeTahfizh}
                       </div>
                    </div>
 
                    <div>
-                      <h4 className="font-bold mb-2">B. Tilawah</h4>
+                      <h4 className="font-bold mb-2 uppercase">B. Tilawah</h4>
                       <div className="border-2 border-gray-900 p-6 min-h-[220px] text-sm leading-relaxed text-justify">
                          {viewingReport.narrativeTilawah}
                       </div>
@@ -182,7 +182,7 @@ export default function GuruRaporPage({ teacherId, teacherName }: { teacherId?: 
                       </div>
                       <div>
                          <p className="mb-24">Pengampu Al Qur'an</p>
-                         <p className="font-bold border-b border-gray-900 inline-block w-48">{signatureName}</p>
+                         <p className="font-bold border-b border-gray-900 inline-block w-48 uppercase">{signatureName}</p>
                       </div>
                    </div>
                 </div>
@@ -196,17 +196,22 @@ export default function GuruRaporPage({ teacherId, teacherName }: { teacherId?: 
                    <h3 className="text-lg font-bold uppercase pt-1">Tahun Pelajaran {viewingReport.academicYear.replace(/\s/g, '')}</h3>
                 </div>
 
-                {/* Header Information: Stacked Vertically & Fixed NISN Row */}
-                <div className="space-y-1 mb-8 text-sm font-bold text-gray-800">
-                   <div className="flex border-b border-gray-300 pb-1"><span className="w-44">Nama Siswa</span><span className="mr-2">:</span><span className="uppercase">{selectedStudent.name}</span></div>
-                   <div className="flex border-b border-gray-300 pb-1"><span className="w-44">Kelas</span><span className="mr-2">:</span><span className="uppercase">{selectedStudent.className}</span></div>
-                   <div className="flex border-b border-gray-300 pb-1"><span className="w-44">Semester</span><span className="mr-2">:</span><span>{viewingReport.semester}</span></div>
-                   <div className="flex border-b border-gray-300 pb-1"><span className="w-44">Tahun Ajaran</span><span className="mr-2">:</span><span>{viewingReport.academicYear}</span></div>
-                   <div className="flex border-b border-gray-300 pb-1"><span className="w-44 shrink-0">Nomor Induk / NISN</span><span className="mr-2">:</span><span>{selectedStudent.nis || '-'} / {selectedStudent.nisn || '-'}</span></div>
-                   <div className="flex border-b border-gray-300 pb-1"><span className="w-44">Target Hafalan</span><span className="mr-2">:</span><span>{viewingReport.targetHafalan}</span></div>
+                {/* Header Information: 4-6 Parallel layout kept as original, fixed NISN row alignment */}
+                <div className="grid grid-cols-2 gap-x-8 mb-8 text-[13px] font-bold text-gray-800">
+                   <div className="space-y-1">
+                      <div className="flex"><span className="w-32">Nama Siswa</span><span className="mr-2">:</span><span className="uppercase">{selectedStudent.name}</span></div>
+                      {/* NISN Sejajar (one line, no cut) */}
+                      <div className="flex whitespace-nowrap"><span className="w-32 shrink-0">Nomor Induk / NISN</span><span className="mr-2">:</span><span>{selectedStudent.nis || '-'} / {selectedStudent.nisn || '-'}</span></div>
+                      <div className="flex"><span className="w-32">Target Hafalan</span><span className="mr-2">:</span><span>{viewingReport.targetHafalan}</span></div>
+                   </div>
+                   <div className="space-y-1">
+                      <div className="flex"><span className="w-32">Kelas</span><span className="mr-2">:</span><span className="uppercase">{selectedStudent.className}</span></div>
+                      <div className="flex"><span className="w-32">Semester</span><span className="mr-2">:</span><span>{viewingReport.semester}</span></div>
+                      <div className="flex"><span className="w-32">Tahun Ajaran</span><span className="mr-2">:</span><span>{viewingReport.academicYear}</span></div>
+                   </div>
                 </div>
 
-                <table className="w-full border-2 border-gray-900 text-center text-sm font-bold">
+                <table className="w-full border-2 border-gray-900 text-center text-[13px] font-bold">
                    <thead className="bg-gray-100"><tr className="border-b-2 border-gray-900"><th className="py-2 w-12 border-r-2 border-gray-900">No</th><th className="py-2 border-r-2 border-gray-900 px-4 text-left">Aspek Penilaian</th><th className="py-2 w-40 border-r-2 border-gray-900">Prestasi</th><th className="py-2 w-40">Predikat</th></tr></thead>
                    <tbody>
                       {[
@@ -221,7 +226,7 @@ export default function GuruRaporPage({ teacherId, teacherName }: { teacherId?: 
                    </tbody>
                 </table>
 
-                <table className="w-full border-2 border-gray-900 text-center text-sm font-bold">
+                <table className="w-full border-2 border-gray-900 text-center text-[13px] font-bold">
                    <thead className="bg-gray-100"><tr className="border-b-2 border-gray-900"><th className="py-2 w-12 border-r-2 border-gray-900">No</th><th className="py-2 border-r-2 border-gray-900 px-4 text-left">Ujian-ujian</th><th className="py-2 w-40 border-r-2 border-gray-900">Angka</th><th className="py-2 w-40">Predikat</th></tr></thead>
                    <tbody>
                       <tr className="border-b border-gray-900"><td className="py-2 border-r-2 border-gray-900">1</td><td className="py-2 border-r-2 border-gray-900 px-4 text-left">UTS</td><td className="py-2 border-r-2 border-gray-900">{viewingReport.exams.uts}</td><td className="py-2">{getPredikatScore(viewingReport.exams.uts)}</td></tr>
@@ -229,13 +234,12 @@ export default function GuruRaporPage({ teacherId, teacherName }: { teacherId?: 
                    </tbody>
                 </table>
 
-                {/* Status Hafalan Section (if needed) */}
                 <div className="border-2 border-gray-900 p-4">
                   <h4 className="text-xs font-bold uppercase mb-2">Status Hafalan Siswa</h4>
-                  <div className="grid grid-cols-1 gap-2 text-xs">
-                    <div className="flex border-b border-gray-100 pb-1"><span className="w-32">Dimiliki</span><span className="mr-2">:</span><span>{viewingReport.statusHafalan.dimiliki.jumlah} {viewingReport.statusHafalan.dimiliki.rincian}</span></div>
-                    <div className="flex border-b border-gray-100 pb-1"><span className="w-32">Mutqin</span><span className="mr-2">:</span><span>{viewingReport.statusHafalan.mutqin.jumlah} {viewingReport.statusHafalan.mutqin.rincian}</span></div>
-                    <div className="flex border-b border-gray-100 pb-1"><span className="w-32">Semester Ini</span><span className="mr-2">:</span><span>{viewingReport.statusHafalan.semesterIni.jumlah} {viewingReport.statusHafalan.semesterIni.rincian}</span></div>
+                  <div className="grid grid-cols-1 gap-1 text-[12px]">
+                    <div className="flex"><span className="w-32">Dimiliki</span><span className="mr-2">:</span><span>{viewingReport.statusHafalan.dimiliki.jumlah} {viewingReport.statusHafalan.dimiliki.rincian}</span></div>
+                    <div className="flex"><span className="w-32">Mutqin</span><span className="mr-2">:</span><span>{viewingReport.statusHafalan.mutqin.jumlah} {viewingReport.statusHafalan.mutqin.rincian}</span></div>
+                    <div className="flex"><span className="w-32">Semester Ini</span><span className="mr-2">:</span><span>{viewingReport.statusHafalan.semesterIni.jumlah} {viewingReport.statusHafalan.semesterIni.rincian}</span></div>
                   </div>
                 </div>
 
@@ -243,7 +247,7 @@ export default function GuruRaporPage({ teacherId, teacherName }: { teacherId?: 
                    <div className="text-right mb-16">Bogor, {viewingReport.dateHijri}<br/>{viewingReport.dateStr}</div>
                    <div className="grid grid-cols-2 text-center">
                       <div><p className="mb-20">Orang Tua/Wali</p><p className="border-b border-gray-900 inline-block w-48"></p></div>
-                      <div><p className="mb-20">Wali Kelas</p><p className="font-bold border-b border-gray-900 inline-block w-48">{signatureName}</p></div>
+                      <div><p className="mb-20">Wali Kelas</p><p className="font-bold border-b border-gray-900 inline-block w-48 uppercase">{signatureName}</p></div>
                    </div>
                 </div>
              </div>
