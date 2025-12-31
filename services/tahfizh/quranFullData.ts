@@ -11,7 +11,7 @@ export interface QuranAyahData {
  * Kunci: "NamaSurah:NomorAyat"
  */
 export const QURAN_FULL_MAP: Record<string, QuranAyahData> = {
-  "Al-Fatihah:1": { juz: 1, page: 1, line: 8, globalIndex: 1 },
+  "Al-Fatihah:1": { juz: 1, page: 1, line: 1, globalIndex: 1 },
   "Al-Fatihah:2": { juz: 1, page: 1, line: 9, globalIndex: 2 },
   "Al-Fatihah:3": { juz: 1, page: 1, line: 10, globalIndex: 3 },
   "Al-Fatihah:4": { juz: 1, page: 1, line: 10, globalIndex: 4 },
