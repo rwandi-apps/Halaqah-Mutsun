@@ -169,23 +169,30 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
         </div>
       </div>
 
-      {/* Summary Cards - Grid-cols-2 is good for mobile */}
+      {/* Summary Cards with Gradients */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="bg-white p-4 sm:p-6 rounded-2xl border border-gray-100 shadow-sm">
-          <p className="text-[9px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Siswa</p>
-          <p className="text-2xl sm:text-3xl font-black text-gray-800">{metrics.total}</p>
+        {/* Total Siswa - Purple Gradient */}
+        <div className="bg-gradient-to-br from-indigo-600 to-purple-700 p-4 sm:p-6 rounded-2xl shadow-lg shadow-indigo-500/20 text-white transition-all duration-300 hover:scale-[1.03] active:scale-95 group border border-white/10">
+          <p className="text-[9px] sm:text-[10px] font-bold text-indigo-100 uppercase tracking-widest mb-1 opacity-80 group-hover:opacity-100">Total Siswa</p>
+          <p className="text-2xl sm:text-4xl font-black drop-shadow-sm">{metrics.total}</p>
         </div>
-        <div className="bg-white p-4 sm:p-6 rounded-2xl border border-gray-100 shadow-sm">
-          <p className="text-[9px] sm:text-[10px] font-bold text-green-500 uppercase tracking-widest mb-1">Tercapai</p>
-          <p className="text-2xl sm:text-3xl font-black text-green-600">{metrics.completed}</p>
+        
+        {/* Tercapai - Emerald Gradient */}
+        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-4 sm:p-6 rounded-2xl shadow-lg shadow-emerald-500/20 text-white transition-all duration-300 hover:scale-[1.03] active:scale-95 group border border-white/10">
+          <p className="text-[9px] sm:text-[10px] font-bold text-emerald-50 uppercase tracking-widest mb-1 opacity-80 group-hover:opacity-100">Tercapai</p>
+          <p className="text-2xl sm:text-4xl font-black drop-shadow-sm">{metrics.completed}</p>
         </div>
-        <div className="bg-white p-4 sm:p-6 rounded-2xl border border-gray-100 shadow-sm">
-          <p className="text-[9px] sm:text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-1">On Track</p>
-          <p className="text-2xl sm:text-3xl font-black text-blue-600">{metrics.onTrack}</p>
+        
+        {/* On Track - Blue Gradient */}
+        <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-4 sm:p-6 rounded-2xl shadow-lg shadow-blue-500/20 text-white transition-all duration-300 hover:scale-[1.03] active:scale-95 group border border-white/10">
+          <p className="text-[9px] sm:text-[10px] font-bold text-blue-50 uppercase tracking-widest mb-1 opacity-80 group-hover:opacity-100">On Track</p>
+          <p className="text-2xl sm:text-4xl font-black drop-shadow-sm">{metrics.onTrack}</p>
         </div>
-        <div className="bg-white p-4 sm:p-6 rounded-2xl border border-gray-100 shadow-sm">
-          <p className="text-[9px] sm:text-[10px] font-bold text-red-500 uppercase tracking-widest mb-1">Perhatian</p>
-          <p className="text-2xl sm:text-3xl font-black text-red-500">{metrics.needsAttention}</p>
+        
+        {/* Perhatian - Rose Gradient */}
+        <div className="bg-gradient-to-br from-orange-500 to-rose-600 p-4 sm:p-6 rounded-2xl shadow-lg shadow-rose-500/20 text-white transition-all duration-300 hover:scale-[1.03] active:scale-95 group border border-white/10">
+          <p className="text-[9px] sm:text-[10px] font-bold text-orange-50 uppercase tracking-widest mb-1 opacity-80 group-hover:opacity-100">Perhatian</p>
+          <p className="text-2xl sm:text-4xl font-black drop-shadow-sm">{metrics.needsAttention}</p>
         </div>
       </div>
 
