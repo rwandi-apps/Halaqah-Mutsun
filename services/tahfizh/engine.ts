@@ -39,23 +39,18 @@ export class TahfizhEngine {
     let lines: number;
 
     // Cek apakah ini dalam surah yang sama (Setoran Lanjut)
-    // Jika sama surah, kita pakai hitungan Volume Baris (Math.floor)
-    // Jika beda surah (Muraja'ah), kita pakai hitungan Halaman Fisik
     const isSameSurah = this.normalizeSurahName(start.surah) === this.normalizeSurahName(end.surah);
 
     if (isSameSurah) {
-      // Logika Volume (Sesuai kasus Al-Baqarah 6-17)
+      // Logika Volume (Sesuai kasus Al-Baqarah)
+      // Math.floor(14/15) = 0 Halaman
+      // Math.floor(15/15) = 1 Halaman
       pages = Math.floor(totalLines / 15);
       lines = totalLines % 15;
-
-      // Minimal 1 halaman jika ada isinya (menangani kasus surah pendek seperti An-Naba)
-      if (pages === 0 && lines > 0) {
-        pages = 1;
-      }
     } else {
       // Logika Fisik (Sesuai kasus An-Nas -> Al-Kafirun)
       pages = touchedPages;
-      lines = totalLines % 15; // Opsional, bisa diset 0 jika ingin murni hitungan halaman
+      lines = totalLines % 15;
     }
 
     return { 
@@ -67,7 +62,6 @@ export class TahfizhEngine {
   }
 
   private static normalizeSurahName(name: string): string {
-    // Handle kutip aneh (’, ‘, `)
     return name.replace(/[’‘`]/g, "'").trim();
   }
 }
