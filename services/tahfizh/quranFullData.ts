@@ -323,7 +323,7 @@ export const QURAN_FULL_MAP: Record<string, QuranAyahData> = {
 "Ali 'Imran:17": { juz: 3, page: 52, line: 3, globalIndex: 310 },
 "Ali 'Imran:18": { juz: 3, page: 52, line: 5, globalIndex: 311 },
 "Ali 'Imran:19": { juz: 3, page: 52, line: 8, globalIndex: 312 },
-"Ali 'Imran:20": { juz: 3, page: 52, line: 11, globalIndex: 313 }
+"Ali 'Imran:20": { juz: 3, page: 52, line: 11, globalIndex: 313 },
 "Ali 'Imran:21": { juz: 3, page: 52, line: 13, globalIndex: 314 },
 "Ali 'Imran:22": { juz: 3, page: 52, line: 15, globalIndex: 315 },
 "Ali 'Imran:23": { juz: 3, page: 53, line: 2, globalIndex: 316 },
