@@ -1,139 +1,138 @@
 import { AyahPointer, CalculationResult } from './types';
 import { QURAN_FULL_MAP } from './quranFullData';
 
-// --- KONFIGURASI DATA SURAH ---
-// Mapping Nama Surah ke Index Pertama & Terakhir di Global QURAN_FULL_MAP
-const SURAH_RANGES: Record<string, { startIdx: number, endIdx: number }> = {
-  "Al-Fatihah": { startIdx: 1, endIdx: 7 },
-  "Al-Baqarah": { startIdx: 8, endIdx: 286 },
-  "Ali 'Imran": { startIdx: 294, endIdx: 493 },
-  "An-Nisa'": { startIdx: 494, endIdx: 669 },
-  "Al-Ma'idah": { startIdx: 670, endIdx: 789 },
-  "Al-An'am": { startIdx: 790, endIdx: 954 },
-  "Al-A'raf": { startIdx: 955, endIdx: 1223 },
-  "Al-Anfal": { startIdx: 1224, endIdx: 1299 },
-  "At-Taubah": { startIdx: 1300, endIdx: 1362 },
-  "Yunus": { startIdx: 1363, endIdx: 1450 },
-  "Hud": { startIdx: 1451, endIdx: 1536 },
-  "Yusuf": { startIdx: 1537, endIdx: 1594 },
-  "Ar-Ra'd": { startIdx: 1595, endIdx: 1633 },
-  "Ibrahim": { startIdx: 1634, endIdx: 1695 },
-  "Al-Hijr": { startIdx: 1696, endIdx: 1722 },
-  "An-Nahl": { startIdx: 1723, endIdx: 1779 },
-  "Al-Isra'": { startIdx: 1780, endIdx: 1825 },
-  "Al-Kahf": { startIdx: 1826, endIdx: 1863 },
-  "Maryam": { startIdx: 1864, endIdx: 1905 },
-  "Ta Ha": { startIdx: 1906, endIdx: 1938 },
-  "Al-Anbiya'": { startIdx: 1939, endIdx: 1993 },
-  "Al-Hajj": { startIdx: 1994, endIdx: 2042 },
-  "Al-Mu'minun": { startIdx: 2043, endIdx: 2094 },
-  "An-Nur": { startIdx: 2095, endIdx: 2153 },
-  "Al-Furqan": { startIdx: 2154, endIdx: 2183 },
-  "Ash-Shu'ara'": { startIdx: 2184, endIdx: 2238 },
-  "An-Naml": { startIdx: 2239, endIdx: 2289 },
-  "Al-Qasas": { startIdx: 2290, endIdx: 2337 },
-  "Al-Ankabut": { startIdx: 2338, endIdx: 2397 },
-  "Ar-Rum": { startIdx: 2398, endIdx: 2456 },
-  "Luqman": { startIdx: 2457, endIdx: 2490 },
-  "As-Sajdah": { startIdx: 2491, endIdx: 2518 },
-  "Al-Ahzab": { startIdx: 2519, endIdx: 2567 },
-  "Saba'": { startIdx: 2568, endIdx: 2599 },
-  "Fatir": { startIdx: 2600, endIdx: 2625 },
-  "Ya Sin": { startIdx: 2626, endIdx: 2659 },
-  "As-Saffat": { startIdx: 2660, endIdx: 2698 },
-  "Sad": { startIdx: 2699, endIdx: 2729 },
-  "Az-Zumar": { startIdx: 2730, endIdx: 2773 },
-  "Ghafir": { startIdx: 2774, endIdx: 2815 },
-  "Fussilat": { startIdx: 2816, endIdx: 2861 },
-  "Ash-Shura": { startIdx: 2862, endIdx: 2894 },
-  "Az-Zukhruf": { startIdx: 2895, endIdx: 2927 },
-  "Ad-Dukhan": { startIdx: 2928, endIdx: 2943 },
-  "Al-Jasiyah": { startIdx: 2944, endIdx: 2968 },
-  "Al-Ahqaf": { startIdx: 2969, endIdx: 3010 },
-  "Muhammad": { startIdx: 3011, endIdx: 3058 },
-  "Al-Fath": { startIdx: 3059, endIdx: 3094 },
-  "Al-Hujurat": { startIdx: 3095, endIdx: 3118 },
-  "Qaf": { startIdx: 3119, endIdx: 3166 },
-  "Adz-Dzariyat": { startIdx: 3167, endIdx: 3206 },
-  "At-Tur": { startIdx: 3207, endIdx: 3247 },
-  "An-Najm": { startIdx: 3248, endIdx: 3291 },
-  "Al-Qamar": { startIdx: 3292, endIdx: 3340 },
-  "Ar-Rahman": { startIdx: 3341, endIdx: 3396 },
-  "Al-Waqi'ah": { startIdx: 3397, endIdx: 3468 },
-  "Al-Hadid": { startIdx: 3469, endIdx: 3524 },
-  "Al-Mujadilah": { startIdx: 3525, endIdx: 3572 },
-  "Al-Hashr": { startIdx: 3573, endIdx: 3595 },
-  "Al-Mumtahanah": { startIdx: 3596, endIdx: 3621 },
-  "Ash-Shaf": { startIdx: 3622, endIdx: 3639 },
-  "Al-Jumu'ah": { startIdx: 3640, endIdx: 3650 },
-  "Al-Munafiqun": { startIdx: 3651, endIdx: 3661 },
-  "At-Taghabun": { startIdx: 3662, endIdx: 3684 },
-  "At-Talaq": { startIdx: 3685, endIdx: 3696 },
-  "At-Tahrim": { startIdx: 3697, endIdx: 3710 },
-  "Al-Mulk": { startIdx: 3711, endIdx: 3743 },
-  "Al-Qalam": { startIdx: 3744, endIdx: 3787 },
-  "Al-Haqqah": { startIdx: 3788, endIdx: 3839 },
-  "Al-Ma'arij": { startIdx: 3840, endIdx: 3875 },
-  "Nuh": { startIdx: 3876, endIdx: 3908 },
-  "Al-Jinn": { startIdx: 3909, endIdx: 3931 },
-  "Al-Muzzammil": { startIdx: 3932, endIdx: 3955 },
-  "Al-Muddassir": { startIdx: 3956, endIdx: 4018 },
-  "Al-Qiyamah": { startIdx: 4019, endIdx: 4048 },
-  "Al-Insan": { startIdx: 4049, endIdx: 4078 },
-  "Al-Mursalat": { startIdx: 4079, endIdx: 4115 },
-  "An-Naba'": { startIdx: 4116, endIdx: 4151 },
-  "An-Nazi'at": { startIdx: 4152, endIdx: 4201 },
-  "Abasa": { startIdx: 4202, endIdx: 4243 },
-  "At-Takwir": { startIdx: 4244, endIdx: 4284 },
-  "Al-Infitar": { startIdx: 4285, endIdx: 4302 },
-  "Al-Mutaffifin": { startIdx: 4303, endIdx: 4342 },
-  "Al-Insyiqaq": { startIdx: 4343, endIdx: 4376 },
-  "Al-Buruj": { startIdx: 4377, endIdx: 4402 },
-  "Ath-Thariq": { startIdx: 4403, endIdx: 4420 },
-  "Al-A'la": { startIdx: 4421, endIdx: 4434 },
-  "Al-Ghashiyah": { startIdx: 4435, endIdx: 4456 },
-  "Al-Fajr": { startIdx: 4457, endIdx: 4481 },
-  "Al-Balad": { startIdx: 4482, endIdx: 4495 },
-  "Ash-Shams": { startIdx: 4496, endIdx: 4505 },
-  "Al-Lail": { startIdx: 4506, endIdx: 4518 },
-  "Adh-Duha": { startIdx: 4519, endIdx: 4526 },
-  "Al-Insyirah": { startIdx: 4527, endIdx: 4533 },
-  "At-Tin": { startIdx: 4534, endIdx: 4539 },
-  "Al-'Alaq": { startIdx: 4540, endIdx: 4555 },
-  "Al-Qadr": { startIdx: 4556, endIdx: 4560 },
-  "Al-Bayyinah": { startIdx: 4561, endIdx: 4572 },
-  "Al-Zalzalah": { startIdx: 4573, endIdx: 4585 },
-  "Al-'Adiyat": { startIdx: 4586, endIdx: 4598 },
-  "Al-Qari'ah": { startIdx: 4599, endIdx: 4616 },
-  "At-Takathur": { startIdx: 4617, endIdx: 4636 },
-  "Al-'Ashr": { startIdx: 4637, endIdx: 4642 },
-  "Al-Humazah": { startIdx: 4643, endIdx: 4650 },
-  "Al-Fil": { startIdx: 4651, endIdx: 4656 },
-  "Quraisy": { startIdx: 4657, endIdx: 4662 },
-  "Al-Ma'un": { startIdx: 4663, endIdx: 4672 },
-  "Al-Kautsar": { startIdx: 4673, endIdx: 4675 },
-  "Al-Kafirun": { startIdx: 4676, endIdx: 4682 },
-  "An-Nasr": { startIdx: 4683, endIdx: 4685 },
-  "Al-Masad": { startIdx: 4686, endIdx: 4691 },
-  "Al-Ikhlas": { startIdx: 4692, endIdx: 4695 },
-  "Al-Falaq": { startIdx: 4696, endIdx: 4699 },
-  "An-Nas": { startIdx: 4700, endIdx: 4706 }
+// --- DATA INTERNAL (Agar Aman & Tidak Error) ---
+// Mapping Nama Surah -> Data (Nomor Surah, GlobalIndex Ayat 1, Total Ayat)
+const SURAH_DATA: Record<string, { num: number, startIdx: number, totalAyat: number }> = {
+  "Al-Fatihah": { num: 1, startIdx: 1, totalAyat: 7 },
+  "Al-Baqarah": { num: 2, startIdx: 8, totalAyat: 286 },
+  "Ali Imran": { num: 3, startIdx: 294, totalAyat: 200 },
+  "An-Nisa": { num: 4, startIdx: 494, totalAyat: 176 },
+  "Al-Maidah": { num: 5, startIdx: 670, totalAyat: 120 },
+  "Al-An'am": { num: 6, startIdx: 790, totalAyat: 165 },
+  "Al-A'raf": { num: 7, startIdx: 955, totalAyat: 206 },
+  "Al-Anfal": { num: 8, startIdx: 1224, totalAyat: 75 },
+  "At-Taubah": { num: 9, startIdx: 1300, totalAyat: 129 },
+  "Yunus": { num: 10, startIdx: 1363, totalAyat: 109 },
+  "Hud": { num: 11, startIdx: 1451, totalAyat: 123 },
+  "Yusuf": { num: 12, startIdx: 1537, totalAyat: 111 },
+  "Ar-Ra'd": { num: 13, startIdx: 1595, totalAyat: 43 },
+  "Ibrahim": { num: 14, startIdx: 1634, totalAyat: 52 },
+  "Al-Hijr": { num: 15, startIdx: 1686, totalAyat: 99 },
+  "An-Nahl": { num: 16, startIdx: 1723, totalAyat: 128 },
+  "Al-Isra": { num: 17, startIdx: 1780, totalAyat: 111 },
+  "Al-Kahf": { num: 18, startIdx: 1826, totalAyat: 110 },
+  "Maryam": { num: 19, startIdx: 1864, totalAyat: 98 },
+  "Ta Ha": { num: 20, startIdx: 1906, totalAyat: 135 },
+  "Al-Anbiya": { num: 21, startIdx: 1939, totalAyat: 112 },
+  "Al-Hajj": { num: 22, startIdx: 1994, totalAyat: 78 },
+  "Al-Mu'minun": { num: 23, startIdx: 2043, totalAyat: 118 },
+  "An-Nur": { num: 24, startIdx: 2095, totalAyat: 64 },
+  "Al-Furqan": { num: 25, startIdx: 2154, totalAyat: 77 },
+  "Ash-Shu'ara": { num: 26, startIdx: 2184, totalAyat: 227 },
+  "An-Naml": { num: 27, startIdx: 2239, totalAyat: 93 },
+  "Al-Qasas": { num: 28, startIdx: 2290, totalAyat: 88 },
+  "Al-Ankabut": { num: 29, startIdx: 2338, totalAyat: 69 },
+  "Ar-Rum": { num: 30, startIdx: 2398, totalAyat: 60 },
+  "Luqman": { num: 31, startIdx: 2457, totalAyat: 34 },
+  "As-Sajdah": { num: 32, startIdx: 2491, totalAyat: 54 },
+  "Al-Ahzab": { num: 33, startIdx: 2519, totalAyat: 73 },
+  "Saba": { num: 34, startIdx: 2568, totalAyat: 54 },
+  "Fatir": { num: 35, startIdx: 2600, totalAyat: 45 },
+  "Ya Sin": { num: 36, startIdx: 2626, totalAyat: 83 },
+  "As-Saffat": { num: 37, startIdx: 2660, totalAyat: 182 },
+  "Sad": { num: 38, startIdx: 2699, totalAyat: 88 },
+  "Az-Zumar": { num: 39, startIdx: 2730, totalAyat: 75 },
+  "Ghafir": { num: 40, startIdx: 2774, totalAyat: 85 },
+  "Fussilat": { num: 41, startIdx: 2816, totalAyat: 54 },
+  "Ash-Shura": { num: 42, startIdx: 2862, totalAyat: 53 },
+  "Az-Zukhruf": { num: 43, startIdx: 2895, totalAyat: 89 },
+  "Ad-Dukhan": { num: 44, startIdx: 2928, totalAyat: 59 },
+  "Al-Jasiyah": { num: 45, startIdx: 2944, totalAyat: 37 },
+  "Al-Ahqaf": { num: 46, startIdx: 2969, totalAyat: 35 },
+  "Muhammad": { num: 47, startIdx: 3011, totalAyat: 38 },
+  "Al-Fath": { num: 48, startIdx: 3059, totalAyat: 29 },
+  "Al-Hujurat": { num: 49, startIdx: 3095, totalAyat: 18 },
+  "Qaf": { num: 50, startIdx: 3119, totalAyat: 45 },
+  "Adz-Dzariyat": { num: 51, startIdx: 3167, totalAyat: 60 },
+  "At-Tur": { num: 52, startIdx: 3207, totalAyat: 49 },
+  "An-Najm": { num: 53, startIdx: 3248, totalAyat: 62 },
+  "Al-Qamar": { num: 54, startIdx: 3292, totalAyat: 55 },
+  "Ar-Rahman": { num: 55, startIdx: 3341, totalAyat: 78 },
+  "Al-Waqi'ah": { num: 56, startIdx: 3397, totalAyat: 96 },
+  "Al-Hadid": { num: 57, startIdx: 3469, totalAyat: 29 },
+  "Al-Mujadilah": { num: 58, startIdx: 3525, totalAyat: 22 },
+  "Al-Hashr": { num: 59, startIdx: 3573, totalAyat: 24 },
+  "Al-Mumtahanah": { num: 60, startIdx: 3596, totalAyat: 13 },
+  "Ash-Shaf": { num: 61, startIdx: 3622, totalAyat: 14 },
+  "Al-Jumu'ah": { num: 62, startIdx: 3640, totalAyat: 11 },
+  "Al-Munafiqun": { num: 63, startIdx: 3651, totalAyat: 11 },
+  "At-Taghabun": { num: 64, startIdx: 3662, totalAyat: 18 },
+  "At-Talaq": { num: 65, startIdx: 3685, totalAyat: 12 },
+  "At-Tahrim": { num: 66, startIdx: 3697, totalAyat: 12 },
+  "Al-Mulk": { num: 67, startIdx: 3711, totalAyat: 30 },
+  "Al-Qalam": { num: 68, startIdx: 3744, totalAyat: 52 },
+  "Al-Haqqah": { num: 69, startIdx: 3788, totalAyat: 52 },
+  "Al-Ma'arij": { num: 70, startIdx: 3840, totalAyat: 44 },
+  "Nuh": { num: 71, startIdx: 3876, totalAyat: 28 },
+  "Al-Jinn": { num: 72, startIdx: 3909, totalAyat: 22 },
+  "Al-Muzzammil": { num: 73, startIdx: 3932, totalAyat: 20 },
+  "Al-Muddassir": { num: 74, startIdx: 3956, totalAyat: 56 },
+  "Al-Qiyamah": { num: 75, startIdx: 4019, totalAyat: 40 },
+  "Al-Insan": { num: 76, startIdx: 4049, totalAyat: 31 },
+  "Al-Mursalat": { num: 77, startIdx: 4079, totalAyat: 50 },
+  "An-Naba": { num: 78, startIdx: 4116, totalAyat: 40 },
+  "An-Nazi'at": { num: 79, startIdx: 4152, totalAyat: 46 },
+  "Abasa": { num: 80, startIdx: 4202, totalAyat: 42 },
+  "At-Takwir": { num: 81, startIdx: 4244, totalAyat: 29 },
+  "Al-Infitar": { num: 82, startIdx: 4285, totalAyat: 17 },
+  "Al-Mutaffifin": { num: 83, startIdx: 4303, totalAyat: 36 },
+  "Al-Insyiqaq": { num: 84, startIdx: 4343, totalAyat: 17 },
+  "Al-Buruj": { num: 85, startIdx: 4377, totalAyat: 22 },
+  "Ath-Thariq": { num: 86, startIdx: 4403, totalAyat: 17 },
+  "Al-A'la": { num: 87, startIdx: 4421, totalAyat: 19 },
+  "Al-Ghashiyah": { num: 88, startIdx: 4435, totalAyat: 26 },
+  "Al-Fajr": { num: 89, startIdx: 4457, totalAyat: 30 },
+  "Al-Balad": { num: 90, startIdx: 4482, totalAyat: 20 },
+  "Ash-Shams": { num: 91, startIdx: 4496, totalAyat: 15 },
+  "Al-Lail": { num: 92, startIdx: 4506, totalAyat: 21 },
+  "Adh-Duha": { num: 93, startIdx: 4519, totalAyat: 11 },
+  "Al-Insyirah": { num: 94, startIdx: 4527, totalAyat: 8 },
+  "At-Tin": { num: 95, startIdx: 4534, totalAyat: 8 },
+  "Al-'Alaq": { num: 96, startIdx: 4540, totalAyat: 19 },
+  "Al-Qadr": { num: 97, startIdx: 4556, totalAyat: 5 },
+  "Al-Bayyinah": { num: 98, startIdx: 4561, totalAyat: 8 },
+  "Al-Zalzalah": { num: 99, startIdx: 4573, totalAyat: 8 },
+  "Al-'Adiyat": { num: 100, startIdx: 4586, totalAyat: 11 },
+  "Al-Qari'ah": { num: 101, startIdx: 4599, totalAyat: 11 },
+  "At-Takathur": { num: 102, startIdx: 4617, totalAyat: 8 },
+  "Al-'Ashr": { num: 103, startIdx: 4637, totalAyat: 3 },
+  "Al-Humazah": { num: 104, startIdx: 4643, totalAyat: 9 },
+  "Al-Fil": { num: 105, startIdx: 4651, totalAyat: 5 },
+  "Quraisy": { num: 106, startIdx: 4657, totalAyat: 4 },
+  "Al-Ma'un": { num: 107, startIdx: 4663, totalAyat: 7 },
+  "Al-Kautsar": { num: 108, startIdx: 4673, totalAyat: 3 },
+  "Al-Kafirun": { num: 109, startIdx: 4676, totalAyat: 6 },
+  "An-Nasr": { num: 110, startIdx: 4683, totalAyat: 3 },
+  "Al-Masad": { num: 111, startIdx: 4686, totalAyat: 5 },
+  "Al-Ikhlas": { num: 112, startIdx: 4692, totalAyat: 4 },
+  "Al-Falaq": { num: 113, startIdx: 4696, totalAyat: 5 },
+  "An-Nas": { num: 114, startIdx: 4700, totalAyat: 6 },
 };
 
-// --- URUTAN KURIKULUM SDQ (Juz 30 mundur ke 1) ---
-// Urutan berdasarkan nomor surah agar mudah diproses
+// Urutan Nomor Surah SDQ (Juz 30 mundur ke 1)
 const SDQ_SEQUENCE: number[] = [
-  // Juz 30 (114-78)
+  // Juz 30
   114, 113, 112, 111, 110, 109, 108, 107, 106, 105, 104, 103, 102, 101, 100, 99, 98, 97, 96, 95, 94, 93, 92, 91, 90, 89, 88, 87, 86, 85, 84, 83, 82, 81, 80, 79, 78,
-  // Juz 29 (67-77)
+  // Juz 29
   67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77,
-  // Juz 28 (57-66)
+  // Juz 28
   57, 58, 59, 60, 61, 62, 63, 64, 65, 66,
-  // Juz 27 (51-55)
+  // Juz 27
   51, 52, 53, 54, 55,
-  // Juz 26 (46-50)
+  // Juz 26
   46, 47, 48, 49, 50,
-  // Juz 1-25 (1-25)
+  // Juz 1-25
   1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25
 ];
 
@@ -157,16 +156,8 @@ export class TahfizhEngine {
       };
     }
 
-    // Urutkan input agar selalu dari kecil ke besar (secara logika)
-    if (startData.globalIndex > endData.globalIndex) {
-      const temp = startData;
-      startData = endData;
-      endData = temp;
-    }
-
-    // 1. KASUS PENTING: SATU SURAH (Setoran Lanjut)
-    const isSameSurah = this.normalizeSurahName(start.surah) === this.normalizeSurahName(end.surah);
-    if (isSameSurah) {
+    // --- 1. KASUS SATU SURAH (Volume) ---
+    if (this.normalizeSurahName(start.surah) === this.normalizeSurahName(end.surah)) {
       const totalLines = (endData.page - startData.page) * 15 + (endData.line - startData.line) + 1;
       return { 
         pages: Math.floor(totalLines / 15), 
@@ -176,102 +167,56 @@ export class TahfizhEngine {
       };
     }
 
-    // 2. KASUS LINTAS SURAH (Muraja'ah / SDQ)
-    // Cari index urutan SDQ berdasarkan Nama Surah (Perlu mapping nama ke No Surah atau menggunakan logic manual)
-    // Kita gunakan mapping manual sederhana untuk keamanan
-    const surahToNum: { [key: string]: number } = {
-      "Al-Fatihah": 1, "Al-Baqarah": 2, "Ali 'Imran": 3, "An-Nisa'": 4, "Al-Ma'idah": 5, "Al-An'am": 6,
-      "Al-A'raf": 7, "Al-Anfal": 8, "At-Taubah": 9, "Yunus": 10, "Hud": 11, "Yusuf": 12,
-      "Ar-Ra'd": 13, "Ibrahim": 14, "Al-Hijr": 15, "An-Nahl": 16, "Al-Isra'": 17, "Al-Kahf": 18,
-      "Maryam": 19, "Ta Ha": 20, "Al-Anbiya'": 21, "Al-Hajj": 22, "Al-Mu'minun": 23, "An-Nur": 24,
-      "Al-Furqan": 25, "Ash-Shu'ara'": 26, "An-Naml": 27, "Al-Qasas": 28, "Al-Ankabut": 29, "Ar-Rum": 30,
-      "Luqman": 31, "As-Sajdah": 32, "Al-Ahzab": 33, "Saba'": 34, "Fatir": 35, "Ya Sin": 36,
-      "As-Saffat": 37, "Sad": 38, "Az-Zumar": 39, "Ghafir": 40, "Fussilat": 41, "Ash-Shura": 42,
-      "Az-Zukhruf": 43, "Ad-Dukhan": 44, "Al-Jasiyah": 45, "Al-Ahqaf": 46, "Muhammad": 47,
-      "Al-Fath": 48, "Al-Hujurat": 49, "Qaf": 50, "Adz-Dzariyat": 51, "At-Tur": 52, "An-Najm": 53,
-      "Al-Qamar": 54, "Ar-Rahman": 55, "Al-Waqi'ah": 56, "Al-Hadid": 57, "Al-Mujadilah": 58,
-      "Al-Hashr": 59, "Al-Mumtahanah": 60, "Ash-Shaf": 61, "Al-Jumu'ah": 62, "Al-Munafiqun": 63,
-      "At-Taghabun": 64, "At-Talaq": 65, "At-Tahrim": 66, "Al-Mulk": 67, "Al-Qalam": 68,
-      "Al-Haqqah": 69, "Al-Ma'arij": 70, "Nuh": 71, "Al-Jinn": 72, "Al-Muzzammil": 73,
-      "Al-Muddassir": 74, "Al-Qiyamah": 75, "Al-Insan": 76, "Al-Mursalat": 77, "An-Naba'": 78,
-      "An-Nazi'at": 79, "Abasa": 80, "At-Takwir": 81, "Al-Infitar": 82, "Al-Mutaffifin": 83,
-      "Al-Insyiqaq": 84, "Al-Buruj": 85, "Ath-Thariq": 86, "Al-A'la": 87, "Al-Ghashiyah": 88,
-      "Al-Fajr": 89, "Al-Balad": 90, "Ash-Shams": 91, "Al-Lail": 92, "Adh-Duha": 93, "Al-Insyirah": 94,
-      "At-Tin": 95, "Al-'Alaq": 96, "Al-Qadr": 97, "Al-Bayyinah": 98, "Al-Zalzalah": 99,
-      "Al-'Adiyat": 100, "Al-Qari'ah": 101, "At-Takathur": 102, "Al-'Ashr": 103, "Al-Humazah": 104,
-      "Al-Fil": 105, "Quraisy": 106, "Al-Ma'un": 107, "Al-Kautsar": 108, "Al-Kafirun": 109, "An-Nasr": 110,
-      "Al-Masad": 111, "Al-Ikhlas": 112, "Al-Falaq": 113, "An-Nas": 114
-    };
+    // --- 2. KASUS LINTAS SURAH ---
+    
+    // Cari posisi Nomor Surah dalam Urutan SDQ
+    const sNum = this.getSurahNum(start.surah);
+    const eNum = this.getSurahNum(end.surah);
 
-    const startSurahNum = surahToNum[this.normalizeSurahName(start.surah)];
-    const endSurahNum = surahToNum[this.normalizeSurahName(end.surah)];
-
-    // Cari posisi dalam urutan SDQ
-    const startIndex = SDQ_SEQUENCE.indexOf(startSurahNum);
-    const endIndex = SDQ_SEQUENCE.indexOf(endSurahNum);
-
-    if (startIndex === -1 || endIndex === -1) {
+    if (sNum === null || eNum === null) {
       return { pages: 0, lines: 0, juz: 0, isPartial: true, error: "Nama surah tidak dikenali SDQ" };
+    }
+
+    const sPos = SDQ_SEQUENCE.indexOf(sNum);
+    const ePos = SDQ_SEQUENCE.indexOf(eNum);
+
+    if (sPos === -1 || ePos === -1) {
+      return { pages: 0, lines: 0, juz: 0, isPartial: true, error: "Surah tidak ada di urutan SDQ" };
     }
 
     let totalLines = 0;
 
-    // Jika Start terletak sebelum End dalam urutan SDQ (Linear Forward)
-    if (startIndex <= endIndex) {
-      // LOOP AKUMULASI SURAH (Mulai dari Start Sampai End)
-      for (let i = startIndex; i <= endIndex; i++) {
+    // LOGIKA UTAMA
+    // Jika Start (Masa) Muncul SEBELUM End (Tujuan) dalam Urutan SDQ -> MUNDUR (SDQ)
+    // Kita AKUMULASI VOLUME (Naik Kelas)
+    if (sPos <= ePos) {
+      // Loop dari Start Surah sampai End Surah
+      for (let i = sPos; i <= ePos; i++) {
         const surahNum = SDQ_SEQUENCE[i];
-        const range = Object.values(SURAH_RANGES).find(r => r.endIdx === SURAH_RANGES[`Surah ${surahNum}`]?.endIdx); // Hacky finder
+        const surahName = this.getSurahName(surahNum);
+        const data = SURAH_DATA[surahName];
         
-        // Cari range yang tepat berdasarkan Nomor Surah (Lebih aman mencari di Object Keys)
-        const surahKey = Object.keys(SURAH_RANGES).find(k => k.includes(surahNum.toString()));
-        if (!surahKey) continue;
-        const rangeData = SURAH_RANGES[surahKey];
+        if (data) {
+          let ayatsToCount = data.totalAyat;
 
-        // Hitung Volume Surah
-        let sIdx: number;
-        let eIdx: number;
+          // Jika Surah Pertama: Potong ayat sebelum Start
+          if (i === sPos) {
+            ayatsToCount -= (startData.globalIndex - data.startIdx);
+          }
+          
+          // Jika Surah Terakhir: Potong ayat setelah End
+          if (i === ePos) {
+            ayatsToCount -= (data.startIdx + data.totalAyat - 1 - endData.globalIndex);
+          }
 
-        if (i === startIndex) {
-          // Surah Pertama: Dari Ayat Start sampai Terakhir
-          sIdx = startData.globalIndex;
-          eIdx = rangeData.endIdx;
-        } else if (i === endIndex) {
-          // Surah Terakhir: Dari Ayat 1 sampai Ayat End
-          // Cari data ayat 1
-          const firstAyahKey = `${this.normalizeSurahName(end.surah)}:1`;
-          const firstData = QURAN_FULL_MAP[firstAyahKey];
-          sIdx = firstData ? firstData.globalIndex : rangeData.startIdx;
-          eIdx = endData.globalIndex;
-        } else {
-          // Surah Tengah: Full Surah
-          sIdx = rangeData.startIdx;
-          eIdx = rangeData.endIdx;
-        }
-
-        if (sIdx && eIdx) {
-           // Ambil koordinat start dan end untuk hitung halaman
-           // Perlu mapping globalIndex kembali ke Page/Line. 
-           // Untuk efisiensi, kita asumsikan globalIndex berurutan naik.
-           // Namun QURAN_FULL_MAP diakses by Key string.
-           // Kita ambil data 'dummy' untuk Page/Line start/end atau cari Key.
-           
-           // Cara paling cepat: Kita ambil data GlobalIndex Start dan End.
-           // Kita ambil Page Start dan Page End dari data yang ada.
-           
-           const startObj = Object.values(QURAN_FULL_MAP).find(d => d.globalIndex === sIdx);
-           const endObj = Object.values(QURAN_FULL_MAP).find(d => d.globalIndex === eIdx);
-           
-           if (startObj && endObj) {
-             totalLines += (endObj.page - startObj.page) * 15 + (endObj.line - startObj.line) + 1;
-           }
+          totalLines += ayatsToCount;
         }
       }
-    } else {
-      // Input terbalik / mundur dalam urutan SDQ
-      // Fallback ke logika Touched Pages atau Error
-      const touchedPages = endData.page - startData.page + 1;
-      totalLines = touchedPages * 15;
+    } 
+    // Jika Start Muncul SESUDAH End -> MAJU (Muraja'ah Normal)
+    else {
+      // Hitung Halaman Fisik
+      totalLines = (endData.page - startData.page) * 15 + (endData.line - startData.line) + 1;
     }
 
     return { 
@@ -283,6 +228,19 @@ export class TahfizhEngine {
   }
 
   private static normalizeSurahName(name: string): string {
-    return name.replace(/[’‘`]/g, "'").trim();
+    // Hilangkan kutip dan spasi, lower case untuk pencarian aman
+    return name.replace(/[’‘`]/g, "'").replace(/\s/g, "").trim();
+  }
+
+  private static getSurahNum(name: string): number | null {
+    const normalized = this.normalizeSurahName(name);
+    const data = Object.values(SURAH_DATA).find(d => d.num === parseInt(normalized.replace(/\D/g, ''))); // Coba ambil nomor
+    if (!data) return null;
+    return data.num; // Sebenarnya ini redundant, tapi aman
+  }
+  
+  private static getSurahName(num: number): string {
+    const data = Object.values(SURAH_DATA).find(d => d.num === num);
+    return data ? Object.keys(SURAH_DATA).find(k => SURAH_DATA[k] === data) || "" : "";
   }
 }
