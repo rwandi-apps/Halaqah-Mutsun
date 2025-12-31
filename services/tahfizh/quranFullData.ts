@@ -18,7 +18,7 @@ export const QURAN_FULL_MAP: Record<string, QuranAyahData> = {
   "Al-Fatihah:5": { juz: 1, page: 1, line: 11, globalIndex: 5 },
   "Al-Fatihah:6": { juz: 1, page: 1, line: 12, globalIndex: 6 },
   "Al-Fatihah:7": { juz: 1, page: 1, line: 15, globalIndex: 7 },
-  "Al-Baqarah:1": { juz: 1, page: 2, line: 10, globalIndex: 8 },
+  "Al-Baqarah:1": { juz: 1, page: 2, line: 1, globalIndex: 8 },
   "Al-Baqarah:2": { juz: 1, page: 2, line: 11, globalIndex: 9 },
   "Al-Baqarah:3": { juz: 1, page: 2, line: 12, globalIndex: 10 },
   "Al-Baqarah:4": { juz: 1, page: 2, line: 13, globalIndex: 11 },
