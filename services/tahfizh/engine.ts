@@ -1,4 +1,3 @@
-
 import { AyahPointer, CalculationResult } from './types';
 import { QURAN_FULL_MAP } from './quranFullData';
 
@@ -29,24 +28,46 @@ export class TahfizhEngine {
       endData = temp;
     }
 
-    // 1. Hitung Halaman Fisik (Touched Pages)
-    // Ini menyelesaikan masalah An-Nas -> Al-Kafirun (2 Halaman)
+    // 1. Hitung Total Baris (Volume)
+    const totalLines = (endData.page - startData.page) * 15 + (endData.line - startData.line) + 1;
+    
+    // 2. Hitung Halaman Fisik (Touched Pages)
     const touchedPages = endData.page - startData.page + 1;
 
-    // 2. Hitung Baris Sisa (Opsional, untuk estimasi)
-    const totalLines = (endData.page - startData.page) * 15 + (endData.line - startData.line) + 1;
-    const remainingLines = totalLines % 15;
+    // --- LOGIKA HYBRID ---
+    let pages: number;
+    let lines: number;
+
+    // Cek apakah ini dalam surah yang sama (Setoran Lanjut)
+    // Jika sama surah, kita pakai hitungan Volume Baris (Math.floor)
+    // Jika beda surah (Muraja'ah), kita pakai hitungan Halaman Fisik
+    const isSameSurah = this.normalizeSurahName(start.surah) === this.normalizeSurahName(end.surah);
+
+    if (isSameSurah) {
+      // Logika Volume (Sesuai kasus Al-Baqarah 6-17)
+      pages = Math.floor(totalLines / 15);
+      lines = totalLines % 15;
+
+      // Minimal 1 halaman jika ada isinya (menangani kasus surah pendek seperti An-Naba)
+      if (pages === 0 && lines > 0) {
+        pages = 1;
+      }
+    } else {
+      // Logika Fisik (Sesuai kasus An-Nas -> Al-Kafirun)
+      pages = touchedPages;
+      lines = totalLines % 15; // Opsional, bisa diset 0 jika ingin murni hitungan halaman
+    }
 
     return { 
-      pages: touchedPages,     // <--- PAKAI INI
-      lines: remainingLines,    // <--- ATAU 0 jika Anda ingin anggap full halaman
+      pages: pages, 
+      lines: lines, 
       juz: endData.juz, 
       isPartial: false 
     };
   }
 
   private static normalizeSurahName(name: string): string {
-    // Pastikan backtick ` dan tanda kutip lain dihandle
+    // Handle kutip aneh (’, ‘, `)
     return name.replace(/[’‘`]/g, "'").trim();
   }
 }
