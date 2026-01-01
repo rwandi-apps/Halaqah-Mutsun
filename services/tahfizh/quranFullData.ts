@@ -3218,6 +3218,14 @@ export const JUZ_BOUNDARIES: Record<number, { start: string, end: string }> = {
   26: { start: "Al-Ahqaf:1", end: "Qaf:45" },
   1: { start: "Al-Fatihah:1", end: "Al-Baqarah:141" },
   2: { start: "Al-Baqarah:142", end: "Al-Baqarah:252" }
+  3: { start: "Al-Baqarah:253", end: "Ali 'Imran:91" }
+4: { start: "Ali 'Imran:92", end: "An-Nisa':23" }
+5: { start: "An-Nisa':24", end: "An-Nisa':147" }
+6: { start: "An-Nisa':148", end: "Al-Ma'idah:82" }
+7: { start: "Al-Ma'idah:83", end: "Al-An'am:110" }
+8: { start: "Al-An'am:111", end: "Al-A'raf:87" }
+9: { start: "Al-A'raf:88", end: "Al-Anfal:40" }
+10: { start: "Al-Anfal:41", end: "At-Taubah:93" }
 };
 
 export const IQRA_PAGES: Record<number, number> = {
