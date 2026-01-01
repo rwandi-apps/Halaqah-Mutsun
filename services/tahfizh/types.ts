@@ -1,6 +1,6 @@
 
 export interface AyahPointer {
-  surahId: number; // 1-114
+  surah: string; 
   ayah: number;
 }
 

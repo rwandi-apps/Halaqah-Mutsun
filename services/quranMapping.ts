@@ -9,21 +9,6 @@ export const QURAN_MAPPING = Object.values(QURAN_METADATA).map(m => ({
   end: m.totalAyah
 }));
 
-/**
- * Interface untuk mapping Iqra
- */
-export const IQRA_MAPPING = [
-  { volume: 1, pages: 31 },
-  { volume: 2, pages: 30 },
-  { volume: 3, pages: 30 },
-  { volume: 4, pages: 30 },
-  { volume: 5, pages: 30 },
-  { volume: 6, pages: 31 },
-];
-
-/**
- * Menghitung selisih hafalan secara fisik (Halaman/Baris Mushaf Madinah).
- */
 export const calculateHafalan = (
   fromSurah: string, 
   fromAyat: number, 
@@ -32,24 +17,18 @@ export const calculateHafalan = (
 ): { pages: number, lines: number } => {
   if (!fromSurah || !toSurah) return { pages: 0, lines: 0 };
 
-  // Convert surah name to metadata to get surahId (index)
-  const startMeta = QURAN_METADATA[fromSurah];
-  const endMeta = QURAN_METADATA[toSurah];
-
-  if (!startMeta || !endMeta) return { pages: 0, lines: 0 };
-
-  // Use TahfizhEngineSDQ and calculateCapaian as defined in engine.ts
-  const result = TahfizhEngineSDQ.calculateCapaian(
-    { surahId: startMeta.index, ayah: fromAyat },
-    { surahId: endMeta.index, ayah: toAyat }
-  );
-
-  return { pages: result.quran.totalHalaman, lines: result.quran.totalBaris };
+  try {
+    const result = TahfizhEngineSDQ.calculateCapaian(
+      { surah: fromSurah, ayah: fromAyat },
+      { surah: toSurah, ayah: toAyat }
+    );
+    return { pages: result.quran.totalHalaman, lines: result.quran.totalBaris };
+  } catch (error) {
+    console.error("Calculation Error:", error);
+    return { pages: 0, lines: 0 };
+  }
 };
 
-/**
- * Parsing string range (contoh: "An-Naba: 1 - An-Naba: 24") ke hasil fisik.
- */
 export const calculateFromRangeString = (rangeStr: string): { pages: number, lines: number } => {
   if (!rangeStr || rangeStr.trim() === '-' || rangeStr.trim() === '') return { pages: 0, lines: 0 };
   
@@ -61,7 +40,6 @@ export const calculateFromRangeString = (rangeStr: string): { pages: number, lin
   }
 
   const parseLocation = (s: string) => {
-    // Mencocokkan "Surah: Ayat" atau "Surah:Ayat"
     const match = s.match(/^(.*?)[:\s]+(\d+)$/);
     if (match) return { surah: match[1].trim(), ayah: parseInt(match[2]) };
     return null;
