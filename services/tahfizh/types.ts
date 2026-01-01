@@ -1,19 +1,46 @@
 
 export interface AyahPointer {
-  surah: string;
+  surahId: number; // 1-114
   ayah: number;
 }
 
-export interface CalculationResult {
-  pages: number;
-  lines: number;
+export interface IqraPointer {
+  jilid: number; // 1-6
+  page: number;
+}
+
+export interface CalculationBreakdown {
+  type: 'iqra' | 'juz';
+  name: string;
+  from: string;
+  to: string;
+  halaman: number;
+  baris: number;
+}
+
+export interface SDQCalculationResult {
+  iqra: {
+    totalHalaman: number;
+  };
+  quran: {
+    totalHalaman: number;
+    totalBaris: number;
+  };
+  total: {
+    halaman: number;
+    baris: number;
+  };
+  breakdown: CalculationBreakdown[];
+}
+
+export interface QuranAyahData {
   juz: number;
-  isPartial: boolean;
-  error?: string;
+  page: number;
+  line: number;
 }
 
 export interface SurahMeta {
-  index: number; // Index asli Mushaf (1-114)
+  index: number;
   name: string;
   totalAyah: number;
   startPage: number;

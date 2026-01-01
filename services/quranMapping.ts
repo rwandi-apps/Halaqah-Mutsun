@@ -1,5 +1,5 @@
 
-import { TahfizhEngine } from './tahfizh/engine';
+import { TahfizhEngineSDQ } from './tahfizh/engine';
 import { QURAN_METADATA } from './tahfizh/quranData';
 
 export const QURAN_MAPPING = Object.values(QURAN_METADATA).map(m => ({
@@ -32,12 +32,19 @@ export const calculateHafalan = (
 ): { pages: number, lines: number } => {
   if (!fromSurah || !toSurah) return { pages: 0, lines: 0 };
 
-  const result = TahfizhEngine.calculateRange(
-    { surah: fromSurah, ayah: fromAyat },
-    { surah: toSurah, ayah: toAyat }
+  // Convert surah name to metadata to get surahId (index)
+  const startMeta = QURAN_METADATA[fromSurah];
+  const endMeta = QURAN_METADATA[toSurah];
+
+  if (!startMeta || !endMeta) return { pages: 0, lines: 0 };
+
+  // Use TahfizhEngineSDQ and calculateCapaian as defined in engine.ts
+  const result = TahfizhEngineSDQ.calculateCapaian(
+    { surahId: startMeta.index, ayah: fromAyat },
+    { surahId: endMeta.index, ayah: toAyat }
   );
 
-  return { pages: result.pages, lines: result.lines };
+  return { pages: result.quran.totalHalaman, lines: result.quran.totalBaris };
 };
 
 /**
