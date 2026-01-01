@@ -10,7 +10,7 @@ import {
   updateDoc,
   deleteDoc,
   serverTimestamp,
-  writeBatch,
+  runTransaction,
   onSnapshot,
   Unsubscribe,
   setDoc
@@ -18,6 +18,41 @@ import {
 import { db } from '../lib/firebase';
 import { User, Student, Report, Role, SemesterReport } from '../types';
 import { extractClassLevel } from './sdqTargets';
+import { TahfizhEngineSDQ } from './tahfizh/engine';
+
+/**
+ * Utility: Mengonversi akumulasi baris ke format Juz/Hal/Baris (Standard 15 Lines)
+ */
+const normalizeHafalan = (totalLines: number) => {
+  const LINES_PER_PAGE = 15;
+  const PAGES_PER_JUZ = 20;
+  const LINES_PER_JUZ = LINES_PER_PAGE * PAGES_PER_JUZ;
+
+  const juz = Math.floor(totalLines / LINES_PER_JUZ);
+  const remainingAfterJuz = totalLines % LINES_PER_JUZ;
+  
+  const pages = Math.floor(remainingAfterJuz / LINES_PER_PAGE);
+  const lines = remainingAfterJuz % LINES_PER_PAGE;
+
+  return { juz, pages, lines };
+};
+
+/**
+ * Utility: Menghitung total baris dari objek hafalan
+ */
+const toTotalLines = (h: { juz: number, pages: number, lines: number }) => {
+  return (h.juz * 20 * 15) + (h.pages * 15) + h.lines;
+};
+
+/**
+ * Helper: Parse string "Surah:Ayat" menjadi object pointer
+ */
+const parsePointer = (str: string) => {
+  if (!str || str === '-') return null;
+  const parts = str.split(':');
+  if (parts.length < 2) return null;
+  return { surah: parts[0].trim(), ayah: parseInt(parts[1]) || 1 };
+};
 
 export const getAllTeachers = async (): Promise<User[]> => {
   if (!db) return [];
@@ -142,22 +177,76 @@ export const updateStudent = async (id: string, data: Partial<Student>): Promise
   await updateDoc(docRef, updateData);
 };
 
-export const addReport = async (report: Omit<Report, 'id' | 'createdAt'>): Promise<Report> => {
+/**
+ * IMPLEMENTASI STRATEGI ROLLING TOTAL & BASELINE (SDQ ENGINE)
+ */
+export const saveSDQReport = async (reportData: Omit<Report, 'id' | 'createdAt'>): Promise<void> => {
   if (!db) throw new Error("Firestore not initialized");
-  const batch = writeBatch(db);
-  const newReportRef = doc(collection(db, 'laporan'));
-  const createdAt = new Date().toISOString();
-  batch.set(newReportRef, { ...report, createdAt });
-  
-  const studentRef = doc(db, 'siswa', report.studentId);
-  const latestProgress = report.tahfizh.individual.split(' - ')[1] || report.tahfizh.individual;
-  batch.update(studentRef, { 
-    currentProgress: latestProgress,
-    ...(report.totalHafalan ? { totalHafalan: report.totalHafalan } : {})
+
+  await runTransaction(db, async (transaction) => {
+    const studentRef = doc(db, 'siswa', reportData.studentId);
+    const reportRef = doc(collection(db, 'laporan'));
+    
+    const studentSnap = await transaction.get(studentRef);
+    if (!studentSnap.exists()) throw new Error("Siswa tidak ditemukan");
+    
+    const studentData = studentSnap.data() as Student;
+    const createdAt = new Date().toISOString();
+
+    let finalTotalHafalan = studentData.totalHafalan || { juz: 0, pages: 0, lines: 0 };
+    let finalProgress = studentData.currentProgress;
+
+    // CASE 1: LAPORAN SEMESTER (Hard Baseline)
+    if (reportData.type === 'Laporan Semester') {
+      if (reportData.totalHafalan) {
+        finalTotalHafalan = reportData.totalHafalan;
+      }
+      finalProgress = reportData.tahfizh.individual.split(' - ')[1] || finalProgress;
+    } 
+    // CASE 2: LAPORAN BULANAN (Rolling Total / Delta)
+    else {
+      let currentTotalLines = toTotalLines(finalTotalHafalan);
+      
+      const rangeStr = reportData.tahfizh.individual;
+      if (rangeStr && rangeStr !== '-') {
+        const parts = rangeStr.split(' - ');
+        if (parts.length === 2) {
+          const startPtr = parsePointer(parts[0]);
+          const endPtr = parsePointer(parts[1]);
+          
+          if (startPtr && endPtr) {
+            const delta = TahfizhEngineSDQ.calculateCapaian(startPtr, endPtr);
+            // Tambahkan delta baris dari Quran
+            currentTotalLines += delta.quran.totalBaris;
+            finalProgress = parts[1].trim();
+          }
+        }
+      }
+      finalTotalHafalan = normalizeHafalan(currentTotalLines);
+    }
+
+    // UPDATE STATE SISWA
+    transaction.update(studentRef, {
+      totalHafalan: finalTotalHafalan,
+      currentProgress: finalProgress,
+      lastUpdated: serverTimestamp()
+    });
+
+    // SIMPAN LOG LAPORAN
+    transaction.set(reportRef, {
+      ...reportData,
+      totalHafalan: finalTotalHafalan, // Snapshot total saat laporan dibuat
+      createdAt
+    });
   });
-  
-  await batch.commit();
-  return { id: newReportRef.id, ...report, createdAt } as Report;
+};
+
+/**
+ * Legacy support: aliasing addReport to the new SDQ logic
+ */
+export const addReport = async (report: Omit<Report, 'id' | 'createdAt'>): Promise<Report> => {
+  await saveSDQReport(report);
+  return { id: 'temp-id', ...report, createdAt: new Date().toISOString() } as Report;
 };
 
 export const updateReport = async (reportId: string, data: Partial<Report>): Promise<void> => {
