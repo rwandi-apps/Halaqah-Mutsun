@@ -8,14 +8,14 @@ import { QuranAyahData } from './types';
  */
 export const QURAN_FULL_MAP: Record<string, QuranAyahData> = {
   // Juz 1
-  "Al-Fatihah:1": { juz: 1, page: 1, line: 8, globalIndex: 1 },
+  "Al-Fatihah:1": { juz: 1, page: 1, line: 1, globalIndex: 1 },
 "Al-Fatihah:2": { juz: 1, page: 1, line: 9, globalIndex: 2 },
 "Al-Fatihah:3": { juz: 1, page: 1, line: 10, globalIndex: 3 },
 "Al-Fatihah:4": { juz: 1, page: 1, line: 10, globalIndex: 4 },
 "Al-Fatihah:5": { juz: 1, page: 1, line: 11, globalIndex: 5 },
 "Al-Fatihah:6": { juz: 1, page: 1, line: 12, globalIndex: 6 },
 "Al-Fatihah:7": { juz: 1, page: 1, line: 15, globalIndex: 7 },
-"Al-Baqarah:1": { juz: 1, page: 2, line: 10, globalIndex: 8 },
+"Al-Baqarah:1": { juz: 1, page: 2, line: 1, globalIndex: 8 },
 "Al-Baqarah:2": { juz: 1, page: 2, line: 11, globalIndex: 9 },
 "Al-Baqarah:3": { juz: 1, page: 2, line: 12, globalIndex: 10 },
 "Al-Baqarah:4": { juz: 1, page: 2, line: 13, globalIndex: 11 },
@@ -303,7 +303,7 @@ export const QURAN_FULL_MAP: Record<string, QuranAyahData> = {
 "Al-Baqarah:284": { juz: 3, page: 49, line: 7, globalIndex: 291 },
 "Al-Baqarah:285": { juz: 3, page: 49, line: 10, globalIndex: 292 },
 "Al-Baqarah:286": { juz: 3, page: 49, line: 15, globalIndex: 293 },
-"Ali 'Imran:1": { juz: 3, page: 50, line: 3, globalIndex: 294 },
+"Ali 'Imran:1": { juz: 3, page: 50, line: 1, globalIndex: 294 },
 "Ali 'Imran:2": { juz: 3, page: 50, line: 3, globalIndex: 295 },
 "Ali 'Imran:3": { juz: 3, page: 50, line: 4, globalIndex: 296 },
 "Ali 'Imran:4": { juz: 3, page: 50, line: 6, globalIndex: 297 },
@@ -1474,7 +1474,6 @@ export const QURAN_FULL_MAP: Record<string, QuranAyahData> = {
 "At-Taubah:91": { juz: 10, page: 201, line: 10, globalIndex: 1326 },
 "At-Taubah:92": { juz: 10, page: 201, line: 13, globalIndex: 1327 },
 "At-Taubah:93": { juz: 10, page: 201, line: 15, globalIndex: 1328 },
-
   // Juz 26
   "Al-Ahqaf:1": { juz: 26, page: 502, line: 9, globalIndex: 4511 },
 "Al-Ahqaf:2": { juz: 26, page: 502, line: 9, globalIndex: 4512 },
