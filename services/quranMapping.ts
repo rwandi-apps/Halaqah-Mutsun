@@ -22,7 +22,13 @@ export const calculateHafalan = (
       { surah: fromSurah, ayah: fromAyat },
       { surah: toSurah, ayah: toAyat }
     );
-    return { pages: result.quran.totalHalaman, lines: result.quran.totalBaris };
+    
+    // Untuk Iqra, total halaman adalah result.total.halaman
+    // Untuk Quran, total baris adalah result.total.baris
+    return { 
+      pages: result.total.halaman, 
+      lines: result.total.baris 
+    };
   } catch (error) {
     console.error("Calculation Error:", error);
     return { pages: 0, lines: 0 };
@@ -40,6 +46,7 @@ export const calculateFromRangeString = (rangeStr: string): { pages: number, lin
   }
 
   const parseLocation = (s: string) => {
+    // Menghandle format "Iqra 1: 5" atau "An-Naba: 1"
     const match = s.match(/^(.*?)[:\s]+(\d+)$/);
     if (match) return { surah: match[1].trim(), ayah: parseInt(match[2]) };
     return null;
