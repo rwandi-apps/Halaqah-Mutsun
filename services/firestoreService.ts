@@ -180,62 +180,100 @@ export const updateStudent = async (id: string, data: Partial<Student>): Promise
 /**
  * IMPLEMENTASI STRATEGI ROLLING TOTAL & BASELINE (SDQ ENGINE)
  */
-export const saveSDQReport = async (reportData: Omit<Report, 'id' | 'createdAt'>): Promise<void> => {
+export const saveSDQReport = async (
+  reportData: Omit<Report, 'id' | 'createdAt'>
+): Promise<void> => {
   if (!db) throw new Error("Firestore not initialized");
 
   await runTransaction(db, async (transaction) => {
     const studentRef = doc(db, 'siswa', reportData.studentId);
     const reportRef = doc(collection(db, 'laporan'));
-    
+
     const studentSnap = await transaction.get(studentRef);
-    if (!studentSnap.exists()) throw new Error("Siswa tidak ditemukan");
-    
+    if (!studentSnap.exists()) {
+      throw new Error("Siswa tidak ditemukan");
+    }
+
     const studentData = studentSnap.data() as Student;
     const createdAt = new Date().toISOString();
 
-    let finalTotalHafalan = studentData.totalHafalan || { juz: 0, pages: 0, lines: 0 };
-    let finalProgress = studentData.currentProgress;
+    // ===============================
+    // BASE STATE SISWA
+    // ===============================
+    let finalTotalHafalan = studentData.totalHafalan ?? {
+      juz: 0,
+      pages: 0,
+      lines: 0
+    };
 
-    // CASE 1: LAPORAN SEMESTER (Hard Baseline)
+    let finalProgress = studentData.currentProgress ?? null;
+
+    // ===============================
+    // CASE 1 — LAPORAN SEMESTER
+    // (Hard Baseline)
+    // ===============================
     if (reportData.type === 'Laporan Semester') {
       if (reportData.totalHafalan) {
         finalTotalHafalan = reportData.totalHafalan;
       }
-      finalProgress = reportData.tahfizh.individual.split(' - ')[1] || finalProgress;
-    } 
-    // CASE 2: LAPORAN BULANAN (Rolling Total / Delta)
+
+      const endRange = reportData.tahfizh?.individual?.split(' - ')[1];
+      if (endRange && endRange !== '-') {
+        finalProgress = endRange.trim();
+      }
+    }
+
+    // ===============================
+    // CASE 2 — LAPORAN BULANAN
+    // (Rolling Delta)
+    // ===============================
     else {
       let currentTotalLines = toTotalLines(finalTotalHafalan);
-      
-      const rangeStr = reportData.tahfizh.individual;
+
+      const rangeStr = reportData.tahfizh?.individual;
       if (rangeStr && rangeStr !== '-') {
         const parts = rangeStr.split(' - ');
+
         if (parts.length === 2) {
-          const startPtr = parsePointer(parts[0]);
           const endPtr = parsePointer(parts[1]);
-          
+
+          // 🔑 START POINTER WAJIB DARI PROGRESS TERAKHIR
+          const startPtr = finalProgress
+            ? parsePointer(finalProgress)
+            : parsePointer(parts[0]); // fallback utk data lama
+
           if (startPtr && endPtr) {
-            const delta = TahfizhEngineSDQ.calculateCapaian(startPtr, endPtr);
-            // Tambahkan delta baris dari Quran
+            const delta = TahfizhEngineSDQ.calculateCapaian(
+              startPtr,
+              endPtr
+            );
+
+            // ✅ TAMBAH HANYA DELTA BARIS BARU
             currentTotalLines += delta.quran.totalBaris;
+
             finalProgress = parts[1].trim();
           }
         }
       }
+
       finalTotalHafalan = normalizeHafalan(currentTotalLines);
     }
 
-    // UPDATE STATE SISWA
+    // ===============================
+    // UPDATE DATA SISWA
+    // ===============================
     transaction.update(studentRef, {
       totalHafalan: finalTotalHafalan,
       currentProgress: finalProgress,
       lastUpdated: serverTimestamp()
     });
 
-    // SIMPAN LOG LAPORAN
+    // ===============================
+    // SIMPAN LAPORAN (SNAPSHOT)
+    // ===============================
     transaction.set(reportRef, {
       ...reportData,
-      totalHafalan: finalTotalHafalan, // Snapshot total saat laporan dibuat
+      totalHafalan: finalTotalHafalan,
       createdAt
     });
   });
