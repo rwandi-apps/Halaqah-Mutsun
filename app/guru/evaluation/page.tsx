@@ -1,64 +1,128 @@
 
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { BookOpen, ArrowLeft, Sparkles } from 'lucide-react';
-import { Button } from '../../../components/Button';
+import React, { useEffect, useState } from 'react';
+import { HalaqahEvaluation } from '../../../types';
+import { getLatestEvaluationForTeacher } from '../../../services/firestoreService';
+import { BookOpen, Sparkles, MessageSquare, Target, Zap, AlertCircle } from 'lucide-react';
 
-export default function GuruEvaluationPage() {
-  const navigate = useNavigate();
+export default function GuruEvaluationPage({ teacherId }: { teacherId?: string }) {
+  const [evaluation, setEvaluation] = useState<HalaqahEvaluation | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (teacherId) {
+      getLatestEvaluationForTeacher(teacherId).then(data => {
+        setEvaluation(data);
+        setIsLoading(false);
+      });
+    }
+  }, [teacherId]);
+
+  if (isLoading) return <div className="p-8 text-center text-gray-400">Memuat evaluasi...</div>;
+
+  if (!evaluation) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white rounded-3xl shadow-sm border border-gray-100 p-12 text-center">
+          <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6 text-gray-300">
+            <MessageSquare size={40} />
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Belum Ada Evaluasi</h3>
+          <p className="text-sm text-gray-500">Evaluasi dari koordinator untuk halaqah Anda belum tersedia untuk periode ini.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-[75vh] flex items-center justify-center p-6">
-      <div className="max-w-md w-full bg-white rounded-[2rem] shadow-sm border border-gray-100 p-12 text-center relative overflow-hidden animate-in fade-in slide-in-from-bottom-6 duration-1000">
+    <div className="max-w-4xl mx-auto space-y-8 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="relative bg-white rounded-[2.5rem] shadow-xl shadow-primary-500/5 border border-primary-50 overflow-hidden">
         
-        {/* Background Decorative Element */}
-        <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-emerald-50 rounded-full blur-3xl opacity-50"></div>
-        <div className="absolute bottom-0 left-0 -ml-8 -mb-8 w-32 h-32 bg-amber-50 rounded-full blur-3xl opacity-50"></div>
-
-        {/* Ilustrasi Islami Sederhana: Mushaf Al-Qur'an */}
-        <div className="mb-10 flex justify-center relative">
-          <div className="relative z-10 w-28 h-28 bg-white rounded-3xl shadow-[0_10px_40px_-10px_rgba(16,185,129,0.2)] border border-emerald-50 flex items-center justify-center text-emerald-600 transform -rotate-2 hover:rotate-0 transition-transform duration-500">
-            <BookOpen size={56} strokeWidth={1.2} />
-          </div>
-          <div className="absolute -top-4 -right-2 z-20">
-            <div className="bg-amber-100/80 backdrop-blur-sm p-2 rounded-2xl border border-amber-200 text-amber-600 shadow-sm animate-bounce">
-              <Sparkles size={24} />
+        {/* Header Ribbon */}
+        <div className="bg-gradient-to-r from-primary-600 to-primary-800 px-8 py-10 text-white">
+          <div className="flex justify-between items-start">
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles size={20} className="text-primary-200" />
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary-100">Evaluasi & Arahan Pembinaan</span>
+              </div>
+              <h2 className="text-3xl font-black tracking-tight mb-2">Halaqah {evaluation.period}</h2>
+              <p className="text-primary-100/80 text-sm font-medium">Berdasarkan data performa dan laporan bulanan ustadz.</p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20">
+               <BookOpen size={32} className="text-white" />
             </div>
           </div>
         </div>
 
-        {/* Status Badge */}
-        <div className="inline-flex items-center px-5 py-2 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-bold uppercase tracking-[0.2em] mb-8 border border-emerald-100/50 shadow-inner">
-          Dalam Pengembangan
-        </div>
+        {/* Content Body */}
+        <div className="p-8 sm:p-12 space-y-10">
+          
+          {/* Section 1: Insight Utama */}
+          <div className="space-y-4">
+             <div className="flex items-center gap-3">
+                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
+                  <Zap size={20} />
+                </div>
+                <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">Insight Utama</h3>
+             </div>
+             <div className="bg-emerald-50/30 p-6 rounded-[1.5rem] border border-emerald-100/50 leading-relaxed text-gray-700 font-medium">
+                {evaluation.insightUtama}
+             </div>
+          </div>
 
-        {/* Judul Utama */}
-        <h2 className="text-3xl font-bold text-gray-900 mb-4 tracking-tight">
-          Fitur Evaluasi Sedang Dalam Pengembangan
-        </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Section 2: Kendala */}
+            <div className="space-y-4">
+               <div className="flex items-center gap-3">
+                  <div className="p-2 bg-orange-50 text-orange-600 rounded-xl">
+                    <AlertCircle size={20} />
+                  </div>
+                  <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">Kendala Terindikasi</h3>
+               </div>
+               <div className="p-1 text-sm text-gray-600 leading-relaxed italic">
+                  {evaluation.kendalaTerindikasi}
+               </div>
+            </div>
 
-        {/* Subjudul Islami */}
-        <p className="text-sm text-gray-500 leading-relaxed mb-10 px-4">
-          InsyaAllah fitur ini sedang dipersiapkan untuk mendukung proses pembinaan siswa secara lebih optimal.
-        </p>
+            {/* Section 3: Target */}
+            <div className="space-y-4">
+               <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+                    <Target size={20} />
+                  </div>
+                  <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">Target Bulan Depan</h3>
+               </div>
+               <div className="bg-blue-600 p-6 rounded-[1.5rem] text-white shadow-lg shadow-blue-500/20">
+                  <p className="text-[10px] font-bold uppercase opacity-60 mb-1">Capaian Minimum:</p>
+                  <p className="text-xl font-black">{evaluation.targetBulanDepan}</p>
+               </div>
+            </div>
+          </div>
 
-        {/* Pesan Motivatif Islami Singkat */}
-        <div className="relative py-6 px-6 mb-10 bg-emerald-50/30 rounded-[1.5rem] border border-emerald-100/50">
-          <p className="text-xs italic text-emerald-700 font-semibold tracking-wide">
-            "Setiap kebaikan memiliki waktu terbaiknya."
-          </p>
-        </div>
+          {/* Section 4: Tindak Lanjut */}
+          <div className="pt-6 border-t border-gray-100">
+             <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-primary-50 text-primary-600 rounded-xl">
+                  <MessageSquare size={20} />
+                </div>
+                <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">Tindak Lanjut & Arahan</h3>
+             </div>
+             <div className="bg-gray-50 p-6 rounded-[1.5rem] border border-gray-100 leading-relaxed text-gray-700">
+                {evaluation.tindakLanjut}
+             </div>
+          </div>
 
-        {/* Tombol Navigasi */}
-        <div className="px-2">
-          <Button 
-            variant="secondary" 
-            onClick={() => navigate('/guru/dashboard')}
-            className="w-full py-5 rounded-[1.25rem] border-emerald-100 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 transition-all shadow-sm group font-bold text-sm"
-          >
-            <ArrowLeft size={18} className="mr-2 group-hover:-translate-x-1 transition-transform duration-300" />
-            Kembali ke Dashboard
-          </Button>
+          {/* Signature / Footer */}
+          <div className="flex justify-between items-center pt-8">
+             <div className="text-xs text-gray-400 font-medium">
+                Dibuat pada: {new Date(evaluation.createdAt).toLocaleDateString('id-ID')}
+             </div>
+             <div className="text-right">
+                <p className="text-[10px] font-black text-primary-600 uppercase tracking-widest mb-1">Koordinator Tahfizh</p>
+                <div className="h-px w-24 bg-primary-100 ml-auto mb-2"></div>
+                <p className="text-sm font-bold text-gray-900">SDQ Mutiara Sunnah</p>
+             </div>
+          </div>
         </div>
       </div>
     </div>

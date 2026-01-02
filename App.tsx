@@ -10,6 +10,7 @@ import CoordinatorSiswaPage from './app/coordinator/siswa/page';
 import CoordinatorKelasPage from './app/coordinator/kelas/page';
 import CoordinatorReportsPage from './app/coordinator/reports/page';
 import CoordinatorRaporPage from './app/coordinator/rapor/page';
+import CoordinatorEvaluationsPage from './app/coordinator/evaluations/page';
 import GuruDashboard from './app/guru/dashboard/page';
 import GuruHalaqahPage from './app/guru/halaqah/page';
 import GuruLaporanPage from './app/guru/laporan/page';
@@ -21,7 +22,6 @@ import { getStoredUser, simpleLogout } from './services/simpleAuth';
 import { User } from './types';
 
 function App() {
-  // DISABLING LOGIN: Menginisialisasi user otomatis sebagai GURU jika storage kosong
   const [user, setUser] = useState<User | null>(getStoredUser() || {
     id: 'u2',
     name: 'Ust. Hasan (Auto-Login)',
@@ -47,22 +47,17 @@ function App() {
   return (
     <HashRouter>
       <Routes>
-        {/* Login Page - Tetap ada rutenya tapi user otomatis redirect ke "/" jika sudah set user */}
         <Route path="/login" element={
           !user ? <LoginPage onLogin={handleLogin} /> : <Navigate to="/" replace />
         } />
 
-        {/* Protected Routes */}
         <Route element={<Layout user={user} onLogout={handleLogout} />}>
-          
-          {/* ROOT REDIRECTOR */}
           <Route path="/" element={
             user?.role === 'KOORDINATOR' 
               ? <Navigate to="/coordinator/dashboard" replace /> 
               : <Navigate to="/guru/dashboard" replace />
           } />
           
-          {/* Coordinator Pages */}
           <Route path="/coordinator/dashboard" element={<CoordinatorDashboard />} />
           <Route path="/coordinator/guru" element={<CoordinatorGuruPage />} />
           <Route path="/coordinator/guru/:id" element={<CoordinatorTeacherDetail />} />
@@ -70,19 +65,17 @@ function App() {
           <Route path="/coordinator/kelas" element={<CoordinatorKelasPage />} />
           <Route path="/coordinator/reports" element={<CoordinatorReportsPage />} />
           <Route path="/coordinator/rapor" element={<CoordinatorRaporPage />} />
+          <Route path="/coordinator/evaluations" element={<CoordinatorEvaluationsPage />} />
           
-          {/* Guru Pages */}
           <Route path="/guru/dashboard" element={<GuruDashboard teacherId={user?.id} />} />
           <Route path="/guru/halaqah" element={<GuruHalaqahPage teacherId={user?.id} />} />
           <Route path="/guru/laporan" element={<GuruLaporanPage teacherId={user?.id} />} />
           <Route path="/guru/view-report" element={<GuruViewReportPage teacherId={user?.id} />} />
-          <Route path="/guru/evaluation" element={<GuruEvaluationPage />} />
+          <Route path="/guru/evaluation" element={<GuruEvaluationPage teacherId={user?.id} />} />
           <Route path="/guru/grades" element={<GuruGradesPage teacherId={user?.id} />} />
-          {/* Pass user.name for signature requirements */}
           <Route path="/guru/rapor" element={<GuruRaporPage teacherId={user?.id} teacherName={user?.name} />} />
         </Route>
 
-        {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </HashRouter>

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, GraduationCap, BookOpen, FileText, ClipboardList, LogOut, FileCheck } from 'lucide-react';
+import { LayoutDashboard, Users, GraduationCap, BookOpen, FileText, ClipboardList, LogOut, FileCheck, Sparkles } from 'lucide-react';
 
 interface SidebarProps {
   onLogout: () => void;
@@ -21,7 +21,7 @@ export const SidebarCoordinator: React.FC<SidebarProps> = ({ onLogout, onCloseMo
     { type: 'section', label: 'SUPERVISI' },
     { to: "/coordinator/reports", icon: FileText, label: "Pantau Laporan" },
     { to: "/coordinator/rapor", icon: FileCheck, label: "Pantau Rapor" },
-    { to: "/coordinator/evaluations", icon: ClipboardList, label: "Input Evaluasi" },
+    { to: "/coordinator/evaluations", icon: Sparkles, label: "Input Evaluasi AI" },
   ];
 
   return (

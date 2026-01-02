@@ -10,6 +10,7 @@ export interface User {
   role: Role;
   photoURL?: string;
   createdAt?: string;
+  teacherId?: string;
 }
 
 export interface Student {
@@ -65,7 +66,20 @@ export interface Report {
   evaluation: string;
 }
 
-// Collection: rapor_semester
+export interface HalaqahEvaluation {
+  id: string;
+  teacherId: string;
+  period: string; // Format: "Desember 2025"
+  academicYear: string;
+  insightUtama: string;
+  kendalaTerindikasi: string;
+  tindakLanjut: string;
+  targetBulanDepan: string;
+  catatanKoordinator: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 export interface SemesterReport {
   id?: string;
   studentId: string;
@@ -75,8 +89,6 @@ export interface SemesterReport {
   targetHafalan: string;
   dateStr: string;
   dateHijri: string;
-  
-  // Format Tabel (Kelas 4-6)
   assessments: {
     adab: string;
     murojaah: string;
@@ -93,21 +105,8 @@ export interface SemesterReport {
     mutqin: { jumlah: string; rincian: string; status: string };
     semesterIni: { jumlah: string; rincian: string; status: string };
   };
-
-  // Format Deskripsi (Kelas 1-3)
   narrativeTahfizh?: string;
   narrativeTilawah?: string;
-  
   notes: string;
-  createdAt?: string;
-}
-
-export interface Evaluation {
-  id: string;
-  studentId: string;
-  teacherId: string;
-  date: string;
-  content: string;
-  aiGenerated: boolean;
   createdAt?: string;
 }
