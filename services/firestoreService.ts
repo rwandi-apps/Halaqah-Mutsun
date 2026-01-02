@@ -49,9 +49,17 @@ const toTotalLines = (h: { juz: number, pages: number, lines: number }) => {
  */
 const parsePointer = (str: string) => {
   if (!str || str === '-') return null;
-  const parts = str.split(':');
+
+  // ambil hanya "Surah: Ayat"
+  const clean = str.split('-')[0].trim();
+  const parts = clean.split(':');
+
   if (parts.length < 2) return null;
-  return { surah: parts[0].trim(), ayah: parseInt(parts[1]) || 1 };
+
+  return {
+    surah: parts[0].trim(),
+    ayah: parseInt(parts[1].trim(), 10)
+  };
 };
 
 export const getAllTeachers = async (): Promise<User[]> => {
