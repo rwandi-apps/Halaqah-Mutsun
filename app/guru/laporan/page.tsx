@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Student } from '../../../types';
-import { getStudentsByTeacher, addReport } from '../../../services/firestoreService';
+import { getStudentsByTeacher, saveSDQReport } from '../../../services/firestoreService';
 import { SURAH_LIST } from '../../../services/mockBackend';
 import { calculateHafalan } from '../../../services/quranMapping';
 import { Button } from '../../../components/Button';
@@ -152,14 +152,37 @@ export default function GuruLaporanPage({ teacherId = '1' }: GuruLaporanPageProp
     };
     setIsSaving(true);
     try {
-      await addReport({
-        studentId, studentName: selectedStudent.name, teacherId, className: selectedStudent.className, type: reportType, month, academicYear: '2025/2026', date: new Date().toISOString().split('T')[0], evaluation: '',
-        tilawah: { method: tilawahMethod, individual: makeRange(tilawahFromSurah, tilawahFromVerse, tilawahToSurah, tilawahToVerse), classical: makeRange(tilawahKlasikalFromSurah, tilawahKlasikalFromVerse, tilawahKlasikalToSurah, tilawahKlasikalToVerse) },
-        tahfizh: { individual: makeRange(tahfizhFromSurah, tahfizhFromVerse, tahfizhToSurah, tahfizhToVerse), classical: makeRange(tahfizhKlasikalFromSurah, tahfizhKlasikalFromVerse, tahfizhKlasikalToSurah, tahfizhKlasikalToVerse) },
-        totalHafalan: reportType === 'Laporan Semester' ? { juz: safeNum(baselineJuz), pages: safeNum(baselinePages), lines: safeNum(baselineLines) } : undefined, 
+      await saveSDQReport({
+        studentId, 
+        studentName: selectedStudent.name, 
+        teacherId, 
+        className: selectedStudent.className, 
+        type: reportType, 
+        month, 
+        academicYear: '2025/2026', 
+        date: new Date().toISOString().split('T')[0], 
+        evaluation: '',
+        tilawah: { 
+          method: tilawahMethod, 
+          individual: makeRange(tilawahFromSurah, tilawahFromVerse, tilawahToSurah, tilawahToVerse), 
+          classical: makeRange(tilawahKlasikalFromSurah, tilawahKlasikalFromVerse, tilawahKlasikalToSurah, tilawahKlasikalToVerse) 
+        },
+        tahfizh: { 
+          individual: makeRange(tahfizhFromSurah, tahfizhFromVerse, tahfizhToSurah, tahfizhToVerse), 
+          classical: makeRange(tahfizhKlasikalFromSurah, tahfizhKlasikalFromVerse, tahfizhKlasikalToSurah, tahfizhKlasikalToVerse) 
+        },
+        totalHafalan: reportType === 'Laporan Semester' ? { 
+          juz: safeNum(baselineJuz), 
+          pages: safeNum(baselinePages), 
+          lines: safeNum(baselineLines) 
+        } : undefined, 
         notes
       });
       alert("Laporan berhasil disimpan!");
+      // Reset form range inputs
+      setTahfizhFromSurah(''); setTahfizhToSurah('');
+      setTahfizhFromVerse(''); setTahfizhToVerse('');
+      setNotes('');
     } catch (error) { console.error(error); alert("Gagal menyimpan laporan."); } finally { setIsSaving(false); }
   };
 
@@ -185,7 +208,7 @@ export default function GuruLaporanPage({ teacherId = '1' }: GuruLaporanPageProp
           <div className="bg-emerald-50/50 px-6 py-4 border-b border-emerald-100 flex items-center gap-2"><Book className="text-emerald-600" size={20} /><h3 className="font-bold text-emerald-700">Capaian Tahfizh</h3></div>
           <div className="p-5 sm:p-6 space-y-6">
             {reportType === 'Laporan Semester' && (
-              <div className="bg-emerald-50/30 p-4 rounded-xl border border-emerald-100/50"><div className="flex items-center gap-2 mb-4"><Database size={16} className="text-emerald-600"/><h4 className="font-bold text-emerald-800 text-xs">Akumulasi Awal Semester</h4></div><div className="grid grid-cols-3 gap-2"><div className="text-center"><p className="text-[9px] font-bold text-emerald-600 mb-1 uppercase">Juz</p><CounterInput value={baselineJuz} onChange={setBaselineJuz} /></div><div className="text-center"><p className="text-[9px] font-bold text-emerald-600 mb-1 uppercase">Hal</p><CounterInput value={baselinePages} onChange={setBaselinePages} /></div><div className="text-center"><p className="text-[9px] font-bold text-emerald-600 mb-1 uppercase">Baris</p><CounterInput value={baselineLines} onChange={setBaselineLines} /></div></div></div>
+              <div className="bg-emerald-50/30 p-4 rounded-xl border border-emerald-100/50"><div className="flex items-center gap-2 mb-4"><Database size={16} className="text-emerald-600"/><h4 className="font-bold text-emerald-800 text-xs">Akumulasi Awal Semester (Hard Baseline)</h4></div><div className="grid grid-cols-3 gap-2"><div className="text-center"><p className="text-[9px] font-bold text-emerald-600 mb-1 uppercase">Juz</p><CounterInput value={baselineJuz} onChange={setBaselineJuz} /></div><div className="text-center"><p className="text-[9px] font-bold text-emerald-600 mb-1 uppercase">Hal</p><CounterInput value={baselinePages} onChange={setBaselinePages} /></div><div className="text-center"><p className="text-[9px] font-bold text-emerald-600 mb-1 uppercase">Baris</p><CounterInput value={baselineLines} onChange={setBaselineLines} /></div></div></div>
             )}
             <div className="space-y-4"><div className="flex justify-between items-center mb-1"><h4 className="text-xs font-bold text-gray-800 border-l-4 border-emerald-500 pl-2">Individual (Sabaq)</h4><span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">{formatTotal(tahfizhTotal, 'Al-Quran')}</span></div><InputRow label="DARI"><SourceSelect value={tahfizhFromSurah} onChange={(v) => {setTahfizhFromSurah(v); if(!tahfizhToSurah) setTahfizhToSurah(v);}} method="Al-Quran" /><CounterInput label="Ayat" value={tahfizhFromVerse} onChange={setTahfizhFromVerse} /></InputRow><InputRow label="SAMPAI"><SourceSelect value={tahfizhToSurah} onChange={setTahfizhToSurah} method="Al-Quran" /><CounterInput label="Ayat" value={tahfizhToVerse} onChange={setTahfizhToVerse} /></InputRow></div>
             <div className="h-px bg-gray-50"></div>
