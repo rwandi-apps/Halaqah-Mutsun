@@ -4,7 +4,7 @@ import { User, Report, HalaqahEvaluation } from '../../../types';
 import { getAllTeachers, getReportsByTeacher, saveHalaqahEvaluation, getHalaqahEvaluation } from '../../../services/firestoreService';
 import { GoogleGenAI } from "@google/genai";
 import { Button } from '../../../components/Button';
-import { Sparkles, Save, User as UserIcon, Calendar, ClipboardList, AlertCircle, CheckCircle, MessageSquarePlus, Filter } from 'lucide-react';
+import { Sparkles, Save, User as UserIcon, Calendar, ClipboardList, AlertCircle, CheckCircle, MessageSquarePlus, Filter, ChevronRight } from 'lucide-react';
 
 export default function CoordinatorEvaluationsPage() {
   const [teachers, setTeachers] = useState<User[]>([]);
@@ -34,7 +34,7 @@ export default function CoordinatorEvaluationsPage() {
     });
   }, []);
 
-  // Reset period selection when type changes
+  // Update pilihan periode default saat tipe laporan berubah
   useEffect(() => {
     if (reportType === 'Laporan Semester') {
       setSelectedPeriod('Ganjil');
@@ -43,6 +43,7 @@ export default function CoordinatorEvaluationsPage() {
     }
   }, [reportType]);
 
+  // Load data laporan & data evaluasi yang sudah tersimpan
   useEffect(() => {
     if (selectedTeacherId && selectedPeriod) {
       loadDataAndExistingEval();
@@ -61,8 +62,12 @@ export default function CoordinatorEvaluationsPage() {
         getHalaqahEvaluation(selectedTeacherId, periodLabel)
       ]);
       
-      // Filter reports by Type and Month/Semester
-      setReports(teacherReports.filter(r => r.type === reportType && r.month === selectedPeriod));
+      // Filter laporan berdasarkan tipe dan bulan/semester
+      // Logika: field 'month' di koleksi 'laporan' menyimpan nama bulan atau nama semester
+      const filtered = teacherReports.filter(r => 
+        r.type === reportType && r.month === selectedPeriod
+      );
+      setReports(filtered);
       
       if (existingEval) {
         setEvaluation(existingEval);
@@ -82,7 +87,7 @@ export default function CoordinatorEvaluationsPage() {
 
   const handleGenerateAI = async () => {
     if (reports.length === 0) {
-      alert("Tidak ada data laporan guru pada periode ini untuk dianalisis.");
+      alert(`Data ${reportType} untuk ${selectedPeriod} tidak ditemukan. Pastikan Guru sudah menginput laporan.`);
       return;
     }
 
@@ -90,28 +95,24 @@ export default function CoordinatorEvaluationsPage() {
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       
+      // Persiapkan data kontekstual yang kaya untuk AI
       const contextData = reports.map(r => 
-        `- Santri: ${r.studentName}, Capaian: ${r.tahfizh.individual}, Catatan Guru: ${r.notes}`
+        `- Nama: ${r.studentName}, Sabaq: ${r.tahfizh.individual}, Tilawah: ${r.tilawah.individual}, Catatan Guru: ${r.notes}`
       ).join('\n');
 
       const internalPrompt = `
-        TUGAS: Anda adalah Koordinator Tahfizh Senior yang sedang mengevaluasi Guru Halaqah.
-        TIPE EVALUASI: ${reportType}
+        TUGAS: Anda adalah Koordinator Tahfizh Senior. Berikan analisis pembinaan untuk Guru Halaqah.
+        JENIS EVALUASI: ${reportType}
         PERIODE: ${selectedPeriod}
         
-        DATA PERFORMA HALAQAH:
+        DATA DATA LAPORAN GURU:
         ${contextData}
 
-        INSTRUKSI OUTPUT (WAJIB):
-        1. Analisis tren perkembangan halaqah selama ${reportType === 'Laporan Semester' ? 'satu semester' : 'satu bulan'} terakhir.
-        2. Fokus pada performa KELOMPOK (Halaqah), bukan per individu santri.
-        3. Gunakan bahasa pembinaan yang memotivasi, santun, dan berwibawa.
-        4. Format HARUS JSON murni tanpa markdown.
-        5. Field JSON: 
-           - insightUtama: Rangkuman progres kolektif periode ini.
-           - kendalaTerindikasi: Pola kendala yang terlihat dari catatan guru.
-           - tindakLanjut: Arahan konkret untuk ustadz perbaiki di periode mendatang.
-           - targetBulanDepan: Rekomendasi target capaian minimal untuk ${reportType === 'Laporan Semester' ? 'Semester depan' : 'Bulan depan'}.
+        INSTRUKSI KHUSUS:
+        1. Jika ini evaluasi SEMESTER, fokus pada pencapaian jangka panjang dan stabilitas hafalan.
+        2. Jika ini evaluasi BULANAN, fokus pada ritme setoran mingguan.
+        3. Gunakan bahasa yang "mengayomi" ustadz/ustadzah.
+        4. Output HARUS JSON murni (insightUtama, kendalaTerindikasi, tindakLanjut, targetBulanDepan).
       `;
 
       const response = await ai.models.generateContent({
@@ -119,7 +120,7 @@ export default function CoordinatorEvaluationsPage() {
         contents: internalPrompt,
         config: { 
           responseMimeType: "application/json",
-          temperature: 0.7 
+          temperature: 0.8
         }
       });
 
@@ -132,7 +133,7 @@ export default function CoordinatorEvaluationsPage() {
       
     } catch (error) {
       console.error(error);
-      alert("AI Gagal menganalisis. Mohon coba lagi.");
+      alert("Gagal memproses analisis AI.");
     } finally {
       setIsGenerating(false);
     }
@@ -156,7 +157,7 @@ export default function CoordinatorEvaluationsPage() {
         targetBulanDepan: evaluation.targetBulanDepan || '',
         catatanKoordinator: evaluation.catatanKoordinator || ''
       });
-      alert(`Evaluasi ${reportType} telah terbit!`);
+      alert(`Evaluasi ${reportType} berhasil dipublikasikan.`);
     } catch (e) {
       alert("Gagal menyimpan.");
     } finally {
@@ -168,38 +169,40 @@ export default function CoordinatorEvaluationsPage() {
     <div className="space-y-6 max-w-7xl mx-auto pb-20 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Evaluasi & Tindak Lanjut</h2>
-          <p className="text-gray-500 mt-1">Supervisi performa halaqah secara periodik menggunakan kecerdasan buatan.</p>
+          <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Supervisi & Evaluasi AI</h2>
+          <p className="text-gray-500 mt-1">Gunakan kecerdasan buatan untuk mengulas laporan guru secara mendalam.</p>
         </div>
       </div>
 
-      {/* Control Panel */}
-      <div className="bg-white p-6 rounded-[1.5rem] shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Input Selection Panel */}
+      <div className="bg-white p-6 rounded-[1.5rem] shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="space-y-1.5">
-          <label className="text-[10px] font-black text-gray-400 uppercase ml-1">Pilih Guru Halaqah</label>
+          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">1. Pilih Guru</label>
           <div className="relative">
-            <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" size={16} />
-            <select value={selectedTeacherId} onChange={e => setSelectedTeacherId(e.target.value)} className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl bg-gray-50 text-sm outline-none focus:ring-2 focus:ring-primary-500 transition-all appearance-none">
-              <option value="">-- Pilih Guru --</option>
+            <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-500" size={16} />
+            <select value={selectedTeacherId} onChange={e => setSelectedTeacherId(e.target.value)} className="w-full pl-10 pr-4 py-3 border-2 border-gray-100 rounded-xl bg-gray-50 text-sm font-bold focus:border-primary-500 focus:bg-white outline-none transition-all">
+              <option value="">-- Pilih Guru Halaqah --</option>
               {teachers.map(t => <option key={t.id} value={t.id}>{t.nickname || t.name}</option>)}
             </select>
           </div>
         </div>
+        
         <div className="space-y-1.5">
-          <label className="text-[10px] font-black text-gray-400 uppercase ml-1">Tipe Laporan</label>
+          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">2. Tipe Laporan</label>
           <div className="relative">
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" size={16} />
-            <select value={reportType} onChange={e => setReportType(e.target.value)} className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl bg-gray-50 text-sm outline-none focus:ring-2 focus:ring-primary-500 transition-all appearance-none">
+            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-500" size={16} />
+            <select value={reportType} onChange={e => setReportType(e.target.value)} className="w-full pl-10 pr-4 py-3 border-2 border-gray-100 rounded-xl bg-gray-50 text-sm font-bold focus:border-primary-500 focus:bg-white outline-none transition-all">
               <option value="Laporan Bulanan">Laporan Bulanan</option>
               <option value="Laporan Semester">Laporan Semester</option>
             </select>
           </div>
         </div>
+
         <div className="space-y-1.5">
-          <label className="text-[10px] font-black text-gray-400 uppercase ml-1">Periode</label>
+          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">3. Periode</label>
           <div className="relative">
-            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" size={16} />
-            <select value={selectedPeriod} onChange={e => setSelectedPeriod(e.target.value)} className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl bg-gray-50 text-sm outline-none focus:ring-2 focus:ring-primary-500 transition-all appearance-none">
+            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-500" size={16} />
+            <select value={selectedPeriod} onChange={e => setSelectedPeriod(e.target.value)} className="w-full pl-10 pr-4 py-3 border-2 border-gray-100 rounded-xl bg-gray-50 text-sm font-bold focus:border-primary-500 focus:bg-white outline-none transition-all">
               {reportType === 'Laporan Semester' 
                 ? semesters.map(s => <option key={s} value={s}>Semester {s}</option>)
                 : months.map(m => <option key={m} value={m}>{m} 2025</option>)
@@ -210,92 +213,110 @@ export default function CoordinatorEvaluationsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Panel Referensi Data Guru */}
+        {/* Panel Data Laporan (Source Data) */}
         <div className="lg:col-span-4 space-y-4">
-          <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 h-[600px] flex flex-col">
-            <div className="p-6 border-b border-gray-50 flex items-center justify-between">
-               <h3 className="font-bold text-gray-800 text-sm flex items-center gap-2"><ClipboardList size={18} className="text-primary-500"/> Data {reportType}</h3>
-               <span className="text-[10px] font-bold bg-primary-50 text-primary-600 px-2.5 py-1 rounded-full">{reports.length} Data</span>
+          <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 h-[650px] flex flex-col overflow-hidden">
+            <div className="p-6 border-b border-gray-50 bg-gray-50/50 flex items-center justify-between">
+               <h3 className="font-bold text-gray-800 text-sm flex items-center gap-2"><ClipboardList size={18} className="text-primary-500"/> Sumber Data</h3>
+               <span className="text-[10px] font-black bg-primary-600 text-white px-2.5 py-1 rounded-full uppercase">{reports.length} Santri</span>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
               {isLoading ? (
-                <div className="h-full flex items-center justify-center text-gray-400 italic text-sm">Memuat data halaqah...</div>
+                <div className="h-full flex flex-col items-center justify-center text-gray-400 gap-2">
+                   <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                   <p className="text-[10px] font-bold uppercase tracking-widest">Sinkronisasi Data...</p>
+                </div>
               ) : reports.length > 0 ? (
                 reports.map(r => (
-                  <div key={r.id} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 group hover:border-primary-200 transition-all">
-                    <p className="font-bold text-gray-900 text-xs mb-1">{r.studentName}</p>
-                    <div className="flex items-center gap-1.5 text-[10px] text-gray-500 mb-2">
-                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-                       {r.tahfizh.individual}
+                  <div key={r.id} className="p-4 bg-white rounded-2xl border-2 border-gray-50 hover:border-primary-100 transition-all shadow-sm">
+                    <p className="font-bold text-gray-900 text-xs mb-2 uppercase tracking-tight">{r.studentName}</p>
+                    <div className="space-y-1.5 mb-3">
+                       <div className="flex items-center gap-2 text-[10px] text-gray-600">
+                          <div className="w-1 h-1 rounded-full bg-emerald-500"></div>
+                          <span className="font-black">Tahfizh:</span> {r.tahfizh.individual}
+                       </div>
+                       <div className="flex items-center gap-2 text-[10px] text-gray-600">
+                          <div className="w-1 h-1 rounded-full bg-blue-500"></div>
+                          <span className="font-black">Tilawah:</span> {r.tilawah.individual}
+                       </div>
                     </div>
-                    <p className="text-[11px] text-gray-400 italic leading-relaxed">"{r.notes || 'Tanpa catatan'}"</p>
+                    <div className="bg-gray-50 p-2.5 rounded-lg">
+                       <p className="text-[10px] text-gray-400 italic leading-relaxed">"{r.notes || 'Guru tidak meninggalkan catatan khusus.'}"</p>
+                    </div>
                   </div>
                 ))
               ) : (
-                <div className="h-full flex flex-col items-center justify-center text-gray-300 gap-2 p-10 text-center">
-                   <AlertCircle size={40} className="opacity-20" />
-                   <p className="text-xs font-medium">Data {reportType} untuk {selectedPeriod} tidak ditemukan.</p>
+                <div className="h-full flex flex-col items-center justify-center text-gray-300 gap-4 p-10 text-center">
+                   <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center">
+                      <AlertCircle size={32} className="opacity-20" />
+                   </div>
+                   <div>
+                      <p className="text-xs font-black uppercase text-gray-400">Data Kosong</p>
+                      <p className="text-[10px] font-medium text-gray-400 mt-1">Guru belum mengirim {reportType} untuk periode ini.</p>
+                   </div>
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        {/* Panel Workspace Evaluasi Koordinator */}
+        {/* Panel Workspace Evaluasi (AI Workspace) */}
         <div className="lg:col-span-8 space-y-6">
-          <div className="bg-white rounded-[2.5rem] shadow-xl border border-primary-100 overflow-hidden">
-            <div className="bg-gradient-to-br from-white to-primary-50/30 p-6 sm:p-8 border-b border-primary-50 flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-primary-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-primary-500/30">
-                  <MessageSquarePlus size={20} />
+          <div className="bg-white rounded-[2.5rem] shadow-xl border border-primary-100 overflow-hidden flex flex-col">
+            <div className="p-6 sm:p-8 border-b border-primary-50 flex justify-between items-center bg-[radial-gradient(#ede9fe_1px,transparent_1px)] [background-size:20px_20px]">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-primary-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-primary-500/30">
+                  <Sparkles size={24} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-800">Evaluasi Pembinaan</h3>
-                  <p className="text-[10px] font-bold text-primary-600 uppercase tracking-widest">
-                    {reportType} - {selectedPeriod}
-                  </p>
+                  <h3 className="font-black text-gray-900 text-lg">Analisis Pembinaan</h3>
+                  <div className="flex items-center gap-2 text-[10px] font-bold text-primary-600 uppercase tracking-widest mt-0.5">
+                    <span>{reportType}</span>
+                    <ChevronRight size={10} />
+                    <span>{selectedPeriod}</span>
+                  </div>
                 </div>
               </div>
               <button 
                 onClick={handleGenerateAI} 
                 disabled={isGenerating || reports.length === 0} 
-                className="group flex items-center gap-2 px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-2xl text-xs font-black tracking-widest uppercase transition-all disabled:opacity-50 shadow-lg shadow-primary-500/20 active:scale-95"
+                className="group flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-2xl text-xs font-black tracking-widest uppercase transition-all disabled:opacity-50 shadow-lg shadow-primary-500/20"
               >
-                {isGenerating ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Sparkles size={14} className="group-hover:rotate-12 transition-transform" />}
-                {isGenerating ? "Menganalisis..." : "Analisis AI"}
+                {isGenerating ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Sparkles size={16} />}
+                {isGenerating ? "Berpikir..." : "Mulai Analisis AI"}
               </button>
             </div>
 
             <div className="p-8 space-y-8 max-h-[500px] overflow-y-auto custom-scrollbar">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-primary-500 uppercase tracking-widest ml-1">1. Insight Utama</label>
-                    <textarea value={evaluation.insightUtama} onChange={e => setEvaluation({...evaluation, insightUtama: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-sm focus:border-primary-500 outline-none h-28 transition-all" placeholder="Tinjauan progres halaqah..." />
+                    <label className="text-[10px] font-black text-primary-500 uppercase tracking-widest ml-1">1. Insight Performa</label>
+                    <textarea value={evaluation.insightUtama} onChange={e => setEvaluation({...evaluation, insightUtama: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-sm font-medium focus:border-primary-500 focus:bg-white outline-none h-32 transition-all shadow-inner" placeholder="Tinjauan umum pencapaian halaqah..." />
                  </div>
                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-primary-500 uppercase tracking-widest ml-1">2. Kendala Terindikasi</label>
-                    <textarea value={evaluation.kendalaTerindikasi} onChange={e => setEvaluation({...evaluation, kendalaTerindikasi: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-sm focus:border-primary-500 outline-none h-28 transition-all" placeholder="Masalah yang terdeteksi..." />
+                    <label className="text-[10px] font-black text-primary-500 uppercase tracking-widest ml-1">2. Kendala Terdeteksi</label>
+                    <textarea value={evaluation.kendalaTerindikasi} onChange={e => setEvaluation({...evaluation, kendalaTerindikasi: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-sm font-medium focus:border-primary-500 focus:bg-white outline-none h-32 transition-all shadow-inner" placeholder="Pola masalah yang ditemukan AI..." />
                  </div>
                  <div className="space-y-2">
                     <label className="text-[10px] font-black text-primary-500 uppercase tracking-widest ml-1">3. Arahan & Tindak Lanjut</label>
-                    <textarea value={evaluation.tindakLanjut} onChange={e => setEvaluation({...evaluation, tindakLanjut: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-sm focus:border-primary-500 outline-none h-28 transition-all" placeholder="Instruksi perbaikan untuk Ustadz..." />
+                    <textarea value={evaluation.tindakLanjut} onChange={e => setEvaluation({...evaluation, tindakLanjut: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-sm font-medium focus:border-primary-500 focus:bg-white outline-none h-32 transition-all shadow-inner" placeholder="Instruksi konkret untuk ustadz..." />
                  </div>
                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-primary-500 uppercase tracking-widest ml-1">4. Target Berikutnya</label>
-                    <textarea value={evaluation.targetBulanDepan} onChange={e => setEvaluation({...evaluation, targetBulanDepan: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-sm focus:border-primary-500 outline-none h-28 transition-all" placeholder="KPI atau target capaian minimal..." />
+                    <label className="text-[10px] font-black text-primary-500 uppercase tracking-widest ml-1">4. Target Periode Depan</label>
+                    <textarea value={evaluation.targetBulanDepan} onChange={e => setEvaluation({...evaluation, targetBulanDepan: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-sm font-medium focus:border-primary-500 focus:bg-white outline-none h-32 transition-all shadow-inner" placeholder="KPI atau capaian minimal selanjutnya..." />
                  </div>
               </div>
 
-              <div className="pt-4 border-t border-gray-100">
-                <label className="flex items-center gap-2 text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-3">
-                   <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                   5. Catatan Khusus Koordinator (Pesan Personal)
+              <div className="pt-6 border-t border-gray-100">
+                <label className="flex items-center gap-2 text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-4">
+                   <MessageSquarePlus size={16} />
+                   5. Pesan Personal Koordinator (Manual)
                 </label>
                 <textarea 
                   value={evaluation.catatanKoordinator} 
                   onChange={e => setEvaluation({...evaluation, catatanKoordinator: e.target.value})} 
-                  className="w-full p-5 bg-emerald-50/30 border-2 border-emerald-100 rounded-3xl text-sm font-medium focus:ring-4 focus:ring-emerald-500/10 outline-none h-24" 
-                  placeholder="Contoh: Pesan langsung untuk memotivasi ustadz..." 
+                  className="w-full p-6 bg-emerald-50/30 border-2 border-emerald-100 rounded-[2rem] text-sm font-bold focus:ring-4 focus:ring-emerald-500/10 outline-none h-28 placeholder:text-emerald-300" 
+                  placeholder="Ketik pesan khusus atau motivasi langsung untuk Ustadz di sini..." 
                 />
               </div>
             </div>
@@ -305,11 +326,16 @@ export default function CoordinatorEvaluationsPage() {
                 onClick={handleSave} 
                 isLoading={isSaving} 
                 disabled={!selectedTeacherId || !evaluation.insightUtama} 
-                className="w-full py-5 rounded-3xl font-black text-xs uppercase tracking-[0.2em]"
+                className="w-full py-5 rounded-[1.5rem] font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-primary-500/20"
                >
-                 <Save size={18} className="mr-2" /> Publikasikan Evaluasi Periodik
+                 <Save size={20} className="mr-2" /> Publikasikan Evaluasi ke Guru
                </Button>
             </div>
+          </div>
+          
+          <div className="flex items-center gap-2 justify-center text-[9px] font-black text-gray-400 uppercase tracking-[0.25em]">
+             <CheckCircle size={14} className="text-emerald-500" />
+             Evaluasi yang disimpan akan langsung muncul di dashboard guru
           </div>
         </div>
       </div>
