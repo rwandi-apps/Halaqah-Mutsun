@@ -1,23 +1,40 @@
 
 import React, { useEffect, useState } from 'react';
 import { HalaqahEvaluation } from '../../../types';
-import { getLatestEvaluationForTeacher } from '../../../services/firestoreService';
-import { BookOpen, Sparkles, MessageSquare, Target, Zap, AlertCircle } from 'lucide-react';
+import { subscribeToEvaluationsByTeacher } from '../../../services/firestoreService';
+import { BookOpen, Sparkles, MessageSquare, Target, Zap, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function GuruEvaluationPage({ teacherId }: { teacherId?: string }) {
   const [evaluation, setEvaluation] = useState<HalaqahEvaluation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (teacherId) {
-      getLatestEvaluationForTeacher(teacherId).then(data => {
-        setEvaluation(data);
-        setIsLoading(false);
-      });
-    }
+    if (!teacherId) return;
+
+    setIsLoading(true);
+    // Menggunakan subscription agar data langsung muncul saat dipublish koordinator
+    const unsubscribe = subscribeToEvaluationsByTeacher(teacherId, (evals) => {
+      if (evals.length > 0) {
+        // Urutkan berdasarkan createdAt terbaru di sisi client (menghindari butuh composite index)
+        const sorted = evals.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+        setEvaluation(sorted[0]);
+      } else {
+        setEvaluation(null);
+      }
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
   }, [teacherId]);
 
-  if (isLoading) return <div className="p-8 text-center text-gray-400">Memuat evaluasi...</div>;
+  if (isLoading) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center p-6 gap-4">
+        <Loader2 size={48} className="text-primary-500 animate-spin" />
+        <p className="text-sm font-black text-gray-400 uppercase tracking-widest">Memuat Evaluasi...</p>
+      </div>
+    );
+  }
 
   if (!evaluation) {
     return (
@@ -34,7 +51,7 @@ export default function GuruEvaluationPage({ teacherId }: { teacherId?: string }
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="max-w-4xl mx-auto space-y-8 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700 px-4 sm:px-0">
       <div className="relative bg-white rounded-[2.5rem] shadow-xl shadow-primary-500/5 border border-primary-50 overflow-hidden">
         
         {/* Header Ribbon */}
@@ -48,7 +65,7 @@ export default function GuruEvaluationPage({ teacherId }: { teacherId?: string }
               <h2 className="text-3xl font-black tracking-tight mb-2">Halaqah {evaluation.period}</h2>
               <p className="text-primary-100/80 text-sm font-medium">Berdasarkan data performa dan laporan bulanan ustadz.</p>
             </div>
-            <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20">
+            <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 hidden sm:block">
                <BookOpen size={32} className="text-white" />
             </div>
           </div>
@@ -65,7 +82,7 @@ export default function GuruEvaluationPage({ teacherId }: { teacherId?: string }
                 </div>
                 <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">Insight Utama</h3>
              </div>
-             <div className="bg-emerald-50/30 p-6 rounded-[1.5rem] border border-emerald-100/50 leading-relaxed text-gray-700 font-medium">
+             <div className="bg-emerald-50/30 p-6 rounded-[1.5rem] border border-emerald-100/50 leading-relaxed text-gray-700 font-medium text-sm sm:text-base">
                 {evaluation.insightUtama}
              </div>
           </div>
@@ -80,7 +97,7 @@ export default function GuruEvaluationPage({ teacherId }: { teacherId?: string }
                   <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">Kendala Terindikasi</h3>
                </div>
                <div className="p-1 text-sm text-gray-600 leading-relaxed italic">
-                  {evaluation.kendalaTerindikasi}
+                  {evaluation.kendalaTerindikasi || 'Tidak ada kendala spesifik yang dilaporkan.'}
                </div>
             </div>
 
@@ -107,19 +124,34 @@ export default function GuruEvaluationPage({ teacherId }: { teacherId?: string }
                 </div>
                 <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">Tindak Lanjut & Arahan</h3>
              </div>
-             <div className="bg-gray-50 p-6 rounded-[1.5rem] border border-gray-100 leading-relaxed text-gray-700">
+             <div className="bg-gray-50 p-6 rounded-[1.5rem] border border-gray-100 leading-relaxed text-gray-700 text-sm sm:text-base">
                 {evaluation.tindakLanjut}
              </div>
           </div>
 
+          {/* Section 5: Catatan Koordinator */}
+          {evaluation.catatanKoordinator && (
+            <div className="pt-6 border-t border-gray-100 bg-emerald-50/20 -mx-8 sm:-mx-12 px-8 sm:px-12 py-8">
+               <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-emerald-600 text-white rounded-xl shadow-lg shadow-emerald-500/30">
+                    <MessageSquare size={20} />
+                  </div>
+                  <h3 className="text-sm font-black text-emerald-800 uppercase tracking-widest">Sentuhan Personal Koordinator</h3>
+               </div>
+               <div className="text-sm font-bold text-emerald-700 leading-relaxed bg-white/60 p-6 rounded-2xl border border-emerald-100 italic">
+                  "{evaluation.catatanKoordinator}"
+               </div>
+            </div>
+          )}
+
           {/* Signature / Footer */}
-          <div className="flex justify-between items-center pt-8">
-             <div className="text-xs text-gray-400 font-medium">
-                Dibuat pada: {new Date(evaluation.createdAt).toLocaleDateString('id-ID')}
+          <div className="flex justify-between items-center pt-8 border-t border-gray-50">
+             <div className="text-xs text-gray-400 font-medium italic">
+                Diterbitkan: {new Date(evaluation.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
              </div>
              <div className="text-right">
                 <p className="text-[10px] font-black text-primary-600 uppercase tracking-widest mb-1">Koordinator Tahfizh</p>
-                <div className="h-px w-24 bg-primary-100 ml-auto mb-2"></div>
+                <div className="h-0.5 w-24 bg-primary-100 ml-auto mb-2"></div>
                 <p className="text-sm font-bold text-gray-900">SDQ Mutiara Sunnah</p>
              </div>
           </div>

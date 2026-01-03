@@ -69,7 +69,6 @@ export const getReportsByTeacher = async (teacherId: string): Promise<Report[]> 
 export const saveHalaqahEvaluation = async (evalData: Omit<HalaqahEvaluation, 'id' | 'createdAt'>): Promise<void> => {
   if (!db) throw new Error("Firestore not initialized");
   
-  // FIX: Bersihkan spasi DAN karakter '/' agar tidak merusak segment path Firestore
   const safePeriod = evalData.period.replace(/[\s\/]/g, '_');
   const evalId = `${evalData.teacherId}_${safePeriod}`;
   
@@ -85,7 +84,6 @@ export const saveHalaqahEvaluation = async (evalData: Omit<HalaqahEvaluation, 'i
 export const getHalaqahEvaluation = async (teacherId: string, period: string): Promise<HalaqahEvaluation | null> => {
   if (!db) return null;
   
-  // Konsistensi sanitasi ID dokumen
   const safePeriod = period.replace(/[\s\/]/g, '_');
   const evalId = `${teacherId}_${safePeriod}`;
   
@@ -107,6 +105,19 @@ export const getLatestEvaluationForTeacher = async (teacherId: string): Promise<
 };
 
 // --- REALTIME LISTENERS ---
+
+export const subscribeToEvaluationsByTeacher = (
+  teacherId: string,
+  onUpdate: (evaluations: HalaqahEvaluation[]) => void
+): Unsubscribe => {
+  if (!db) return () => {};
+  // Menggunakan query sederhana agar tidak butuh composite index
+  const q = query(collection(db, 'evaluasi_halaqah'), where('teacherId', '==', teacherId));
+  return onSnapshot(q, (snapshot) => {
+    const evals = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as HalaqahEvaluation));
+    onUpdate(evals);
+  });
+};
 
 export const subscribeToStudentsByTeacher = (
   teacherId: string, 
