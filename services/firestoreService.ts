@@ -68,7 +68,11 @@ export const getReportsByTeacher = async (teacherId: string): Promise<Report[]> 
 
 export const saveHalaqahEvaluation = async (evalData: Omit<HalaqahEvaluation, 'id' | 'createdAt'>): Promise<void> => {
   if (!db) throw new Error("Firestore not initialized");
-  const evalId = `${evalData.teacherId}_${evalData.period.replace(/\s/g, '_')}`;
+  
+  // FIX: Bersihkan spasi DAN karakter '/' agar tidak merusak segment path Firestore
+  const safePeriod = evalData.period.replace(/[\s\/]/g, '_');
+  const evalId = `${evalData.teacherId}_${safePeriod}`;
+  
   const docRef = doc(db, 'evaluasi_halaqah', evalId);
   await setDoc(docRef, {
     ...evalData,
@@ -80,7 +84,11 @@ export const saveHalaqahEvaluation = async (evalData: Omit<HalaqahEvaluation, 'i
 
 export const getHalaqahEvaluation = async (teacherId: string, period: string): Promise<HalaqahEvaluation | null> => {
   if (!db) return null;
-  const evalId = `${teacherId}_${period.replace(/\s/g, '_')}`;
+  
+  // Konsistensi sanitasi ID dokumen
+  const safePeriod = period.replace(/[\s\/]/g, '_');
+  const evalId = `${teacherId}_${safePeriod}`;
+  
   const docSnap = await getDoc(doc(db, 'evaluasi_halaqah', evalId));
   return docSnap.exists() ? docSnap.data() as HalaqahEvaluation : null;
 };
@@ -140,7 +148,6 @@ export const getSemesterReport = async (studentId: string, academicYear: string,
   return docSnap.exists() ? docSnap.data() as SemesterReport : null;
 };
 
-// Fix: Add missing deleteSemesterReport function
 export const deleteSemesterReport = async (studentId: string, academicYear: string, semester: string): Promise<void> => {
   if (!db) throw new Error("Firestore not initialized");
   const reportId = `${studentId}_${academicYear.replace(/\//g, '-')}_${semester}`;
