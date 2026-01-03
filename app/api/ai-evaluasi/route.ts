@@ -4,7 +4,7 @@ import { GoogleGenAI } from "@google/genai";
 // Endpoint ini berjalan di Server (Node.js), sehingga process.env.API_KEY aman & tersedia.
 export async function POST(req: Request) {
   try {
-    const apiKey = process.env.API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       return new Response(JSON.stringify({ error: "API Key tidak terkonfigurasi di server." }), { status: 500 });
     }
