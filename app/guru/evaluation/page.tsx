@@ -12,13 +12,20 @@ import {
   Loader2,
   CheckCircle2,
   ChevronRight,
-  // Added Zap icon import
-  Zap
+  Zap,
+  PauseCircle,
+  RefreshCcw,
+  ClipboardCheck,
+  Check,
+  MessageCircle
 } from 'lucide-react';
 
 export default function GuruEvaluationPage({ teacherId }: { teacherId?: string }) {
   const [evaluation, setEvaluation] = useState<HalaqahEvaluation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // State lokal untuk simulasi interaksi UI
+  const [teacherStatus, setTeacherStatus] = useState('belum');
 
   useEffect(() => {
     if (!teacherId) return;
@@ -37,10 +44,8 @@ export default function GuruEvaluationPage({ teacherId }: { teacherId?: string }
     return () => unsubscribe();
   }, [teacherId]);
 
-  // Fungsi Helper untuk mengubah teks panjang AI menjadi Poin-Poin
   const renderAsList = (text: string) => {
     if (!text) return null;
-    // Split berdasarkan titik atau baris baru, hapus ruang kosong, ambil yang panjangnya memadai
     const points = text.split(/[.\n]/).filter(p => p.trim().length > 5);
     
     return (
@@ -100,7 +105,7 @@ export default function GuruEvaluationPage({ teacherId }: { teacherId?: string }
         </div>
       </div>
 
-      {/* 1. INSIGHT UTAMA (Paling Menonjol) */}
+      {/* 1. INSIGHT UTAMA */}
       <div className="bg-blue-50 rounded-[2.5rem] p-6 sm:p-8 border border-blue-100 shadow-lg shadow-blue-500/5">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-3 bg-white text-blue-600 rounded-2xl shadow-sm">
@@ -148,7 +153,7 @@ export default function GuruEvaluationPage({ teacherId }: { teacherId?: string }
         </div>
       </div>
 
-      {/* 4. TINDAK LANJUT */}
+      {/* 4. TINDAK LANJUT KOORDINATOR */}
       <div className="bg-white rounded-[2.5rem] p-6 sm:p-8 border border-primary-50 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2 bg-primary-50 text-primary-600 rounded-xl">
@@ -161,7 +166,84 @@ export default function GuruEvaluationPage({ teacherId }: { teacherId?: string }
         </div>
       </div>
 
-      {/* 5. PESAN PERSONAL KOORDINATOR */}
+      {/* 5. RESPONS & TINDAK LANJUT GURU (NEW FEEDBACK SECTION) */}
+      <div className="bg-slate-50 rounded-[2.5rem] p-6 sm:p-8 border border-slate-200 shadow-inner">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 bg-white text-slate-600 rounded-xl shadow-sm">
+            <ClipboardCheck size={20} />
+          </div>
+          <div>
+            <h3 className="text-[11px] font-black text-slate-800 uppercase tracking-widest">Respon & Tindak Lanjut Guru</h3>
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Update status pelaksanaan untuk koordinasi</p>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          {/* Status Selection Buttons */}
+          <div>
+            <p className="text-[10px] font-bold text-slate-500 mb-3 ml-1 italic leading-relaxed">
+              Silakan pilih status pelaksanaan tindak lanjut berdasarkan kondisi halaqah saat ini:
+            </p>
+            
+            <div className="grid grid-cols-1 gap-2">
+              {[
+                { id: 'belum', label: 'Belum Dilaksanakan', icon: PauseCircle, color: 'text-slate-400' },
+                { id: 'proses', label: 'Sedang Dilaksanakan', icon: RefreshCcw, color: 'text-blue-500' },
+                { id: 'selesai', label: 'Sudah Dilaksanakan', icon: CheckCircle2, color: 'text-emerald-500' },
+                { id: 'diskusi', label: 'Butuh Diskusi / Konsultasi', icon: MessageSquare, color: 'text-amber-500' },
+              ].map((status) => (
+                <button
+                  key={status.id}
+                  onClick={() => setTeacherStatus(status.id)}
+                  className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all active:scale-[0.98] ${
+                    teacherStatus === status.id 
+                      ? 'border-primary-500 bg-primary-50/50 ring-4 ring-primary-500/5' 
+                      : 'border-white bg-white hover:border-slate-100'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <status.icon size={18} className={status.color} />
+                    <span className={`text-[13px] font-bold ${teacherStatus === status.id ? 'text-primary-700' : 'text-slate-600'}`}>
+                      {status.label}
+                    </span>
+                  </div>
+                  {teacherStatus === status.id && (
+                    <div className="w-5 h-5 bg-primary-500 rounded-full flex items-center justify-center">
+                      <Check size={12} className="text-white" />
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Catatan Guru Textarea */}
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
+              Catatan Guru (Opsional)
+            </label>
+            <div className="relative">
+              <textarea
+                className="w-full p-5 bg-white border-2 border-white rounded-[2rem] text-sm font-medium focus:border-primary-200 outline-none h-32 transition-all shadow-sm placeholder:text-slate-300"
+                placeholder="Contoh: Terdapat beberapa kondisi santri atau kendala teknis yang perlu dibahas bersama koordinator..."
+              ></textarea>
+              <div className="absolute bottom-4 right-5 opacity-20">
+                <MessageCircle size={20} />
+              </div>
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <button 
+            onClick={() => alert("Respon Anda berhasil disimpan. Koordinator akan segera meninjau status halaqah Anda.")}
+            className="w-full py-4 bg-slate-800 hover:bg-slate-900 text-white rounded-2xl text-[10px] font-black tracking-[0.2em] uppercase transition-all shadow-lg active:scale-95"
+          >
+            Simpan Respon Guru
+          </button>
+        </div>
+      </div>
+
+      {/* 6. PESAN PERSONAL KOORDINATOR */}
       {evaluation.catatanKoordinator && (
         <div className="bg-emerald-600 rounded-[2.5rem] p-6 sm:p-8 text-white shadow-xl shadow-emerald-500/10">
           <div className="flex items-center gap-3 mb-4">
