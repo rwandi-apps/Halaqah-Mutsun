@@ -88,8 +88,11 @@ export default function CoordinatorEvaluationsPage() {
       ).join('\n');
 
       const response = await fetch('/api/ai-evaluasi', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', // Memastikan method POST
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify({
           reportType,
           period: selectedPeriod,
@@ -97,10 +100,12 @@ export default function CoordinatorEvaluationsPage() {
         })
       });
 
-      // CEK APAKAH RESPON BERHASIL SEBELUM PARSING JSON
       if (!response.ok) {
+        if (response.status === 405) {
+          throw new Error("Metode tidak diizinkan (405). Periksa konfigurasi routing server.");
+        }
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Server error: ${response.status}`);
+        throw new Error(errorData.error || `Server Error: ${response.status}`);
       }
 
       const result = await response.json();
@@ -114,8 +119,8 @@ export default function CoordinatorEvaluationsPage() {
       }));
       
     } catch (error: any) {
-      console.error(error);
-      alert("Gagal memproses AI: " + error.message);
+      console.error("AI Generation Error:", error);
+      alert(error.message || "Gagal memproses AI.");
     } finally {
       setIsGenerating(false);
     }

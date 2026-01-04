@@ -1,9 +1,18 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
+export async function GET() {
+  return new Response(JSON.stringify({ 
+    message: "Endpoint Analisis AI aktif. Gunakan method POST untuk mengirim data." 
+  }), { 
+    status: 200,
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+
 export async function POST(req: Request) {
   try {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.API_KEY;
     if (!apiKey) {
       return new Response(JSON.stringify({ error: "API Key server tidak ditemukan." }), { 
         status: 500,
@@ -11,15 +20,22 @@ export async function POST(req: Request) {
       });
     }
 
-    const { reportType, period, contextData } = await req.json();
+    const body = await req.json();
+    const { reportType, period, contextData } = body;
+
+    if (!contextData) {
+      return new Response(JSON.stringify({ error: "Data laporan kosong." }), { 
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
 
     const ai = new GoogleGenAI({ apiKey });
     
     const systemInstruction = `
       Anda adalah pakar Supervisor Pendidikan Al-Qur'an (Koordinator Tahfizh).
       Tugas Anda adalah menganalisis data laporan halaqah dan memberikan evaluasi strategis untuk guru.
-
-      Gaya Bahasa: Formal, Profesional, Memotivasi, dan Islami (Gunakan diksi seperti 'Ananda', 'Biidznillah', 'Barakallahu fiikum').
+      Gaya Bahasa: Formal, Profesional, Memotivasi, dan Islami.
     `;
 
     const userPrompt = `
@@ -36,30 +52,17 @@ export async function POST(req: Request) {
       config: { 
         systemInstruction: systemInstruction,
         responseMimeType: "application/json",
-        // MENGGUNAKAN SCHEMA UNTUK MENJAMIN KONSISTENSI JSON
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            insightUtama: { 
-              type: Type.STRING,
-              description: "Ringkasan performa kolektif santri bulan ini."
-            },
-            kendalaTerindikasi: { 
-              type: Type.STRING,
-              description: "Identifikasi masalah dari catatan guru."
-            },
-            tindakLanjut: { 
-              type: Type.STRING,
-              description: "Instruksi konkret untuk guru lakukan."
-            },
-            targetBulanDepan: { 
-              type: Type.STRING,
-              description: "Target capaian realistis berikutnya."
-            },
+            insightUtama: { type: Type.STRING },
+            kendalaTerindikasi: { type: Type.STRING },
+            tindakLanjut: { type: Type.STRING },
+            targetBulanDepan: { type: Type.STRING },
           },
           required: ["insightUtama", "kendalaTerindikasi", "tindakLanjut", "targetBulanDepan"],
         },
-        temperature: 0.1, // Lebih rendah agar lebih stabil
+        temperature: 0.1,
       }
     });
 
@@ -69,8 +72,8 @@ export async function POST(req: Request) {
       throw new Error("AI mengembalikan respon kosong.");
     }
 
-    // Pastikan kita mengembalikan string JSON yang valid
     return new Response(resultText, {
+      status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
 
