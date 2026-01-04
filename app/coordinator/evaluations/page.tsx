@@ -85,7 +85,7 @@ export default function CoordinatorEvaluationsPage() {
     setIsGenerating(true);
     try {
       const contextData = filteredReports.map((r, i) => 
-        `${i+1}. Nama: ${r.studentName}, Sabaq: ${r.tahfizh.individual}, Tilawah: ${r.tilawah.individual}, Catatan Guru: ${r.notes || 'Nihil'}`
+        `${i+1}. Nama: ${r.studentName}, Sabaq: ${r.tahfizh.individual}, Catatan Guru: ${r.notes || 'Nihil'}`
       ).join('\n');
 
       // PANGGIL SERVICE CLIENT-SIDE LANGSUNG

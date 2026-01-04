@@ -64,6 +64,67 @@ export const getReportsByTeacher = async (teacherId: string): Promise<Report[]> 
   return reports.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 };
 
+// --- DASHBOARD WIDGET HELPERS ---
+
+export const getPerformancePerClass = async (): Promise<{label: string, value: number}[]> => {
+  if (!db) return [];
+  const reports = await getAllSemesterReports();
+  const students = await getAllStudents();
+  
+  const studentClassMap: Record<string, string> = {};
+  students.forEach(s => studentClassMap[s.id] = s.className);
+
+  const classMap: Record<string, { total: number, count: number }> = {};
+  
+  reports.forEach(r => {
+    const studentInfo = studentClassMap[r.studentId];
+    if (!studentInfo) return;
+    
+    // Extract short class name (e.g. "Kelas 1")
+    const match = studentInfo.match(/Kelas\s*\d+/i);
+    const className = match ? match[0] : studentInfo;
+    
+    const score = r.assessments?.pencapaianTarget || 0;
+    if (!classMap[className]) classMap[className] = { total: 0, count: 0 };
+    classMap[className].total += score;
+    classMap[className].count += 1;
+  });
+
+  return Object.entries(classMap).map(([label, data]) => ({
+    label,
+    value: Math.round(data.total / data.count)
+  })).sort((a, b) => a.label.localeCompare(b.label));
+};
+
+export const getLatestTeacherActivities = async (limitCount: number = 5): Promise<any[]> => {
+  if (!db) return [];
+  const teachers = await getAllTeachers();
+  const teacherMap: Record<string, string> = {};
+  teachers.forEach(t => teacherMap[t.id] = t.nickname || t.name);
+
+  // Combine activities from 'laporan'
+  const q = query(collection(db, 'laporan'), orderBy('createdAt', 'desc'), limit(limitCount));
+  const snap = await getDocs(q);
+  
+  return snap.docs.map(doc => {
+    const data = doc.data();
+    const name = teacherMap[data.teacherId] || 'Guru';
+    const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    
+    // Format relative time (very basic)
+    const date = new Date(data.createdAt);
+    const timeStr = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+    return {
+      id: doc.id,
+      teacherName: name,
+      initials,
+      actionDescription: `Menginput ${data.type} - ${data.studentName}`,
+      time: timeStr
+    };
+  });
+};
+
 // --- HALAQAH EVALUATIONS (KOORDINATOR -> GURU) ---
 
 export const saveHalaqahEvaluation = async (evalData: Omit<HalaqahEvaluation, 'id' | 'createdAt'>): Promise<void> => {
