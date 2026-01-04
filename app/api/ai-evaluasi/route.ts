@@ -3,7 +3,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 
 export async function POST(req: Request) {
   try {
-    const apiKey = process.env.API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       return new Response(JSON.stringify({ error: "API Key server tidak ditemukan." }), { 
         status: 500,
