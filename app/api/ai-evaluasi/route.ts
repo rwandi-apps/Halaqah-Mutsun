@@ -12,8 +12,8 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const apiKey = process.env.API_KEY;
-    if (!apiKey) {
+    // Fix: Validating API_KEY before initialization
+    if (!process.env.API_KEY) {
       return new Response(JSON.stringify({ error: "API Key server tidak ditemukan." }), { 
         status: 500,
         headers: { 'Content-Type': 'application/json' }
@@ -30,7 +30,8 @@ export async function POST(req: Request) {
       });
     }
 
-    const ai = new GoogleGenAI({ apiKey });
+    // Fix: Initializing GoogleGenAI with named parameter apiKey as per guidelines
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     const systemInstruction = `
       Anda adalah pakar Supervisor Pendidikan Al-Qur'an (Koordinator Tahfizh).
@@ -66,6 +67,7 @@ export async function POST(req: Request) {
       }
     });
 
+    // Fix: Accessing .text as a property (not a method)
     const resultText = response.text;
     
     if (!resultText) {

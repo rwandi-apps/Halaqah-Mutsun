@@ -7,14 +7,13 @@ import { Student } from "../types";
  */
 export const generateEvaluasiAI = async (reportType: string, period: string, contextData: string) => {
   // Fix: Obtained exclusively from process.env.API_KEY as per @google/genai guidelines
-  const apiKey = process.env.API_KEY;
-
-  if (!apiKey) {
+  if (!process.env.API_KEY) {
     throw new Error("API_KEY tidak ditemukan.");
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey });
+    // Fix: Initializing GoogleGenAI with named parameter apiKey as per guidelines
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     const systemInstruction = `
       Anda adalah pakar Supervisor Pendidikan Al-Qur'an (Koordinator Tahfizh).
@@ -50,6 +49,7 @@ export const generateEvaluasiAI = async (reportType: string, period: string, con
       }
     });
 
+    // Fix: Accessing .text as a property (not a method)
     const resultText = response.text;
     if (!resultText) throw new Error("AI tidak memberikan respon.");
 
@@ -63,19 +63,17 @@ export const generateEvaluasiAI = async (reportType: string, period: string, con
 };
 
 /**
- * Fix: Added missing exported member 'generateStudentEvaluation' used in GuruDashboard components.
  * Service untuk generate evaluasi naratif personal santri menggunakan Gemini AI.
  */
 export const generateStudentEvaluation = async (student: Student): Promise<string> => {
   // Fix: Obtained exclusively from process.env.API_KEY as per @google/genai guidelines
-  const apiKey = process.env.API_KEY;
-
-  if (!apiKey) {
+  if (!process.env.API_KEY) {
     throw new Error("API_KEY tidak ditemukan.");
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey });
+    // Fix: Initializing GoogleGenAI with named parameter apiKey as per guidelines
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     const systemInstruction = `
       Anda adalah seorang Guru Al-Qur'an (Musyrif Halaqah) yang bijaksana.
