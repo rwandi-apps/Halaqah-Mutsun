@@ -8,7 +8,7 @@ import { Student } from "../types";
  */
 export const generateStudentEvaluation = async (student: Student): Promise<string> => {
   // Ambil API Key dari environment variable sesuai standar SDK
-  const apiKey = process.env.API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
     console.warn("Gemini API Key is missing. AI features are disabled.");
