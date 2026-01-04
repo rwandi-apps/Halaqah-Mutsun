@@ -7,7 +7,7 @@ import { Student } from "../types";
  */
 export const generateEvaluasiAI = async (reportType: string, period: string, contextData: string) => {
   // Fix: Obtained exclusively from process.env.API_KEY as per @google/genai guidelines
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  const apiKey = process.env.API_KEY;
 
   if (!apiKey) {
     throw new Error("API_KEY tidak ditemukan.");
