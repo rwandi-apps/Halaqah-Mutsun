@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Report, HalaqahEvaluation } from '../../../types';
 import { getAllTeachers, subscribeToReportsByTeacher, saveHalaqahEvaluation, getHalaqahEvaluation } from '../../../services/firestoreService';
+import { generateEvaluasiAI } from '../../../services/geminiService';
 import { Button } from '../../../components/Button';
 import { Sparkles, Save, User as UserIcon, Calendar, ClipboardList, AlertCircle, MessageSquarePlus, Filter, Loader2, Database } from 'lucide-react';
 
@@ -87,28 +88,8 @@ export default function CoordinatorEvaluationsPage() {
         `${i+1}. Nama: ${r.studentName}, Sabaq: ${r.tahfizh.individual}, Catatan Guru: ${r.notes || 'Nihil'}`
       ).join('\n');
 
-      const response = await fetch('/api/ai-evaluasi', {
-        method: 'POST', // Memastikan method POST
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          reportType,
-          period: selectedPeriod,
-          contextData
-        })
-      });
-
-      if (!response.ok) {
-        if (response.status === 405) {
-          throw new Error("Metode tidak diizinkan (405). Periksa konfigurasi routing server.");
-        }
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Server Error: ${response.status}`);
-      }
-
-      const result = await response.json();
+      // PANGGIL SERVICE CLIENT-SIDE LANGSUNG
+      const result = await generateEvaluasiAI(reportType, selectedPeriod, contextData);
 
       setEvaluation(prev => ({
         ...prev,
@@ -119,8 +100,8 @@ export default function CoordinatorEvaluationsPage() {
       }));
       
     } catch (error: any) {
-      console.error("AI Generation Error:", error);
-      alert(error.message || "Gagal memproses AI.");
+      console.error("AI generation fail:", error);
+      alert("Gagal memproses AI: " + error.message);
     } finally {
       setIsGenerating(false);
     }

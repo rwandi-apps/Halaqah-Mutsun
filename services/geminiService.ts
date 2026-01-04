@@ -1,55 +1,115 @@
 
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import { Student } from "../types";
 
 /**
- * Menghasilkan evaluasi naratif untuk siswa menggunakan Gemini AI.
- * Fungsi ini dirancang aman: tidak akan crash jika API Key kosong.
+ * Service untuk generate evaluasi kolektif Halaqah menggunakan Gemini AI (Client-Side).
  */
-export const generateStudentEvaluation = async (student: Student): Promise<string> => {
-  // Ambil API Key dari environment variable sesuai standar SDK
-  const apiKey = VITE_GEMINI_API_KEY;
+export const generateEvaluasiAI = async (reportType: string, period: string, contextData: string) => {
+  // Fix: Obtained exclusively from process.env.API_KEY as per @google/genai guidelines
+  const apiKey = process.env.API_KEY;
 
   if (!apiKey) {
-    console.warn("Gemini API Key is missing. AI features are disabled.");
-    return "Layanan AI tidak tersedia karena konfigurasi belum lengkap. Silakan hubungi admin.";
+    throw new Error("API_KEY tidak ditemukan.");
   }
 
   try {
-    // Inisialisasi client hanya saat fungsi dipanggil (on-demand)
     const ai = new GoogleGenAI({ apiKey });
 
-    const prompt = `
-      Anda adalah pakar pendidik Al-Qur'an di sekolah Islam (SDQ).
-      Buatlah evaluasi naratif yang mendukung, hangat, dan konstruktif untuk siswa berikut:
+    const systemInstruction = `
+      Anda adalah pakar Supervisor Pendidikan Al-Qur'an (Koordinator Tahfizh).
+      Tugas Anda adalah menganalisis data laporan halaqah dan memberikan evaluasi strategis untuk guru.
+      Gaya Bahasa: Formal, Profesional, Memotivasi, dan Islami.
+    `;
+
+    const userPrompt = `
+      ANALISIS DATA BERIKUT:
+      Tipe Laporan: ${reportType}
+      Periode: ${period}
+      Data Santri:
+      ${contextData}
+    `;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: userPrompt,
+      config: { 
+        systemInstruction: systemInstruction,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            insightUtama: { type: Type.STRING },
+            kendalaTerindikasi: { type: Type.STRING },
+            tindakLanjut: { type: Type.STRING },
+            targetBulanDepan: { type: Type.STRING },
+          },
+          required: ["insightUtama", "kendalaTerindikasi", "tindakLanjut", "targetBulanDepan"],
+        },
+        temperature: 0.2,
+      }
+    });
+
+    const resultText = response.text;
+    if (!resultText) throw new Error("AI tidak memberikan respon.");
+
+    // Parse JSON string ke object JavaScript
+    return JSON.parse(resultText);
+
+  } catch (error: any) {
+    console.error("Gemini Client Error:", error);
+    throw new Error(error.message || "Gagal menghubungi AI Gemini.");
+  }
+};
+
+/**
+ * Fix: Added missing exported member 'generateStudentEvaluation' used in GuruDashboard components.
+ * Service untuk generate evaluasi naratif personal santri menggunakan Gemini AI.
+ */
+export const generateStudentEvaluation = async (student: Student): Promise<string> => {
+  // Fix: Obtained exclusively from process.env.API_KEY as per @google/genai guidelines
+  const apiKey = process.env.API_KEY;
+
+  if (!apiKey) {
+    throw new Error("API_KEY tidak ditemukan.");
+  }
+
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+
+    const systemInstruction = `
+      Anda adalah seorang Guru Al-Qur'an (Musyrif Halaqah) yang bijaksana.
+      Tugas Anda adalah memberikan evaluasi naratif yang mendalam, memotivasi, dan Islami untuk seorang santri berdasarkan capaiannya.
+    `;
+
+    const userPrompt = `
+      BUAT EVALUASI NARATIF UNTUK SANTRI BERIKUT:
       Nama: ${student.name}
       Kelas: ${student.className}
       Target: ${student.memorizationTarget}
-      Progres Terakhir: ${student.currentProgress}
-      Kehadiran: ${student.attendance || 0}%
-      Nilai Perilaku: ${student.behaviorScore || 0}/10
+      Capaian Saat Ini: ${student.currentProgress}
+      Kehadiran: ${student.attendance}%
+      Nilai Perilaku: ${student.behaviorScore}
       
-      Struktur laporan:
-      1. Pencapaian Umum
-      2. Kelebihan
-      3. Area Pengembangan
-      4. Pesan untuk Orang Tua
-      
-      Gunakan Bahasa Indonesia yang santun. Maksimal 200 kata.
+      Evaluasi harus mencakup apresiasi atas usahanya dan saran perbaikan yang membangun.
     `;
 
-    // Gunakan model gemini-3-flash-preview untuk tugas teks ringan/cepat
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt,
+      model: 'gemini-3-pro-preview',
+      contents: userPrompt,
+      config: { 
+        systemInstruction: systemInstruction,
+        temperature: 0.7,
+      }
     });
 
-    // Akses properti .text secara langsung (bukan method) sesuai dokumentasi SDK terbaru
-    return response.text || "Maaf, sistem tidak dapat menghasilkan narasi evaluasi saat ini.";
+    // Fix: Access .text property directly as per @google/genai guidelines
+    const resultText = response.text;
+    if (!resultText) throw new Error("AI tidak memberikan respon.");
 
-  } catch (error) {
-    console.error("Gemini Service Error:", error);
-    // Return pesan fallback yang aman alih-alih melempar error ke UI
-    return "Terjadi kendala teknis saat menghubungi layanan AI. Silakan coba beberapa saat lagi.";
+    return resultText;
+  } catch (error: any) {
+    console.error("Gemini Client Error:", error);
+    throw new Error(error.message || "Gagal membuat evaluasi santri.");
   }
 };
