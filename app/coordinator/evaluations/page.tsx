@@ -45,7 +45,6 @@ export default function CoordinatorEvaluationsPage() {
   }, [selectedTeacherId]);
 
   useEffect(() => {
-    // Logika filter yang lebih kokoh
     const filtered = allTeacherReports.filter(r => {
       const typeMatch = r.type === reportType;
       const periodMatch = r.month === selectedPeriod;
@@ -54,7 +53,6 @@ export default function CoordinatorEvaluationsPage() {
     
     setFilteredReports(filtered);
     
-    // Load evaluasi yang sudah tersimpan jika ada
     if (selectedTeacherId && selectedPeriod) {
       loadExistingEvaluation();
     }
@@ -67,7 +65,6 @@ export default function CoordinatorEvaluationsPage() {
     if (existingEval) {
       setEvaluation(existingEval);
     } else {
-      // Reset form jika tidak ada data tersimpan
       setEvaluation({
         insightUtama: '',
         kendalaTerindikasi: '',
@@ -100,9 +97,13 @@ export default function CoordinatorEvaluationsPage() {
         })
       });
 
-      const result = await response.json();
+      // CEK APAKAH RESPON BERHASIL SEBELUM PARSING JSON
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+      }
 
-      if (result.error) throw new Error(result.error);
+      const result = await response.json();
 
       setEvaluation(prev => ({
         ...prev,
