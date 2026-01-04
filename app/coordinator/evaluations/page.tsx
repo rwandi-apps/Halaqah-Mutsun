@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { User, Report, HalaqahEvaluation } from '../../../types';
 import { getAllTeachers, subscribeToReportsByTeacher, saveHalaqahEvaluation, getHalaqahEvaluation } from '../../../services/firestoreService';
 import { Button } from '../../../components/Button';
-import { Sparkles, Save, User as UserIcon, Calendar, ClipboardList, AlertCircle, MessageSquarePlus, Filter, Loader2 } from 'lucide-react';
+import { Sparkles, Save, User as UserIcon, Calendar, ClipboardList, AlertCircle, MessageSquarePlus, Filter, Loader2, Database } from 'lucide-react';
 
 export default function CoordinatorEvaluationsPage() {
   const [teachers, setTeachers] = useState<User[]>([]);
@@ -31,7 +31,11 @@ export default function CoordinatorEvaluationsPage() {
   }, []);
 
   useEffect(() => {
-    if (!selectedTeacherId) return;
+    if (!selectedTeacherId) {
+      setAllTeacherReports([]);
+      return;
+    }
+    
     setIsLoading(true);
     const unsubscribe = subscribeToReportsByTeacher(selectedTeacherId, (data) => {
       setAllTeacherReports(data);
@@ -41,19 +45,37 @@ export default function CoordinatorEvaluationsPage() {
   }, [selectedTeacherId]);
 
   useEffect(() => {
+    // Logika filter yang lebih kokoh
     const filtered = allTeacherReports.filter(r => {
-      const typeMatch = r.type.toLowerCase().includes(reportType.toLowerCase().replace('laporan ', ''));
+      const typeMatch = r.type === reportType;
       const periodMatch = r.month === selectedPeriod;
       return typeMatch && periodMatch;
     });
+    
     setFilteredReports(filtered);
-    if (selectedTeacherId && selectedPeriod) loadExistingEvaluation();
+    
+    // Load evaluasi yang sudah tersimpan jika ada
+    if (selectedTeacherId && selectedPeriod) {
+      loadExistingEvaluation();
+    }
   }, [allTeacherReports, reportType, selectedPeriod, selectedTeacherId]);
 
   const loadExistingEvaluation = async () => {
     const periodLabel = reportType === 'Laporan Semester' ? `Semester ${selectedPeriod} 2025/2026` : `${selectedPeriod} 2025`;
     const existingEval = await getHalaqahEvaluation(selectedTeacherId, periodLabel);
-    if (existingEval) setEvaluation(existingEval);
+    
+    if (existingEval) {
+      setEvaluation(existingEval);
+    } else {
+      // Reset form jika tidak ada data tersimpan
+      setEvaluation({
+        insightUtama: '',
+        kendalaTerindikasi: '',
+        tindakLanjut: '',
+        targetBulanDepan: '',
+        catatanKoordinator: ''
+      });
+    }
   };
 
   const handleGenerateAI = async () => {
@@ -64,7 +86,6 @@ export default function CoordinatorEvaluationsPage() {
 
     setIsGenerating(true);
     try {
-      // Format data tabel mentah menjadi string deskriptif untuk AI
       const contextData = filteredReports.map((r, i) => 
         `${i+1}. Nama: ${r.studentName}, Sabaq: ${r.tahfizh.individual}, Catatan Guru: ${r.notes || 'Nihil'}`
       ).join('\n');
@@ -83,7 +104,6 @@ export default function CoordinatorEvaluationsPage() {
 
       if (result.error) throw new Error(result.error);
 
-      // Mapping hasil AI ke state evaluation
       setEvaluation(prev => ({
         ...prev,
         insightUtama: result.insightUtama || '',
@@ -132,7 +152,6 @@ export default function CoordinatorEvaluationsPage() {
         </div>
       </div>
 
-      {/* Kontrol Filter */}
       <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="space-y-2">
           <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Guru Halaqah</label>
@@ -163,7 +182,7 @@ export default function CoordinatorEvaluationsPage() {
             <select value={selectedPeriod} onChange={e => setSelectedPeriod(e.target.value)} className="w-full pl-10 pr-4 py-3 border-2 border-gray-50 rounded-2xl bg-gray-50 text-sm font-bold focus:border-primary-500 focus:bg-white outline-none transition-all">
               {reportType === 'Laporan Semester' 
                 ? ["Ganjil", "Genap"].map(s => <option key={s} value={s}>Semester {s}</option>)
-                : ["Juli", "Agustus", "September", "Oktober", "November", "Desember", "Januari", "Februari", "Maret", "April", "Mei", "Juni"].map(m => <option key={m} value={m}>{m} 2025</option>)
+                : ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"].map(m => <option key={m} value={m}>{m} 2025</option>)
               }
             </select>
           </div>
@@ -171,7 +190,6 @@ export default function CoordinatorEvaluationsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Panel Data Input */}
         <div className="lg:col-span-4">
           <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 h-[600px] flex flex-col overflow-hidden">
             <div className="p-6 border-b border-gray-50 bg-gray-50/50 flex items-center justify-between">
@@ -182,6 +200,12 @@ export default function CoordinatorEvaluationsPage() {
               {isLoading ? (
                 <div className="h-full flex flex-col items-center justify-center text-gray-400">
                    <Loader2 size={32} className="text-primary-500 animate-spin" />
+                   <p className="text-[10px] font-bold uppercase mt-4">Menghubungkan ke Database...</p>
+                </div>
+              ) : !selectedTeacherId ? (
+                <div className="h-full flex flex-col items-center justify-center text-gray-300 gap-2 p-10 text-center">
+                   <UserIcon size={32} className="opacity-20" />
+                   <p className="text-[10px] font-black uppercase tracking-widest leading-relaxed">Pilih Guru Halaqah<br/>Terlebih Dahulu</p>
                 </div>
               ) : filteredReports.length > 0 ? (
                 filteredReports.map(r => (
@@ -193,15 +217,14 @@ export default function CoordinatorEvaluationsPage() {
                 ))
               ) : (
                 <div className="h-full flex flex-col items-center justify-center text-gray-300 gap-2 p-10 text-center">
-                   <AlertCircle size={32} className="opacity-20" />
-                   <p className="text-[10px] font-black uppercase tracking-widest leading-relaxed">Pilih Guru & Periode<br/>Untuk Memuat Data</p>
+                   <Database size={32} className="opacity-20" />
+                   <p className="text-[10px] font-black uppercase tracking-widest leading-relaxed">Data Tidak Ditemukan<br/>untuk Periode {selectedPeriod}</p>
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        {/* Panel Output AI */}
         <div className="lg:col-span-8">
           <div className="bg-white rounded-[3rem] shadow-xl border border-primary-100 overflow-hidden flex flex-col h-full">
             <div className="p-8 border-b border-primary-50 flex justify-between items-center bg-gray-50/50">
