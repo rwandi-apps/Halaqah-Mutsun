@@ -3,16 +3,114 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { Student } from "../types";
 
 /**
+ * Service untuk menyempurnakan redaksi catatan wali kelas (Kelas 4-6).
+ * AI bertindak sebagai editor bahasa agar lebih santun, profesional, dan membina.
+ */
+export const improveTeacherNotes = async (originalText: string): Promise<string> => {
+  if (!process.env.API_KEY) {
+    throw new Error("API_KEY tidak ditemukan.");
+  }
+
+  if (!originalText || originalText.trim().length < 5) {
+    throw new Error("Catatan terlalu singkat untuk disempurnakan.");
+  }
+
+  try {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+    const systemInstruction = `
+      Anda adalah AI Assistant yang bertugas sebagai EDITOR BAHASA untuk Catatan Rapor Siswa Kelas 4–6 SDQ.
+      Tugas utama: Perbaiki redaksi agar lebih runtut, santun, jelas, dan profesional tanpa mengubah makna aslinya.
+      
+      GAYA BAHASA & ATURAN:
+      1. Gunakan gaya bahasa santun, reflektif, membina, dan positif-konstruktif.
+      2. Gunakan istilah: "Ananda", "perlu ditingkatkan", "menunjukkan perkembangan", "perlu konsistensi", "diharapkan dapat".
+      3. HINDARI kata: "lemah", "buruk", "tidak mampu", "kurang serius".
+      4. JANGAN mengubah makna, substansi penilaian, atau capaian siswa.
+      
+      OUTPUT:
+      - Berupa 1 paragraf saja.
+      - Hanya teks hasil perbaikan, tanpa penjelasan tambahan atau embel-embel AI.
+    `;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: `Sempurnakan redaksi catatan guru berikut: "${originalText}"`,
+      config: { 
+        systemInstruction: systemInstruction,
+        temperature: 0.3,
+      }
+    });
+
+    const resultText = response.text;
+    if (!resultText) throw new Error("AI tidak memberikan respon.");
+
+    return resultText.trim();
+  } catch (error: any) {
+    console.error("Gemini Notes Redaction Error:", error);
+    throw new Error(error.message || "Gagal menyempurnakan catatan.");
+  }
+};
+
+/**
+ * Service untuk menyempurnakan redaksi bahasa rapor deskriptif (Kelas 1-3).
+ * AI bertindak sebagai editor bahasa, bukan penilai.
+ */
+export const improveReportRedaction = async (originalText: string): Promise<string> => {
+  if (!process.env.API_KEY) {
+    throw new Error("API_KEY tidak ditemukan.");
+  }
+
+  if (!originalText || originalText.trim().length < 5) {
+    throw new Error("Teks terlalu singkat untuk disempurnakan.");
+  }
+
+  try {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+    const systemInstruction = `
+      Anda adalah AI Assistant untuk guru SD Al-Qur'an (SDQ) yang bertugas MEMPERBAIKI REDAKSI KALIMAT RAPOR DESKRIPSI.
+      Tugas utama: Perbaiki tata bahasa, alur, kelembutan bahasa, dan kejelasan makna agar sesuai dengan standar rapor SDQ.
+      
+      BATASAN KERAS:
+      1. JANGAN mengubah makna atau substansi penilaian.
+      2. JANGAN menambah poin penilaian baru atau mengubah capaian siswa.
+      3. Gunakan gaya bahasa santun, positif, edukatif, dan membina.
+      4. Gunakan istilah: "Ananda", "menunjukkan", "perlu pendampingan", "terus dibimbing".
+      
+      OUTPUT:
+      - Berupa 1 paragraf saja.
+      - Hanya teks hasil perbaikan, tanpa penjelasan tambahan atau embel-embel AI.
+    `;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: `Sempurnakan redaksi kalimat rapor berikut tanpa mengubah maknanya: "${originalText}"`,
+      config: { 
+        systemInstruction: systemInstruction,
+        temperature: 0.3, // Rendah agar tetap setia pada teks asli
+      }
+    });
+
+    const resultText = response.text;
+    if (!resultText) throw new Error("AI tidak memberikan respon.");
+
+    return resultText.trim();
+  } catch (error: any) {
+    console.error("Gemini Redaction Error:", error);
+    throw new Error(error.message || "Gagal menyempurnakan bahasa.");
+  }
+};
+
+/**
  * Service untuk generate evaluasi kolektif Halaqah menggunakan Gemini AI (Client-Side).
  */
 export const generateEvaluasiAI = async (reportType: string, period: string, contextData: string) => {
-  // Fix: Obtained exclusively from process.env.API_KEY as per @google/genai guidelines
   if (!process.env.API_KEY) {
     throw new Error("API_KEY tidak ditemukan.");
   }
 
   try {
-    // Fix: Initializing GoogleGenAI with named parameter apiKey as per guidelines
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     const systemInstruction = `
@@ -49,13 +147,9 @@ export const generateEvaluasiAI = async (reportType: string, period: string, con
       }
     });
 
-    // Fix: Accessing .text as a property (not a method)
     const resultText = response.text;
     if (!resultText) throw new Error("AI tidak memberikan respon.");
-
-    // Parse JSON string ke object JavaScript
     return JSON.parse(resultText);
-
   } catch (error: any) {
     console.error("Gemini Client Error:", error);
     throw new Error(error.message || "Gagal menghubungi AI Gemini.");
@@ -66,13 +160,11 @@ export const generateEvaluasiAI = async (reportType: string, period: string, con
  * Service untuk generate evaluasi naratif personal santri menggunakan Gemini AI.
  */
 export const generateStudentEvaluation = async (student: Student): Promise<string> => {
-  // Fix: Obtained exclusively from process.env.API_KEY as per @google/genai guidelines
   if (!process.env.API_KEY) {
     throw new Error("API_KEY tidak ditemukan.");
   }
 
   try {
-    // Fix: Initializing GoogleGenAI with named parameter apiKey as per guidelines
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     const systemInstruction = `
@@ -101,10 +193,8 @@ export const generateStudentEvaluation = async (student: Student): Promise<strin
       }
     });
 
-    // Fix: Access .text property directly as per @google/genai guidelines
     const resultText = response.text;
     if (!resultText) throw new Error("AI tidak memberikan respon.");
-
     return resultText;
   } catch (error: any) {
     console.error("Gemini Client Error:", error);

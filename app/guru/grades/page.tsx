@@ -3,9 +3,10 @@ import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Student, SemesterReport } from '../../../types';
 import { getStudentsByTeacher, saveSemesterReport, getSemesterReport } from '../../../services/firestoreService';
+import { improveReportRedaction, improveTeacherNotes } from '../../../services/geminiService';
 import { extractClassLevel } from '../../../services/sdqTargets';
 import { Button } from '../../../components/Button';
-import { Save, BookOpen, ClipboardCheck, GraduationCap, User, FileText, Info } from 'lucide-react';
+import { Save, BookOpen, ClipboardCheck, GraduationCap, User, FileText, Info, Sparkles, Loader2, MessageSquare } from 'lucide-react';
 
 export default function GuruGradesPage({ teacherId }: { teacherId?: string }) {
   const location = useLocation();
@@ -13,6 +14,7 @@ export default function GuruGradesPage({ teacherId }: { teacherId?: string }) {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isRefining, setIsRefining] = useState<{ [key: string]: boolean }>({});
 
   const [report, setReport] = useState<SemesterReport>({
     studentId: '',
@@ -62,12 +64,35 @@ export default function GuruGradesPage({ teacherId }: { teacherId?: string }) {
         ...prev,
         studentId: id,
         teacherId: teacherId || '',
-        narrativeTahfizh: `Alhamdulillah, Ananda ${student?.name || ''} dalam pelajaran tahfizh menunjukkan perkembangan yang menggembirakan...`,
-        narrativeTilawah: `Alhamdulillah atas taufik dari Allah, pada semester ${report.semester.toLowerCase()} ini capaian kompetensi ananda ${student?.name || ''} dalam mata pelajaran Tilawah menunjukkan perkembangan yang sangat menggembirakan...`,
+        narrativeTahfizh: '',
+        narrativeTilawah: '',
         notes: `Tingkatkan kembali semangat Ananda ${student?.name || ''} dalam menghafal serta memuroja'ah hafalan. Semoga Allah selalu memberikan kemudahan.`
       }));
     }
     setIsLoading(false);
+  };
+
+  const handleRefineLanguage = async (field: 'narrativeTahfizh' | 'narrativeTilawah' | 'notes') => {
+    const text = (report as any)[field];
+    if (!text || text.trim().length < 10) {
+      alert("Silakan tulis deskripsi minimal satu kalimat terlebih dahulu.");
+      return;
+    }
+
+    setIsRefining(prev => ({ ...prev, [field]: true }));
+    try {
+      let refinedText = "";
+      if (field === 'notes') {
+        refinedText = await improveTeacherNotes(text);
+      } else {
+        refinedText = await improveReportRedaction(text);
+      }
+      setReport(prev => ({ ...prev, [field]: refinedText }));
+    } catch (error: any) {
+      alert(error.message);
+    } finally {
+      setIsRefining(prev => ({ ...prev, [field]: false }));
+    }
   };
 
   const handleSave = async () => {
@@ -148,30 +173,53 @@ export default function GuruGradesPage({ teacherId }: { teacherId?: string }) {
           
           {isDescriptionFormat ? (
             <div className="space-y-6">
+              {/* Narasi Tahfizh */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="bg-gray-50 px-6 py-3 border-b border-gray-100 flex items-center gap-2">
-                  <FileText size={18} className="text-primary-600" />
-                  <h3 className="font-bold text-gray-800 text-sm uppercase">A. Perkembangan Tahfizh</h3>
+                <div className="bg-gray-50 px-6 py-3 border-b border-gray-100 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FileText size={18} className="text-primary-600" />
+                    <h3 className="font-bold text-gray-800 text-sm uppercase">A. Perkembangan Tahfizh</h3>
+                  </div>
+                  <button 
+                    onClick={() => handleRefineLanguage('narrativeTahfizh')}
+                    disabled={isRefining['narrativeTahfizh'] || !report.narrativeTahfizh}
+                    className="flex items-center gap-1.5 px-3 py-1 bg-primary-50 hover:bg-primary-100 text-primary-600 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all disabled:opacity-50"
+                  >
+                    {isRefining['narrativeTahfizh'] ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                    Sempurnakan Bahasa (AI)
+                  </button>
                 </div>
                 <div className="p-6">
                    <textarea 
                      value={report.narrativeTahfizh}
                      onChange={e => setReport({...report, narrativeTahfizh: e.target.value})}
-                     className="w-full p-4 border border-gray-200 rounded-xl text-sm h-48 focus:ring-2 focus:ring-primary-500 outline-none leading-relaxed"
-                     placeholder="Tuliskan perkembangan hafalan siswa..."
+                     className="w-full p-4 border border-gray-200 rounded-xl text-sm h-48 focus:ring-2 focus:ring-primary-500 outline-none leading-relaxed transition-all"
+                     placeholder="Tuliskan perkembangan hafalan siswa... (Contoh: Tahfiz ananda masih kurang lancar dan sering lupa ayat)"
                    />
                 </div>
               </div>
+
+              {/* Narasi Tilawah */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="bg-gray-50 px-6 py-3 border-b border-gray-100 flex items-center gap-2">
-                  <BookOpen size={18} className="text-primary-600" />
-                  <h3 className="font-bold text-gray-800 text-sm uppercase">B. Perkembangan Tilawah</h3>
+                <div className="bg-gray-50 px-6 py-3 border-b border-gray-100 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <BookOpen size={18} className="text-primary-600" />
+                    <h3 className="font-bold text-gray-800 text-sm uppercase">B. Perkembangan Tilawah</h3>
+                  </div>
+                  <button 
+                    onClick={() => handleRefineLanguage('narrativeTilawah')}
+                    disabled={isRefining['narrativeTilawah'] || !report.narrativeTilawah}
+                    className="flex items-center gap-1.5 px-3 py-1 bg-primary-50 hover:bg-primary-100 text-primary-600 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all disabled:opacity-50"
+                  >
+                    {isRefining['narrativeTilawah'] ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                    Sempurnakan Bahasa (AI)
+                  </button>
                 </div>
                 <div className="p-6">
                    <textarea 
                      value={report.narrativeTilawah}
                      onChange={e => setReport({...report, narrativeTilawah: e.target.value})}
-                     className="w-full p-4 border border-gray-200 rounded-xl text-sm h-48 focus:ring-2 focus:ring-primary-500 outline-none leading-relaxed"
+                     className="w-full p-4 border border-gray-200 rounded-xl text-sm h-48 focus:ring-2 focus:ring-primary-500 outline-none leading-relaxed transition-all"
                      placeholder="Tuliskan perkembangan tilawah siswa..."
                    />
                 </div>
@@ -237,7 +285,7 @@ export default function GuruGradesPage({ teacherId }: { teacherId?: string }) {
                 </div>
               </div>
 
-              {/* Status Hafalan (Updated to include Status field) */}
+              {/* Status Hafalan */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="bg-gray-50 px-6 py-3 border-b border-gray-100 flex items-center gap-2">
                   <User size={18} className="text-primary-600" />
@@ -271,6 +319,32 @@ export default function GuruGradesPage({ teacherId }: { teacherId?: string }) {
                        </div>
                     </div>
                   ))}
+                </div>
+              </div>
+
+              {/* Catatan Guru (Khusus 4-6) */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="bg-gray-50 px-6 py-3 border-b border-gray-100 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare size={18} className="text-primary-600" />
+                    <h3 className="font-bold text-gray-800 text-sm">CATATAN WALI KELAS</h3>
+                  </div>
+                  <button 
+                    onClick={() => handleRefineLanguage('notes')}
+                    disabled={isRefining['notes'] || !report.notes}
+                    className="flex items-center gap-1.5 px-3 py-1 bg-primary-50 hover:bg-primary-100 text-primary-600 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all disabled:opacity-50"
+                  >
+                    {isRefining['notes'] ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                    Sempurnakan Catatan (AI)
+                  </button>
+                </div>
+                <div className="p-6">
+                   <textarea 
+                     value={report.notes}
+                     onChange={e => setReport({...report, notes: e.target.value})}
+                     className="w-full p-4 border border-gray-200 rounded-xl text-sm h-32 focus:ring-2 focus:ring-primary-500 outline-none leading-relaxed transition-all"
+                     placeholder="Tuliskan catatan pembinaan untuk siswa... (Contoh: Ananda cukup baik tapi masih sering tidak fokus)"
+                   />
                 </div>
               </div>
             </>
