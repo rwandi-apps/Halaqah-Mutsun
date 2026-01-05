@@ -7,7 +7,7 @@ import { Student } from "../types";
  * AI bertindak sebagai editor bahasa agar lebih santun, profesional, dan membina.
  */
 export const improveTeacherNotes = async (originalText: string): Promise<string> => {
-  if (!import.meta.env.VITE\_GEMINI\_API\_KEY) {
+  if (!import.meta.env.VITE_GEMINI_API_KEY) {
     throw new Error("API_KEY tidak ditemukan.");
   }
 
@@ -16,7 +16,7 @@ export const improveTeacherNotes = async (originalText: string): Promise<string>
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
 
     const systemInstruction = `
       Anda adalah AI Assistant yang bertugas sebagai EDITOR BAHASA untuk Catatan Rapor Siswa Kelas 4–6 SDQ.
