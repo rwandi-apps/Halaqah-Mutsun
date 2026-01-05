@@ -7,7 +7,7 @@ import { Student } from "../types";
  * AI bertindak sebagai editor bahasa agar lebih santun, profesional, dan membina.
  */
 export const improveTeacherNotes = async (originalText: string): Promise<string> => {
-  if (!process.env.API_KEY) {
+  if (!import.meta.env.VITE\_GEMINI\_API\_KEY) {
     throw new Error("API_KEY tidak ditemukan.");
   }
 
