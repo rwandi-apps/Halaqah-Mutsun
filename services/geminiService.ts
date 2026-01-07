@@ -123,7 +123,7 @@ export const generateEvaluasiAI = async (reportType: string, period: string, con
       ANALISIS DATA BERIKUT:
       Tipe Laporan: ${reportType}
       Periode: ${period}
-      Data Santri:
+      Data Santri (Nama, Capaian, Catatan Guru, Kehadiran, Skor Adab):
       ${contextData}
     `;
 
@@ -178,10 +178,10 @@ export const generateStudentEvaluation = async (student: Student): Promise<strin
       Kelas: ${student.className}
       Target: ${student.memorizationTarget}
       Capaian Saat Ini: ${student.currentProgress}
-      Kehadiran: ${student.attendance}%
-      Nilai Perilaku: ${student.behaviorScore}
+      Kehadiran: ${student.attendance}% (Skala 0-100)
+      Skor Adab: ${student.behaviorScore}/10 (10=Sangat Baik, 8=Baik, 6=Perlu Pembinaan)
       
-      Evaluasi harus mencakup apresiasi atas usahanya dan saran perbaikan yang membangun.
+      Evaluasi harus mencakup apresiasi atas usahanya, evaluasi kedisiplinan & adab, serta saran perbaikan yang membangun.
     `;
 
     const response = await ai.models.generateContent({

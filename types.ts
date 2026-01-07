@@ -36,6 +36,35 @@ export interface Student {
   progress: number;
 }
 
+// Single Source of Truth untuk data Klasikal
+// Collection: halaqah_monthly_reports
+export interface HalaqahMonthlyReport {
+  id?: string;
+  halaqahId: string; 
+  teacherId: string;
+  period: string; 
+  academicYear: string;
+  klasikal: {
+    tahfizh: {
+      from: { surah: string; ayah: number };
+      to: { surah: string; ayah: number };
+    };
+    tilawah: {
+      type: 'quran' | 'iqra';
+      from: { 
+        surah?: string; ayah?: number; 
+        jilid?: number; halaman?: number; 
+      };
+      to: { 
+        surah?: string; ayah?: number; 
+        jilid?: number; halaman?: number; 
+      };
+    };
+  };
+  createdAt?: string;
+  updatedAt?: any;
+}
+
 export interface Report {
   id: string;
   studentId: string;
@@ -49,17 +78,19 @@ export interface Report {
   tilawah: {
     method: string;
     individual: string;
-    classical: string;
+    classical?: string; 
   };
   tahfizh: {
     individual: string;
-    classical: string;
+    classical?: string; 
   };
   totalHafalan?: {
     juz: number;
     pages: number;
     lines: number;
   };
+  attendance?: number;
+  behaviorScore?: number;
   notes: string;
   createdAt: string;
   date: string;
@@ -69,7 +100,7 @@ export interface Report {
 export interface HalaqahEvaluation {
   id: string;
   teacherId: string;
-  period: string; // Format: "Desember 2025"
+  period: string; 
   academicYear: string;
   insightUtama: string;
   kendalaTerindikasi: string;

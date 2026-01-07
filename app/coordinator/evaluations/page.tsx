@@ -84,11 +84,11 @@ export default function CoordinatorEvaluationsPage() {
 
     setIsGenerating(true);
     try {
+      // DATA FLOW: Mengambil attendance & behaviorScore dari log laporan bulanan untuk context AI
       const contextData = filteredReports.map((r, i) => 
-        `${i+1}. Nama: ${r.studentName}, Sabaq: ${r.tahfizh.individual}, Catatan Guru: ${r.notes || 'Nihil'}`
+        `${i+1}. Nama: ${r.studentName}, Sabaq: ${r.tahfizh.individual}, Hadir: ${r.attendance}%, Adab: ${r.behaviorScore}/10, Catatan Guru: ${r.notes || 'Nihil'}`
       ).join('\n');
 
-      // PANGGIL SERVICE CLIENT-SIDE LANGSUNG
       const result = await generateEvaluasiAI(reportType, selectedPeriod, contextData);
 
       setEvaluation(prev => ({
@@ -198,6 +198,10 @@ export default function CoordinatorEvaluationsPage() {
                 filteredReports.map(r => (
                   <div key={r.id} className="p-4 bg-white rounded-2xl border-2 border-gray-50 hover:border-primary-100 transition-all">
                     <p className="font-black text-gray-900 text-xs uppercase mb-1">{r.studentName}</p>
+                    <div className="flex gap-2 mb-1">
+                       <span className="text-[8px] font-bold bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">Hadir: {r.attendance}%</span>
+                       <span className="text-[8px] font-bold bg-rose-50 text-rose-600 px-1.5 py-0.5 rounded">Adab: {r.behaviorScore}/10</span>
+                    </div>
                     <p className="text-[10px] text-gray-500 line-clamp-2">Sabaq: {r.tahfizh.individual}</p>
                     {r.notes && <p className="text-[10px] text-primary-600 italic mt-1">"{r.notes}"</p>}
                   </div>

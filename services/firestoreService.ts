@@ -18,7 +18,7 @@ import {
   limit
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { User, Student, Report, Role, SemesterReport, HalaqahEvaluation } from '../types';
+import { User, Student, Report, Role, SemesterReport, HalaqahEvaluation, HalaqahMonthlyReport } from '../types';
 import { extractClassLevel } from './sdqTargets';
 
 export const getAllTeachers = async (): Promise<User[]> => {
@@ -34,6 +34,25 @@ export const getTeacherById = async (id: string): Promise<User | undefined> => {
   return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as User : undefined;
 };
 
+// --- DATA KLASIKAL SERVICE ---
+
+export const saveHalaqahMonthlyReport = async (data: HalaqahMonthlyReport): Promise<void> => {
+  if (!db) throw new Error("Firestore not initialized");
+  const reportId = `${data.teacherId}_${data.period.replace(/\s/g, '_')}`;
+  const docRef = doc(db, 'halaqah_monthly_reports', reportId);
+  await setDoc(docRef, {
+    ...data,
+    updatedAt: serverTimestamp()
+  }, { merge: true });
+};
+
+export const getHalaqahMonthlyReport = async (teacherId: string, period: string): Promise<HalaqahMonthlyReport | null> => {
+  if (!db) return null;
+  const reportId = `${teacherId}_${period.replace(/\s/g, '_')}`;
+  const docSnap = await getDoc(doc(db, 'halaqah_monthly_reports', reportId));
+  return docSnap.exists() ? docSnap.data() as HalaqahMonthlyReport : null;
+};
+
 // --- AGGREGATION SERVICE ---
 
 export interface ClassSummary {
@@ -46,11 +65,9 @@ export interface ClassSummary {
   }[];
 }
 
-// Fix: Strictly typing classGroups to resolve property access and unknown array errors
 export const getClassHalaqahSummary = async (): Promise<ClassSummary[]> => {
   if (!db) return [];
   
-  // 1. Ambil data dasar
   const studentsSnap = await getDocs(collection(db, 'siswa'));
   const teachersSnap = await getDocs(collection(db, 'users'));
   
@@ -61,8 +78,6 @@ export const getClassHalaqahSummary = async (): Promise<ClassSummary[]> => {
     teacherMap[d.id] = data.nickname || data.name;
   });
 
-  // 2. Grouping Logic
-  // Fix: Explicitly defining the structure of classGroups for better type inference
   const classGroups: Record<string, {
     className: string;
     totalStudents: number;
@@ -75,7 +90,7 @@ export const getClassHalaqahSummary = async (): Promise<ClassSummary[]> => {
       classGroups[name] = {
         className: name,
         totalStudents: 0,
-        halaqahMap: {} // group by teacherId
+        halaqahMap: {} 
       };
     }
 
@@ -91,8 +106,6 @@ export const getClassHalaqahSummary = async (): Promise<ClassSummary[]> => {
     classGroups[name].halaqahMap[tId].studentCount++;
   });
 
-  // 3. Transform ke Array & Format UI
-  // Fix: Added explicit type cast for 'status' to satisfy 'Aktif' | 'Kosong' union requirement
   return Object.values(classGroups).map(group => ({
     className: group.className,
     totalStudents: group.totalStudents,
@@ -101,7 +114,6 @@ export const getClassHalaqahSummary = async (): Promise<ClassSummary[]> => {
   })).sort((a, b) => a.className.localeCompare(b.className));
 };
 
-// ... (sisanya tetap sama)
 export const addTeacher = async (name: string, email: string, nickname: string, role: Role): Promise<User> => {
   if (!db) throw new Error("Firestore not initialized");
   const docRef = await addDoc(collection(db, 'users'), { name, nickname, email, role, createdAt: serverTimestamp() });
@@ -141,10 +153,6 @@ export const getAllSemesterReports = async (): Promise<SemesterReport[]> => {
   return snapshot.docs.map(doc => ({ ...doc.data() } as SemesterReport));
 };
 
-// Fix: Added missing export 'getPerformancePerClass' required by CoordinatorDashboard
-/**
- * Mendapatkan performa rata-rata pencapaian target per kelas
- */
 export const getPerformancePerClass = async (): Promise<{label: string, value: number}[]> => {
   if (!db) return [];
   const reports = await getAllSemesterReports();
@@ -170,10 +178,6 @@ export const getPerformancePerClass = async (): Promise<{label: string, value: n
   })).sort((a, b) => a.label.localeCompare(b.label));
 };
 
-// Fix: Added missing export 'getLatestTeacherActivities' required by CoordinatorDashboard
-/**
- * Mendapatkan aktivitas guru terbaru (mock)
- */
 export const getLatestTeacherActivities = async (limitCount: number): Promise<any[]> => {
   if (!db) return [];
   const teachers = await getAllTeachers();
@@ -240,23 +244,39 @@ export const updateStudent = async (id: string, data: Partial<Student>): Promise
   await updateDoc(docRef, updateData);
 };
 
+// ALUR DATA: UI (Guru Laporan) -> Firestore (Laporan & Update Siswa)
 export const saveSDQReport = async (reportData: Omit<Report, 'id' | 'createdAt'>): Promise<void> => {
   if (!db) throw new Error("Firestore not initialized");
   await runTransaction(db, async (transaction) => {
     const studentRef = doc(db, 'siswa', reportData.studentId);
     const reportRef = doc(collection(db, 'laporan'));
     const studentSnap = await transaction.get(studentRef);
+    
     if (!studentSnap.exists()) throw new Error("Siswa tidak ditemukan");
     const studentData = studentSnap.data() as Student;
+    
     let updatedTotalHafalan = studentData.totalHafalan || { juz: 0, pages: 0, lines: 0 };
     let updatedProgress = studentData.currentProgress || 'Belum Ada';
+    
     if (reportData.type === 'Laporan Semester' && reportData.totalHafalan) {
       updatedTotalHafalan = reportData.totalHafalan;
       const parts = reportData.tahfizh.individual.split(' - ');
       updatedProgress = parts.length > 1 ? parts[1].trim() : parts[0].trim();
     } 
-    transaction.update(studentRef, { totalHafalan: updatedTotalHafalan, currentProgress: updatedProgress, lastUpdated: serverTimestamp() });
-    transaction.set(reportRef, { ...reportData, totalHafalan: updatedTotalHafalan, createdAt: new Date().toISOString() });
+
+    transaction.update(studentRef, { 
+      totalHafalan: updatedTotalHafalan, 
+      currentProgress: updatedProgress, 
+      attendance: reportData.attendance !== undefined ? reportData.attendance : studentData.attendance,
+      behaviorScore: reportData.behaviorScore !== undefined ? reportData.behaviorScore : studentData.behaviorScore,
+      lastUpdated: serverTimestamp() 
+    });
+
+    transaction.set(reportRef, { 
+      ...reportData, 
+      totalHafalan: updatedTotalHafalan, 
+      createdAt: new Date().toISOString() 
+    });
   });
 };
 
