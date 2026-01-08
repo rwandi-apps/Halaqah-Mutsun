@@ -1,5 +1,3 @@
-engine.ts ver 1.1 (bisa hitung Al-Quran dan iqra)
-
 import {
   AyahPointer,
   SDQCalculationResult,
