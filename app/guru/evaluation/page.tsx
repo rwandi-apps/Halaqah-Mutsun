@@ -4,7 +4,6 @@ import { HalaqahEvaluation } from '../../../types';
 import { subscribeToEvaluationsByTeacher } from '../../../services/firestoreService';
 import { 
   BookOpen, 
-  Sparkles, 
   MessageSquare, 
   Target, 
   Lightbulb, 
@@ -139,18 +138,16 @@ export default function GuruEvaluationPage({ teacherId }: { teacherId?: string }
           </div>
         </div>
 
-        {/* 3. TARGET BULAN DEPAN */}
-        <div className="bg-amber-50 rounded-[2.5rem] p-6 border border-amber-100 shadow-sm flex flex-col justify-between">
+        {/* 3. TARGET BULAN DEPAN - FIX: List style matching others */}
+        <div className="bg-white rounded-[2.5rem] p-6 border border-amber-100 shadow-sm flex flex-col">
           <div className="flex items-center gap-3 mb-5">
-            <div className="p-2 bg-white text-amber-600 rounded-xl shadow-sm">
+            <div className="p-2 bg-amber-50 text-amber-600 rounded-xl shadow-sm">
               <Target size={20} />
             </div>
             <h3 className="text-[11px] font-black text-amber-900 uppercase tracking-widest">Target Mendatang</h3>
           </div>
-          <div className="bg-amber-600/90 p-5 rounded-3xl text-white text-center shadow-lg shadow-amber-500/20">
-            <p className="text-[18px] font-black tracking-tight leading-tight">
-              {evaluation.targetBulanDepan}
-            </p>
+          <div className="bg-amber-50/50 p-5 rounded-3xl border border-amber-100/50 flex-1">
+            {renderAsList(evaluation.targetBulanDepan)}
           </div>
         </div>
       </div>
@@ -168,7 +165,7 @@ export default function GuruEvaluationPage({ teacherId }: { teacherId?: string }
         </div>
       </div>
 
-      {/* NEW: KONFIRMASI PEMAHAMAN EVALUASI */}
+      {/* KONFIRMASI PEMAHAMAN EVALUASI */}
       <div className={`rounded-[2rem] p-5 sm:p-6 transition-all duration-300 border ${isReadConfirmed ? 'bg-emerald-50/50 border-emerald-100' : 'bg-white border-gray-100 shadow-sm'}`}>
         <div className="flex items-start gap-4">
           <div className="mt-1">
@@ -184,26 +181,12 @@ export default function GuruEvaluationPage({ teacherId }: { teacherId?: string }
               <span className={`text-[13px] sm:text-sm font-bold transition-colors ${isReadConfirmed ? 'text-emerald-800' : 'text-gray-700'}`}>
                 Saya telah membaca dan memahami evaluasi ini
               </span>
-              {isReadConfirmed && (
-                <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-100 rounded-full shrink-0">
-                  <CheckCircle2 size={10} className="text-emerald-600" />
-                  <span className="text-[8px] font-black text-emerald-600 uppercase tracking-widest">Evaluasi telah dipahami</span>
-                </div>
-              )}
             </div>
-            {!isReadConfirmed && (
-              <div className="mt-2 flex items-start gap-2 p-3 bg-blue-50/50 rounded-2xl border border-blue-50">
-                <Info size={14} className="text-blue-500 shrink-0 mt-0.5" />
-                <p className="text-[10px] sm:text-[11px] font-medium text-blue-600/80 leading-relaxed">
-                  Silakan luangkan waktu untuk membaca evaluasi agar tindak lanjut terhadap santri dapat dilakukan dengan optimal.
-                </p>
-              </div>
-            )}
           </div>
         </div>
       </div>
 
-      {/* 5. RESPONS & TINDAK LANJUT GURU */}
+      {/* RESPONS & TINDAK LANJUT GURU */}
       <div className={`transition-all duration-500 ${!isReadConfirmed ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
         <div className="bg-slate-50 rounded-[2.5rem] p-6 sm:p-8 border border-slate-200 shadow-inner">
           <div className="flex items-center gap-3 mb-6">
@@ -212,68 +195,51 @@ export default function GuruEvaluationPage({ teacherId }: { teacherId?: string }
             </div>
             <div>
               <h3 className="text-[11px] font-black text-slate-800 uppercase tracking-widest">Respon & Tindak Lanjut Guru</h3>
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Update status pelaksanaan untuk koordinasi</p>
             </div>
           </div>
 
           <div className="space-y-6">
-            {/* Status Selection Buttons */}
-            <div>
-              <p className="text-[10px] font-bold text-slate-500 mb-3 ml-1 italic leading-relaxed">
-                Silakan pilih status pelaksanaan tindak lanjut berdasarkan kondisi halaqah saat ini:
-              </p>
-              
-              <div className="grid grid-cols-1 gap-2">
-                {[
-                  { id: 'belum', label: 'Belum Dilaksanakan', icon: PauseCircle, color: 'text-slate-400' },
-                  { id: 'proses', label: 'Sedang Dilaksanakan', icon: RefreshCcw, color: 'text-blue-500' },
-                  { id: 'selesai', label: 'Sudah Dilaksanakan', icon: CheckCircle2, color: 'text-emerald-500' },
-                  { id: 'diskusi', label: 'Butuh Diskusi / Konsultasi', icon: MessageSquare, color: 'text-amber-500' },
-                ].map((status) => (
-                  <button
-                    key={status.id}
-                    onClick={() => setTeacherStatus(status.id)}
-                    className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all active:scale-[0.98] ${
-                      teacherStatus === status.id 
-                        ? 'border-primary-500 bg-primary-50/50 ring-4 ring-primary-500/5' 
-                        : 'border-white bg-white hover:border-slate-100'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <status.icon size={18} className={status.color} />
-                      <span className={`text-[13px] font-bold ${teacherStatus === status.id ? 'text-primary-700' : 'text-slate-600'}`}>
-                        {status.label}
-                      </span>
+            <div className="grid grid-cols-1 gap-2">
+              {[
+                { id: 'belum', label: 'Belum Dilaksanakan', icon: PauseCircle, color: 'text-slate-400' },
+                { id: 'proses', label: 'Sedang Dilaksanakan', icon: RefreshCcw, color: 'text-blue-500' },
+                { id: 'selesai', label: 'Sudah Dilaksanakan', icon: CheckCircle2, color: 'text-emerald-500' },
+                { id: 'diskusi', label: 'Butuh Diskusi / Konsultasi', icon: MessageSquare, color: 'text-amber-500' },
+              ].map((status) => (
+                <button
+                  key={status.id}
+                  onClick={() => setTeacherStatus(status.id)}
+                  className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all active:scale-[0.98] ${
+                    teacherStatus === status.id 
+                      ? 'border-primary-500 bg-primary-50/50 ring-4 ring-primary-500/5' 
+                      : 'border-white bg-white hover:border-slate-100'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <status.icon size={18} className={status.color} />
+                    <span className={`text-[13px] font-bold ${teacherStatus === status.id ? 'text-primary-700' : 'text-slate-600'}`}>
+                      {status.label}
+                    </span>
+                  </div>
+                  {teacherStatus === status.id && (
+                    <div className="w-5 h-5 bg-primary-500 rounded-full flex items-center justify-center">
+                      <Check size={12} className="text-white" />
                     </div>
-                    {teacherStatus === status.id && (
-                      <div className="w-5 h-5 bg-primary-500 rounded-full flex items-center justify-center">
-                        <Check size={12} className="text-white" />
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
+                  )}
+                </button>
+              ))}
             </div>
 
-            {/* Catatan Guru Textarea */}
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
-                Catatan Guru (Opsional)
-              </label>
-              <div className="relative">
-                <textarea
-                  className="w-full p-5 bg-white border-2 border-white rounded-[2rem] text-sm font-medium focus:border-primary-200 outline-none h-32 transition-all shadow-sm placeholder:text-slate-300"
-                  placeholder="Contoh: Terdapat beberapa kondisi santri atau kendala teknis yang perlu dibahas bersama koordinator..."
-                ></textarea>
-                <div className="absolute bottom-4 right-5 opacity-20">
-                  <MessageCircle size={20} />
-                </div>
-              </div>
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Catatan Guru (Opsional)</label>
+              <textarea
+                className="w-full p-5 bg-white border-2 border-white rounded-[2rem] text-sm font-medium focus:border-primary-200 outline-none h-32 transition-all shadow-sm placeholder:text-slate-300"
+                placeholder="Tuliskan respon atau kendala pelaksanaan..."
+              />
             </div>
 
-            {/* Submit Button */}
             <button 
-              onClick={() => alert("Respon Anda berhasil disimpan. Koordinator akan segera meninjau status halaqah Anda.")}
+              onClick={() => alert("Respon berhasil disimpan.")}
               className="w-full py-4 bg-slate-800 hover:bg-slate-900 text-white rounded-2xl text-[10px] font-black tracking-[0.2em] uppercase transition-all shadow-lg active:scale-95"
             >
               Simpan Respon Guru
@@ -282,7 +248,7 @@ export default function GuruEvaluationPage({ teacherId }: { teacherId?: string }
         </div>
       </div>
 
-      {/* 6. PESAN PERSONAL KOORDINATOR */}
+      {/* PESAN PERSONAL KOORDINATOR */}
       {evaluation.catatanKoordinator && (
         <div className="bg-emerald-600 rounded-[2.5rem] p-6 sm:p-8 text-white shadow-xl shadow-emerald-500/10">
           <div className="flex items-center gap-3 mb-4">
@@ -296,17 +262,6 @@ export default function GuruEvaluationPage({ teacherId }: { teacherId?: string }
           </p>
         </div>
       )}
-
-      {/* Footer Info */}
-      <div className="pt-4 flex justify-between items-center px-6 text-gray-400">
-        <span className="text-[9px] font-bold uppercase tracking-widest">
-          Diterbitkan: {new Date(evaluation.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
-        </span>
-        <div className="flex items-center gap-1">
-          <CheckCircle2 size={12} className="text-emerald-500" />
-          <span className="text-[9px] font-bold uppercase tracking-widest">Terverifikasi Sistem</span>
-        </div>
-      </div>
     </div>
   );
 }

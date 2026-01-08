@@ -6,7 +6,7 @@ import { getStudentsByTeacher, saveSDQReport, saveHalaqahMonthlyReport, getHalaq
 import { SURAH_LIST } from '../../../services/mockBackend';
 import { calculateHafalan } from '../../../services/quranMapping';
 import { Button } from '../../../components/Button';
-import { BookOpen, Book, Plus, Minus, Database, UserCheck, Layers, Loader2 } from 'lucide-react';
+import { BookOpen, Book, Plus, Minus, Database, UserCheck, Layers, Loader2, Calendar } from 'lucide-react';
 
 interface GuruLaporanPageProps {
   teacherId?: string;
@@ -14,6 +14,8 @@ interface GuruLaporanPageProps {
 
 const IQRA_JILIDS = [1, 2, 3, 4, 5, 6];
 const IQRA_VOLUMES = ["Iqra' 1", "Iqra' 2", "Iqra' 3", "Iqra' 4", "Iqra' 5", "Iqra' 6"];
+const MONTH_LIST = ["Juli", "Agustus", "September", "Oktober", "November", "Desember", "Januari", "Februari", "Maret", "April", "Mei", "Juni"];
+const ACADEMIC_YEARS = ["2024/2025", "2025/2026", "2026/2027"];
 
 const CounterInput = ({ 
   label, 
@@ -84,6 +86,7 @@ export default function GuruLaporanPage({ teacherId = '1' }: GuruLaporanPageProp
   // States
   const [reportType, setReportType] = useState('Laporan Bulanan');
   const [studentId, setStudentId] = useState('');
+  const [academicYear, setAcademicYear] = useState('2025/2026');
   const [month, setMonth] = useState('Desember');
   
   const [klasikalTahfizh, setKlasikalTahfizh] = useState({
@@ -116,6 +119,23 @@ export default function GuruLaporanPage({ teacherId = '1' }: GuruLaporanPageProp
   const [baselineLines, setBaselineLines] = useState<number | string>(0);
   const [notes, setNotes] = useState('');
 
+  // Load existing shared klasikal data when month changes
+  useEffect(() => {
+    const loadKlasikal = async () => {
+      if (!teacherId || !month) return;
+      const existing = await getHalaqahMonthlyReport(teacherId, month);
+      if (existing) {
+        setKlasikalTahfizh(existing.klasikal.tahfizh);
+        setKlasikalTilawah({
+          type: existing.klasikal.tilawah.type,
+          from: { ...klasikalTilawah.from, ...existing.klasikal.tilawah.from },
+          to: { ...klasikalTilawah.to, ...existing.klasikal.tilawah.to }
+        });
+      }
+    };
+    loadKlasikal();
+  }, [teacherId, month]);
+
   // Edit Mode Handler
   useEffect(() => {
     if (location.state?.editReportId && location.state?.reportData) {
@@ -123,6 +143,7 @@ export default function GuruLaporanPage({ teacherId = '1' }: GuruLaporanPageProp
       setStudentId(r.studentId);
       setReportType(r.type);
       setMonth(r.month);
+      setAcademicYear(r.academicYear || '2025/2026');
       setAttendance(r.attendance || 100);
       setBehaviorScore(r.behaviorScore || 10);
       setNotes(r.notes || '');
@@ -170,17 +191,6 @@ export default function GuruLaporanPage({ teacherId = '1' }: GuruLaporanPageProp
     getStudentsByTeacher(teacherId).then(data => { setStudents(data); setIsLoading(false); });
   }, [teacherId]);
 
-  const validation = useMemo(() => {
-    const checkQuranRange = (fromS: string, fromA: number, toS: string, toA: number) => {
-      const startIdx = SURAH_LIST.indexOf(fromS);
-      const endIdx = SURAH_LIST.indexOf(toS);
-      if (endIdx < startIdx) return false;
-      if (endIdx === startIdx && toA < fromA) return false;
-      return true;
-    };
-    return { allValid: true };
-  }, [klasikalTahfizh, klasikalTilawah]);
-
   const handleSave = async () => {
     if (!studentId) { alert("Mohon pilih siswa terlebih dahulu."); return; }
     const selectedStudent = students.find(s => s.id === studentId);
@@ -192,7 +202,7 @@ export default function GuruLaporanPage({ teacherId = '1' }: GuruLaporanPageProp
         halaqahId: teacherId || '',
         teacherId: teacherId || '',
         period: month,
-        academicYear: '2025/2026',
+        academicYear,
         klasikal: {
           tahfizh: klasikalTahfizh,
           tilawah: {
@@ -208,7 +218,7 @@ export default function GuruLaporanPage({ teacherId = '1' }: GuruLaporanPageProp
 
       await saveSDQReport({
         studentId, studentName: selectedStudent.name, teacherId: teacherId || '', className: selectedStudent.className, 
-        type: reportType, month, academicYear: '2025/2026', date: new Date().toISOString().split('T')[0], evaluation: '',
+        type: reportType, month, academicYear, date: new Date().toISOString().split('T')[0], evaluation: '',
         attendance, behaviorScore,
         tilawah: { method: tilawahMethod, individual: makeRange(tilawahFromSurah, tilawahFromVerse, tilawahToSurah, tilawahToVerse) },
         tahfizh: { individual: makeRange(tahfizhFromSurah, tahfizhFromVerse, tahfizhToSurah, tahfizhToVerse) },
@@ -230,16 +240,39 @@ export default function GuruLaporanPage({ teacherId = '1' }: GuruLaporanPageProp
         <h2 className="text-2xl font-bold text-gray-900">{location.state?.editReportId ? 'Edit Laporan' : 'Input Laporan Halaqah'}</h2>
       </div>
       
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div><label className="block text-xs font-bold text-gray-400 uppercase mb-1.5 ml-1">Periode Laporan</label><select value={month} onChange={(e) => setMonth(e.target.value)} className="w-full px-4 py-2 border border-gray-200 rounded-xl outline-none bg-white text-sm">{(["Juli", "Agustus", "September", "Oktober", "November", "Desember", "Januari", "Februari", "Maret", "April", "Mei", "Juni"].map(m => <option key={m} value={m}>{m} 2025/2026</option>))}</select></div>
-        <div><label className="block text-xs font-bold text-gray-400 uppercase mb-1.5 ml-1">Tipe Laporan</label><select value={reportType} onChange={(e) => setReportType(e.target.value)} className="w-full px-4 py-2 border border-gray-200 rounded-xl outline-none bg-white text-sm"><option value="Laporan Bulanan">Laporan Bulanan</option><option value="Laporan Semester">Laporan Semester (Individu)</option></select></div>
+      {/* FILTER SECTION - SEPARATED YEAR AND MONTH */}
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div>
+          <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5 ml-1">Tahun Ajaran</label>
+          <div className="relative">
+            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-500" size={14} />
+            <select value={academicYear} onChange={(e) => setAcademicYear(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl outline-none bg-white text-sm">
+              {ACADEMIC_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
+          </div>
+        </div>
+        <div>
+          <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5 ml-1">Bulan Periode</label>
+          <select value={month} onChange={(e) => setMonth(e.target.value)} className="w-full px-4 py-2 border border-gray-200 rounded-xl outline-none bg-white text-sm">
+            {MONTH_LIST.map(m => <option key={m} value={m}>{m}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5 ml-1">Tipe Laporan</label>
+          <select value={reportType} onChange={(e) => setReportType(e.target.value)} className="w-full px-4 py-2 border border-gray-200 rounded-xl outline-none bg-white text-sm">
+            <option value="Laporan Bulanan">Laporan Bulanan</option>
+            <option value="Laporan Semester">Laporan Semester (Individu)</option>
+          </select>
+        </div>
       </div>
 
+      {/* SECTION KLASIKAL (Shared) */}
       <div className="bg-white rounded-[2rem] shadow-sm border-2 border-primary-50 overflow-hidden">
         <div className="bg-primary-50 px-6 py-4 flex items-center justify-between border-b border-primary-100">
            <div className="flex items-center gap-3"><Layers className="text-primary-600" /><div><h3 className="font-bold text-primary-900 text-sm uppercase">Capaian Klasikal Halaqah</h3></div></div>
         </div>
-        <div className="p-6 space-y-10">
+        <div className="p-6 space-y-8">
+           {/* Tahfizh Klasikal */}
            <div className="space-y-4">
               <h4 className="text-[11px] font-black text-gray-700 uppercase tracking-widest flex items-center gap-2"><Book size={14} className="text-emerald-500" /> Tahfizh Klasikal</h4>
               <div className="flex flex-col md:flex-row gap-4 items-end bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
@@ -257,9 +290,54 @@ export default function GuruLaporanPage({ teacherId = '1' }: GuruLaporanPageProp
                  </div>
               </div>
            </div>
+
+           {/* Tilawah Klasikal - RESTORED AND FUNCTIONAL */}
+           <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                <h4 className="text-[11px] font-black text-gray-700 uppercase tracking-widest flex items-center gap-2"><BookOpen size={14} className="text-blue-500" /> Tilawah Klasikal</h4>
+                <div className="flex bg-gray-100 p-1 rounded-xl gap-1">
+                    <button type="button" onClick={() => setKlasikalTilawah({...klasikalTilawah, type: 'quran'})} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${klasikalTilawah.type === 'quran' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>Al-Qur'an</button>
+                    <button type="button" onClick={() => setKlasikalTilawah({...klasikalTilawah, type: 'iqra'})} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${klasikalTilawah.type === 'iqra' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>Iqra'</button>
+                 </div>
+              </div>
+              <div className="flex flex-col md:flex-row gap-4 items-end bg-gray-50/50 p-4 rounded-2xl border border-gray-100 transition-all">
+                 {klasikalTilawah.type === 'quran' ? (
+                    <>
+                      <div className="flex-1 space-y-2"><p className="text-[10px] font-bold text-gray-400 ml-1 uppercase">Dari</p>
+                        <div className="flex gap-2">
+                          <select value={klasikalTilawah.from.surah} onChange={e => setKlasikalTilawah({...klasikalTilawah, from: {...klasikalTilawah.from, surah: e.target.value}})} className="flex-1 p-2 border border-gray-200 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500">{SURAH_LIST.map(s => <option key={s} value={s}>{s}</option>)}</select>
+                          <CounterInput label="Ayat" value={klasikalTilawah.from.ayah || 1} onChange={v => setKlasikalTilawah({...klasikalTilawah, from: {...klasikalTilawah.from, ayah: v}})} />
+                        </div>
+                      </div>
+                      <div className="flex-1 space-y-2"><p className="text-[10px] font-bold text-gray-400 ml-1 uppercase">Sampai</p>
+                        <div className="flex gap-2">
+                          <select value={klasikalTilawah.to.surah} onChange={e => setKlasikalTilawah({...klasikalTilawah, to: {...klasikalTilawah.to, surah: e.target.value}})} className="flex-1 p-2 border border-gray-200 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500">{SURAH_LIST.map(s => <option key={s} value={s}>{s}</option>)}</select>
+                          <CounterInput label="Ayat" value={klasikalTilawah.to.ayah || 1} onChange={v => setKlasikalTilawah({...klasikalTilawah, to: {...klasikalTilawah.to, ayah: v}})} />
+                        </div>
+                      </div>
+                    </>
+                 ) : (
+                    <>
+                      <div className="flex-1 space-y-2"><p className="text-[10px] font-bold text-gray-400 ml-1 uppercase">Dari</p>
+                        <div className="flex gap-2">
+                          <select value={klasikalTilawah.from.jilid} onChange={e => setKlasikalTilawah({...klasikalTilawah, from: {...klasikalTilawah.from, jilid: parseInt(e.target.value)}})} className="flex-1 p-2 border border-gray-200 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500">{IQRA_JILIDS.map(j => <option key={j} value={j}>Iqra' {j}</option>)}</select>
+                          <CounterInput label="Hal" value={klasikalTilawah.from.halaman || 1} onChange={v => setKlasikalTilawah({...klasikalTilawah, from: {...klasikalTilawah.from, halaman: v}})} />
+                        </div>
+                      </div>
+                      <div className="flex-1 space-y-2"><p className="text-[10px] font-bold text-gray-400 ml-1 uppercase">Sampai</p>
+                        <div className="flex gap-2">
+                          <select value={klasikalTilawah.to.jilid} onChange={e => setKlasikalTilawah({...klasikalTilawah, to: {...klasikalTilawah.to, jilid: parseInt(e.target.value)}})} className="flex-1 p-2 border border-gray-200 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500">{IQRA_JILIDS.map(j => <option key={j} value={j}>Iqra' {j}</option>)}</select>
+                          <CounterInput label="Hal" value={klasikalTilawah.to.halaman || 1} onChange={v => setKlasikalTilawah({...klasikalTilawah, to: {...klasikalTilawah.to, halaman: v}})} />
+                        </div>
+                      </div>
+                    </>
+                 )}
+              </div>
+           </div>
         </div>
       </div>
 
+      {/* SECTION INDIVIDUAL SISWA */}
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6 border-t-4 border-t-emerald-500">
         <div className="flex items-center gap-2 mb-2"><UserCheck className="text-emerald-600" /><h3 className="font-bold text-gray-800 text-sm uppercase">Capaian Individu Siswa</h3></div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
