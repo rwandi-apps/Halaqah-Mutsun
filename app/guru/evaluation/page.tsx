@@ -45,7 +45,7 @@ export default function GuruEvaluationPage({ teacherId }: { teacherId?: string }
     return () => unsubscribe();
   }, [teacherId]);
 
-  const renderAsList = (text: string) => {
+  const renderAsList = (text: string, isDark: boolean = false) => {
     if (!text) return null;
     const points = text.split(/[.\n]/).filter(p => p.trim().length > 5);
     
@@ -54,9 +54,9 @@ export default function GuruEvaluationPage({ teacherId }: { teacherId?: string }
         {points.map((point, i) => (
           <li key={i} className="flex gap-3 items-start group">
             <div className="mt-1.5 shrink-0">
-               <ChevronRight size={14} className="text-primary-400 group-hover:translate-x-1 transition-transform" />
+               <ChevronRight size={14} className={`${isDark ? 'text-white/60' : 'text-primary-400'} group-hover:translate-x-1 transition-transform`} />
             </div>
-            <span className="text-gray-700 leading-relaxed text-[13px] sm:text-sm font-medium">
+            <span className={`${isDark ? 'text-white' : 'text-gray-700'} leading-relaxed text-[13px] sm:text-sm font-medium`}>
               {point.trim()}
             </span>
           </li>
@@ -106,19 +106,19 @@ export default function GuruEvaluationPage({ teacherId }: { teacherId?: string }
         </div>
       </div>
 
-      {/* 1. INSIGHT UTAMA */}
-      <div className="bg-blue-50 rounded-[2.5rem] p-6 sm:p-8 border border-blue-100 shadow-lg shadow-blue-500/5">
+      {/* 1. INSIGHT UTAMA - Visual Update: Blue BG, White Text */}
+      <div className="bg-blue-600 rounded-[2.5rem] p-6 sm:p-8 border border-blue-700 shadow-xl shadow-blue-500/20 text-white">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 bg-white text-blue-600 rounded-2xl shadow-sm">
+          <div className="p-3 bg-white/20 text-white rounded-2xl shadow-sm backdrop-blur-md">
             <Lightbulb size={24} />
           </div>
           <div>
-            <h3 className="text-sm font-black text-blue-900 uppercase tracking-widest">Insight Utama</h3>
-            <p className="text-[10px] font-bold text-blue-500 uppercase">Ringkasan Performa Halaqah</p>
+            <h3 className="text-sm font-black text-white uppercase tracking-widest">Insight Utama</h3>
+            <p className="text-[10px] font-bold text-blue-100 uppercase">Ringkasan Performa Halaqah</p>
           </div>
         </div>
-        <div className="bg-white/60 p-5 rounded-3xl border border-blue-100/50">
-          {renderAsList(evaluation.insightUtama)}
+        <div className="bg-white/10 p-5 rounded-3xl border border-white/10 backdrop-blur-sm">
+          {renderAsList(evaluation.insightUtama, true)}
         </div>
       </div>
 
@@ -138,16 +138,16 @@ export default function GuruEvaluationPage({ teacherId }: { teacherId?: string }
           </div>
         </div>
 
-        {/* 3. TARGET BULAN DEPAN - FIX: List style matching others */}
-        <div className="bg-white rounded-[2.5rem] p-6 border border-amber-100 shadow-sm flex flex-col">
+        {/* 3. TARGET BULAN DEPAN - Visual Update: Orange BG, White Text */}
+        <div className="bg-orange-500 rounded-[2.5rem] p-6 border border-orange-600 shadow-xl shadow-orange-500/20 flex flex-col text-white">
           <div className="flex items-center gap-3 mb-5">
-            <div className="p-2 bg-amber-50 text-amber-600 rounded-xl shadow-sm">
+            <div className="p-2 bg-white/20 text-white rounded-xl shadow-sm backdrop-blur-md">
               <Target size={20} />
             </div>
-            <h3 className="text-[11px] font-black text-amber-900 uppercase tracking-widest">Target Mendatang</h3>
+            <h3 className="text-[11px] font-black text-white uppercase tracking-widest">Target Mendatang</h3>
           </div>
-          <div className="bg-amber-50/50 p-5 rounded-3xl border border-amber-100/50 flex-1">
-            {renderAsList(evaluation.targetBulanDepan)}
+          <div className="bg-white/10 p-5 rounded-3xl border border-white/10 backdrop-blur-sm flex-1">
+            {renderAsList(evaluation.targetBulanDepan, true)}
           </div>
         </div>
       </div>
@@ -164,6 +164,21 @@ export default function GuruEvaluationPage({ teacherId }: { teacherId?: string }
           {renderAsList(evaluation.tindakLanjut)}
         </div>
       </div>
+
+      {/* 5. PESAN PERSONAL KOORDINATOR - Order Update: Moved after Tindak Lanjut */}
+      {evaluation.catatanKoordinator && (
+        <div className="bg-emerald-600 rounded-[2.5rem] p-6 sm:p-8 text-white shadow-xl shadow-emerald-500/10">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-white/20 rounded-xl">
+              <MessageSquare size={20} />
+            </div>
+            <h3 className="text-[11px] font-black uppercase tracking-widest text-emerald-100">Pesan dari Koordinator</h3>
+          </div>
+          <p className="text-sm font-bold leading-relaxed italic opacity-90 pl-2 border-l-2 border-emerald-400">
+            "{evaluation.catatanKoordinator}"
+          </p>
+        </div>
+      )}
 
       {/* KONFIRMASI PEMAHAMAN EVALUASI */}
       <div className={`rounded-[2rem] p-5 sm:p-6 transition-all duration-300 border ${isReadConfirmed ? 'bg-emerald-50/50 border-emerald-100' : 'bg-white border-gray-100 shadow-sm'}`}>
@@ -186,7 +201,7 @@ export default function GuruEvaluationPage({ teacherId }: { teacherId?: string }
         </div>
       </div>
 
-      {/* RESPONS & TINDAK LANJUT GURU */}
+      {/* RESPONS & TINDAK LANJUT GURU - Stays at bottom as requested */}
       <div className={`transition-all duration-500 ${!isReadConfirmed ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
         <div className="bg-slate-50 rounded-[2.5rem] p-6 sm:p-8 border border-slate-200 shadow-inner">
           <div className="flex items-center gap-3 mb-6">
@@ -247,21 +262,6 @@ export default function GuruEvaluationPage({ teacherId }: { teacherId?: string }
           </div>
         </div>
       </div>
-
-      {/* PESAN PERSONAL KOORDINATOR */}
-      {evaluation.catatanKoordinator && (
-        <div className="bg-emerald-600 rounded-[2.5rem] p-6 sm:p-8 text-white shadow-xl shadow-emerald-500/10">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-white/20 rounded-xl">
-              <MessageSquare size={20} />
-            </div>
-            <h3 className="text-[11px] font-black uppercase tracking-widest text-emerald-100">Pesan dari Koordinator</h3>
-          </div>
-          <p className="text-sm font-bold leading-relaxed italic opacity-90 pl-2 border-l-2 border-emerald-400">
-            "{evaluation.catatanKoordinator}"
-          </p>
-        </div>
-      )}
     </div>
   );
 }
