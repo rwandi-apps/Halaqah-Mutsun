@@ -312,13 +312,13 @@ export default function GuruLaporanPage({ teacherId = '1' }: GuruLaporanPageProp
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4 border-t border-gray-50">
           {/* Tahfizh Individu */}
           <div className="space-y-4">
-            <div className="flex justify-between items-center"><h4 className="text-xs font-bold text-emerald-700">Setoran Sabaq Individu</h4><span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">Total: {tahfizhTotal.pages} Hal</span></div>
+            <div className="flex justify-between items-center"><h4 className="text-xs font-bold text-emerald-700">Setoran Sabaq Individu</h4><span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">Total: {tahfizhTotal.pages} Hal ({tahfizhTotal.lines} Brs)</span></div>
             <InputRow label="DARI"><SourceSelect value={tahfizhFromSurah} onChange={(v) => {setTahfizhFromSurah(v); if(!tahfizhToSurah) setTahfizhToSurah(v);}} method="Al-Quran" /><CounterInput label="Ayat" value={tahfizhFromVerse} onChange={setTahfizhFromVerse} /></InputRow>
             <InputRow label="SAMPAI"><SourceSelect value={tahfizhToSurah} onChange={setTahfizhToSurah} method="Al-Quran" /><CounterInput label="Ayat" value={tahfizhToVerse} onChange={setTahfizhToVerse} /></InputRow>
           </div>
           {/* Tilawah Individu */}
           <div className="space-y-4">
-            <div className="flex justify-between items-center"><h4 className="text-xs font-bold text-blue-700">Tilawah Individu</h4><span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">Total: {tilawahTotal.pages} Hal</span></div>
+            <div className="flex justify-between items-center"><h4 className="text-xs font-bold text-blue-700">Tilawah Individu</h4><span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">Total: {tilawahTotal.pages} Hal ({tilawahTotal.lines} Brs)</span></div>
             <div className="flex gap-2"><button onClick={() => setTilawahMethod('Al-Quran')} className={`flex-1 py-1 text-[9px] font-bold rounded-lg ${tilawahMethod === 'Al-Quran' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'}`}>AL-QUR'AN</button><button onClick={() => setTilawahMethod('Iqra')} className={`flex-1 py-1 text-[9px] font-bold rounded-lg ${tilawahMethod === 'Iqra' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'}`}>IQRA'</button></div>
             <InputRow label="DARI"><SourceSelect value={tilawahFromSurah} onChange={(v) => {setTilawahFromSurah(v); if(!tilawahToSurah) setTilawahToSurah(v);}} method={tilawahMethod} /><CounterInput label={tilawahMethod === 'Al-Quran' ? 'Ayat' : 'Hal'} value={tilawahFromVerse} onChange={setTilawahFromVerse} /></InputRow>
             <InputRow label="SAMPAI"><SourceSelect value={tilawahToSurah} onChange={setTilawahToSurah} method={tilawahMethod} /><CounterInput label={tilawahMethod === 'Al-Quran' ? 'Ayat' : 'Hal'} value={tilawahToVerse} onChange={setTilawahToVerse} /></InputRow>

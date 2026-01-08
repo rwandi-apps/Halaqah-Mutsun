@@ -20,6 +20,7 @@ import {
 import { db } from '../lib/firebase';
 import { User, Student, Report, Role, SemesterReport, HalaqahEvaluation, HalaqahMonthlyReport } from '../types';
 import { extractClassLevel } from './sdqTargets';
+import { calculateFromRangeString } from './quranMapping';
 
 export const getAllTeachers = async (): Promise<User[]> => {
   if (!db) return [];
@@ -244,9 +245,13 @@ export const updateStudent = async (id: string, data: Partial<Student>): Promise
   await updateDoc(docRef, updateData);
 };
 
-// ALUR DATA: UI (Guru Laporan) -> Firestore (Laporan & Update Siswa)
+/**
+ * LOGIKA PERHITUNGAN JUMLAH HAFALAN (FIX)
+ * Aturan Resmi SDQ: 1 Juz = 20 Halaman
+ */
 export const saveSDQReport = async (reportData: Omit<Report, 'id' | 'createdAt'>): Promise<void> => {
   if (!db) throw new Error("Firestore not initialized");
+  
   await runTransaction(db, async (transaction) => {
     const studentRef = doc(db, 'siswa', reportData.studentId);
     const reportRef = doc(collection(db, 'laporan'));
@@ -255,15 +260,48 @@ export const saveSDQReport = async (reportData: Omit<Report, 'id' | 'createdAt'>
     if (!studentSnap.exists()) throw new Error("Siswa tidak ditemukan");
     const studentData = studentSnap.data() as Student;
     
-    let updatedTotalHafalan = studentData.totalHafalan || { juz: 0, pages: 0, lines: 0 };
-    let updatedProgress = studentData.currentProgress || 'Belum Ada';
+    // 1. Data Awal dari Database (Baseline)
+    const currentJuz = Number(studentData.totalHafalan?.juz || 0);
+    const currentPages = Number(studentData.totalHafalan?.pages || 0);
     
-    if (reportData.type === 'Laporan Semester' && reportData.totalHafalan) {
-      updatedTotalHafalan = reportData.totalHafalan;
-      const parts = reportData.tahfizh.individual.split(' - ');
-      updatedProgress = parts.length > 1 ? parts[1].trim() : parts[0].trim();
-    } 
+    // 2. Hitung Penambahan dari Laporan Ini (Numeric Only)
+    // Menggunakan helper range string -> numeric pages
+    const sessionResult = calculateFromRangeString(reportData.tahfizh.individual);
+    const addedPages = Number(sessionResult.pages || 0);
+    
+    let updatedTotalHafalan;
+    let updatedProgress = studentData.currentProgress || 'Belum Ada';
 
+    // 3. Algoritma Penjumlahan Numerik (1 Juz = 20 Hal)
+    if (reportData.type === 'Laporan Semester' && reportData.totalHafalan && (reportData.totalHafalan.juz > 0 || reportData.totalHafalan.pages > 0)) {
+        // Mode Master Override (Manual Akumulasi di Semester)
+        const manualTotalPages = (Number(reportData.totalHafalan.juz || 0) * 20) + Number(reportData.totalHafalan.pages || 0);
+        updatedTotalHafalan = {
+            juz: Math.floor(manualTotalPages / 20),
+            pages: manualTotalPages % 20,
+            lines: 0
+        };
+        const parts = reportData.tahfizh.individual.split(' - ');
+        updatedProgress = parts.length > 1 ? parts[1].trim() : parts[0].trim();
+    } else {
+        // Mode Otomatis (Bulanan & Baseline Semester)
+        const totalHalamanAwal = (currentJuz * 20) + currentPages;
+        const totalHalamanBaru = totalHalamanAwal + addedPages;
+        
+        updatedTotalHafalan = {
+            juz: Math.floor(totalHalamanBaru / 20),
+            pages: totalHalamanBaru % 20,
+            lines: 0
+        };
+
+        // Update progress text berdasarkan "Sampai" pada Tahfizh Individual
+        if (reportData.tahfizh.individual && reportData.tahfizh.individual !== '-') {
+            const parts = reportData.tahfizh.individual.split(' - ');
+            updatedProgress = parts.length > 1 ? parts[1].trim() : parts[0].trim();
+        }
+    }
+
+    // 4. Update Database Siswa
     transaction.update(studentRef, { 
       totalHafalan: updatedTotalHafalan, 
       currentProgress: updatedProgress, 
@@ -272,6 +310,7 @@ export const saveSDQReport = async (reportData: Omit<Report, 'id' | 'createdAt'>
       lastUpdated: serverTimestamp() 
     });
 
+    // 5. Simpan Laporan dengan Nilai Hafalan yang Sudah Terupdate
     transaction.set(reportRef, { 
       ...reportData, 
       totalHafalan: updatedTotalHafalan, 
