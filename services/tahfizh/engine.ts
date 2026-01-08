@@ -5,7 +5,7 @@ import {
   CalculationBreakdown, 
   QuranAyahData 
 } from './types';
-import { QURAN_FULL_MAP, JUZ_BOUNDARIES, IQRA_PAGES } from './quranFullData';
+import { QURAN_FULL_MAP, IQRA_PAGES } from './quranFullData';
 import { QURAN_METADATA } from './quranData';
 
 export class TahfizhEngineSDQ {
@@ -32,8 +32,10 @@ export class TahfizhEngineSDQ {
     const normalized = this.normalizeName(surah);
     const key = `${normalized}:${ayah}`;
     
+    // Prioritaskan Hard-coded Map (Presisi Baris)
     if (QURAN_FULL_MAP[key]) return QURAN_FULL_MAP[key];
 
+    // Fallback ke Metadata (Estimasi jika data detail tidak ada)
     const meta = QURAN_METADATA[normalized];
     if (!meta) throw new Error(`Surah "${surah}" tidak ditemukan.`);
 
@@ -44,14 +46,8 @@ export class TahfizhEngineSDQ {
     const estLine = Math.floor(((progress * totalPages) % 1) * 15) + 1;
 
     let juz = 1;
-    if (estPage >= 2) {
-      juz = Math.min(30, Math.floor((estPage - 2) / 20) + 1);
-    }
+    if (estPage >= 2) juz = Math.min(30, Math.floor((estPage - 2) / 20) + 1);
     if (estPage >= 582) juz = 30;
-    else if (estPage >= 562) juz = 29;
-    else if (estPage >= 542) juz = 28;
-    else if (estPage >= 522) juz = 27;
-    else if (estPage >= 502) juz = 26;
 
     return { 
       juz, 
@@ -77,38 +73,26 @@ export class TahfizhEngineSDQ {
         this.getIqraJilid(end.surah), end.ayah
       );
       result.iqra.totalHalaman = iqraResult.halaman;
+      result.total.halaman = iqraResult.halaman;
+      result.total.baris = 0;
       result.breakdown = iqraResult.breakdown;
     } 
-    else if (isStartIqra && !isEndIqra) {
-      const iqraPart = this.calculateIqra(
-        this.getIqraJilid(start.surah), start.ayah,
-        6, IQRA_PAGES[6]
-      );
-      result.iqra.totalHalaman = iqraPart.halaman;
-      result.breakdown.push(...iqraPart.breakdown);
-
-      const qPart = this.calculateQuranRange(
-        this.getAyahCoordinates("An-Naba'", 1),
-        this.getAyahCoordinates(end.surah, end.ayah),
-        "An-Naba':1",
-        `${this.normalizeName(end.surah)}:${end.ayah}`
-      );
-      result.quran = { totalHalaman: qPart.halaman, totalBaris: qPart.baris };
-      result.breakdown.push(...qPart.breakdown);
-    }
     else {
+      // Logic Quran (Termasuk Transisi Iqra -> Quran jika diperlukan)
+      const p1 = this.getAyahCoordinates(start.surah, start.ayah);
+      const p2 = this.getAyahCoordinates(end.surah, end.ayah);
+      
       const qPart = this.calculateQuranRange(
-        this.getAyahCoordinates(start.surah, start.ayah),
-        this.getAyahCoordinates(end.surah, end.ayah),
+        p1, p2,
         `${this.normalizeName(start.surah)}:${start.ayah}`,
         `${this.normalizeName(end.surah)}:${end.ayah}`
       );
-      result.quran = { totalHalaman: qPart.halaman, totalBaris: qPart.baris };
+
+      result.quran = { totalHalaman: qPart.halaman, totalBaris: qPart.totalBarisFull };
+      result.total.halaman = qPart.halaman;
+      result.total.baris = qPart.sisaBaris;
       result.breakdown = qPart.breakdown;
     }
-
-    result.total.halaman = result.iqra.totalHalaman + result.quran.totalHalaman;
-    result.total.baris = result.quran.totalBaris;
 
     return result;
   }
@@ -142,33 +126,27 @@ export class TahfizhEngineSDQ {
     p2: QuranAyahData, 
     sLabel: string, 
     eLabel: string
-  ): { halaman: number, baris: number, breakdown: CalculationBreakdown[] } {
-    let totalBaris = 0;
-
-    // Hitung jarak baris antar koordinat
-    if (p1.page === p2.page) {
-      totalBaris = Math.max(0, p2.line - p1.line + 1);
-    } else {
-      const sisaBarisAwal = 15 - p1.line + 1;
-      const halamanPenuh = Math.max(0, p2.page - p1.page - 1);
-      const barisAkhir = p2.line;
-      totalBaris = sisaBarisAwal + (halamanPenuh * 15) + barisAkhir;
-    }
-
-    // Konversi Baris ke Halaman (15 Baris = 1 Halaman)
-    // Gunakan Math.ceil atau logic inclusive agar range tercatat sebagai jumlah halaman numerik yang benar
-    const totalHalaman = Math.ceil(totalBaris / 15);
+  ): { halaman: number, sisaBaris: number, totalBarisFull: number, breakdown: CalculationBreakdown[] } {
+    
+    // RUMUS UTAMA: Selisih baris kumulatif
+    // (Loncatan Halaman * 15 baris) + (Baris Akhir - Baris Awal + 1)
+    const totalBaris = ((p2.page - p1.page) * 15) + (p2.line - p1.line + 1);
+    
+    const finalTotalBaris = Math.max(0, totalBaris);
+    const displayHalaman = Math.floor(finalTotalBaris / 15);
+    const displayBaris = finalTotalBaris % 15;
 
     return { 
-      halaman: totalHalaman, 
-      baris: totalBaris, 
+      halaman: displayHalaman, 
+      sisaBaris: displayBaris,
+      totalBarisFull: finalTotalBaris,
       breakdown: [{
         type: 'juz',
         name: p1.juz === p2.juz ? `Juz ${p1.juz}` : `Juz ${p1.juz}-${p2.juz}`,
         from: sLabel,
         to: eLabel,
-        halaman: totalHalaman,
-        baris: totalBaris
+        halaman: displayHalaman,
+        baris: displayBaris
       }]
     };
   }
