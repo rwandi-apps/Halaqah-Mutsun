@@ -244,76 +244,73 @@ export const updateStudent = async (id: string, data: Partial<Student>): Promise
   await updateDoc(docRef, updateData);
 };
 
-/**
- * LOGIKA PERHITUNGAN JUMLAH HAFALAN (FIX)
- * Aturan Resmi SDQ: 1 Juz = 20 Halaman
- */
-export const saveSDQReport = async (reportData: Omit<Report, 'id' | 'createdAt'>): Promise<void> => {
-  if (!db) throw new Error("Firestore not initialized");
-  
+export const saveSDQReport = async (
+  reportData: Omit<Report, 'id' | 'createdAt'>
+): Promise<void> => {
+  if (!db) throw new Error('Firestore not initialized');
+
   await runTransaction(db, async (transaction) => {
     const studentRef = doc(db, 'siswa', reportData.studentId);
-    const reportRef = doc(collection(db, 'laporan'));
+
+    const reportId =
+      reportData.type === 'Laporan Semester'
+        ? `${reportData.studentId}_${reportData.academicYear}_${reportData.semester}`
+        : `${reportData.studentId}_${reportData.period}`;
+
+    const reportRef = doc(db, 'laporan', reportId);
+
     const studentSnap = await transaction.get(studentRef);
-    
-    if (!studentSnap.exists()) throw new Error("Siswa tidak ditemukan");
-    const studentData = studentSnap.data() as Student;
-    
-    // 1. Data Awal dari Database (Baseline)
-    const currentJuz = Number(studentData.totalHafalan?.juz || 0);
-    const currentPages = Number(studentData.totalHafalan?.pages || 0);
-    
-    // 2. Hitung Penambahan dari Laporan Ini (Numeric Only)
-    // Menggunakan helper range string -> numeric pages
-    const sessionResult = calculateFromRangeString(reportData.tahfizh.individual);
-    const addedPages = Number(sessionResult.pages || 0);
-    
-    let updatedTotalHafalan;
-    let updatedProgress = studentData.currentProgress || 'Belum Ada';
+    if (!studentSnap.exists()) throw new Error('Siswa tidak ditemukan');
 
-    // 3. Algoritma Penjumlahan Numerik (1 Juz = 20 Hal)
-    if (reportData.type === 'Laporan Semester' && reportData.totalHafalan && (reportData.totalHafalan.juz > 0 || reportData.totalHafalan.pages > 0)) {
-        // Mode Master Override (Manual Akumulasi di Semester)
-        const manualTotalPages = (Number(reportData.totalHafalan.juz || 0) * 20) + Number(reportData.totalHafalan.pages || 0);
-        updatedTotalHafalan = {
-            juz: Math.floor(manualTotalPages / 20),
-            pages: manualTotalPages % 20,
-            lines: 0
-        };
-        const parts = reportData.tahfizh.individual.split(' - ');
-        updatedProgress = parts.length > 1 ? parts[1].trim() : parts[0].trim();
-    } else {
-        // Mode Otomatis (Bulanan & Baseline Semester)
-        const totalHalamanAwal = (currentJuz * 20) + currentPages;
-        const totalHalamanBaru = totalHalamanAwal + addedPages;
-        
-        updatedTotalHafalan = {
-            juz: Math.floor(totalHalamanBaru / 20),
-            pages: totalHalamanBaru % 20,
-            lines: 0
-        };
+    const student = studentSnap.data() as Student;
 
-        // Update progress text berdasarkan "Sampai" pada Tahfizh Individual
-        if (reportData.tahfizh.individual && reportData.tahfizh.individual !== '-') {
-            const parts = reportData.tahfizh.individual.split(' - ');
-            updatedProgress = parts.length > 1 ? parts[1].trim() : parts[0].trim();
-        }
+    const baseTotalPages =
+      (student.totalHafalan?.juz || 0) * 20 +
+      (student.totalHafalan?.pages || 0);
+
+    let totalPages = baseTotalPages;
+    let progress = student.currentProgress || 'Belum Ada';
+
+    // 🔴 SEMESTER = MASTER OVERRIDE
+    if (
+      reportData.type === 'Laporan Semester' &&
+      reportData.totalHafalan
+    ) {
+      totalPages =
+        (reportData.totalHafalan.juz || 0) * 20 +
+        (reportData.totalHafalan.pages || 0);
     }
 
-    // 4. Update Database Siswa
-    transaction.update(studentRef, { 
-      totalHafalan: updatedTotalHafalan, 
-      currentProgress: updatedProgress, 
-      attendance: reportData.attendance !== undefined ? reportData.attendance : studentData.attendance,
-      behaviorScore: reportData.behaviorScore !== undefined ? reportData.behaviorScore : studentData.behaviorScore,
-      lastUpdated: serverTimestamp() 
+    // 🟢 BULANAN = TAMBAH
+    else if (reportData.tahfizh?.individual && reportData.tahfizh.individual !== '-') {
+      const r = calculateFromRangeString(reportData.tahfizh.individual);
+      totalPages += Number(r?.pages || 0);
+    }
+
+    if (reportData.tahfizh?.individual) {
+      const p = reportData.tahfizh.individual.split(' - ');
+      progress = p.length > 1 ? p[1].trim() : p[0].trim();
+    }
+
+    const finalHafalan = {
+      juz: Math.floor(totalPages / 20),
+      pages: totalPages % 20,
+      lines: 0
+    };
+
+    transaction.update(studentRef, {
+      totalHafalan: finalHafalan,
+      currentProgress: progress,
+      attendance: reportData.attendance ?? student.attendance ?? 100,
+      behaviorScore: reportData.behaviorScore ?? student.behaviorScore ?? 10,
+      lastUpdated: serverTimestamp()
     });
 
-    // 5. Simpan Laporan dengan Nilai Hafalan yang Sudah Terupdate
-    transaction.set(reportRef, { 
-      ...reportData, 
-      totalHafalan: updatedTotalHafalan, 
-      createdAt: new Date().toISOString() 
+    transaction.set(reportRef, {
+      ...reportData,
+      id: reportId,
+      totalHafalan: finalHafalan,
+      createdAt: new Date().toISOString()
     });
   });
 };
