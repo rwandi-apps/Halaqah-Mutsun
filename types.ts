@@ -75,6 +75,9 @@ export interface Report {
   type: string;
   month: string;
   academicYear?: string;
+  periodCode?: number; // Added for chronological sorting
+  migrated?: boolean;  // Flag for legacy data migration status
+  
   tilawah: {
     method: string;
     individual: string;
@@ -95,6 +98,9 @@ export interface Report {
   createdAt: string;
   date: string;
   evaluation: string;
+  
+  // Legacy fields support (optional)
+  hafalanRange?: string; 
 }
 
 export interface HalaqahEvaluation {
