@@ -3026,7 +3026,7 @@ export const QURAN_FULL_MAP: Record<string, QuranAyahData> = {
 "Al-Furqan:16": { "juz": 18, "page": 361, "line": 6, "globalIndex": 2871 },
 "Al-Furqan:17": { "juz": 18, "page": 361, "line": 8, "globalIndex": 2872 },
 "Al-Furqan:18": { "juz": 18, "page": 361, "line": 10, "globalIndex": 2873 },
-"Al-Furqan:19": { "juz": 18, "page": 361, "line": 12, "globalIndex": 2874 }
+"Al-Furqan:19": { "juz": 18, "page": 361, "line": 12, "globalIndex": 2874 },
 "Al-Furqan:20": { "juz": 18, "page": 361, "line": 15, "globalIndex": 2875 },
 // Juz 19
 "Al-Furqan:21": { "juz": 19, "page": 362, "line": 2, "globalIndex": 2876 },
