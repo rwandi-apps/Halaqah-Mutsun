@@ -157,9 +157,9 @@ private static calculateQuranRange(
 
     // Validasi data
 
-    const startObj = QURAN\_FULL\_MAP\[startKey];
+    const startObj = QURAN_FULL_MAP[startKey];
 
-    const endObj = QURAN\_FULL\_MAP\[endKey];
+    const endObj = QURAN_FULL_MAP[endKey];
 
     if (!startObj || !endObj) throw new Error(`Data Quran tidak valid: ${startKey} atau ${endKey}`);
 
@@ -189,19 +189,19 @@ private static calculateQuranRange(
 
       if (idx === 0) currentStartKey = startKey;
 
-      else currentStartKey = JUZ\_BOUNDARIES\[juz].start;
+      else currentStartKey = JUZ_BOUNDARIES[juz].start;
 
 
 
       if (idx === juzSeq.length - 1) currentEndKey = endKey;
 
-      else currentEndKey = JUZ\_BOUNDARIES\[juz].end;
+      else currentEndKey = JUZ_BOUNDARIES[juz].end;
 
 
 
-      const p1 = QURAN\_FULL\_MAP\[currentStartKey];
+      const p1 = QURAN_FULL_MAP[currentStartKey];
 
-      const p2 = QURAN\_FULL\_MAP\[currentEndKey];
+      const p2 = QURAN_FULL_MAP[currentEndKey];
 
 
 
@@ -213,7 +213,7 @@ private static calculateQuranRange(
 
       const diffLines = p2.line - p1.line;
 
-      const totalBarisJuz = (diffPages \* 15) + diffLines + 1;
+      const totalBarisJuz = (diffPages * 15) + diffLines + 1;
 
 
 
