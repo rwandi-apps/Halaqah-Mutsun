@@ -14,9 +14,7 @@ import {
 export class TahfizhEngineSDQ {
   private static readonly LINES_PER_PAGE = 15;
 
-  /
-   * Urutan resmi kurikulum SDQ
-   */
+  /* Urutan resmi kurikulum SDQ */
   private static readonly SDQ_JUZ_ORDER = [
     30, 29, 28, 27, 26,
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
