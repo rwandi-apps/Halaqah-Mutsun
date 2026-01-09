@@ -2178,7 +2178,7 @@ export const QURAN_FULL_MAP: Record<string, QuranAyahData> = {
 "An-Nahl:126": { "juz": 14, "page": 281, "line": 12, "globalIndex": 2027 },
 "An-Nahl:127": { "juz": 14, "page": 281, "line": 14, "globalIndex": 2028 },
 "An-Nahl:128": { "juz": 14, "page": 281, "line": 15, "globalIndex": 2029 },
-/juz 15
+// juz 15
 "Al-Isra':1": { "juz": 15, "page": 282, "line": 4, "globalIndex": 2030 },
 "Al-Isra':2": { "juz": 15, "page": 282, "line": 6, "globalIndex": 2031 },
 "Al-Isra':3": { "juz": 15, "page": 282, "line": 7, "globalIndex": 2032 },
