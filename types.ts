@@ -75,8 +75,8 @@ export interface Report {
   type: string;
   month: string;
   academicYear?: string;
-  periodCode?: number; // Added for chronological sorting
-  migrated?: boolean;  // Flag for legacy data migration status
+  periodCode?: number; // Integer YYYYMM untuk sorting absolut
+  migrated?: boolean;  // Flag penanda data legacy yang sudah dinormalisasi
   
   tilawah: {
     method: string;

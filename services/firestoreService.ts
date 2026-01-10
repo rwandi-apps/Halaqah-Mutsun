@@ -25,11 +25,12 @@ import { calculateFromRangeString } from './quranMapping';
 
 /**
  * Menghasilkan Integer YYYYMM untuk sorting kronologis absolut.
+ * Menangani logika Semester Ganjil = Desember, Semester Genap = Juni.
  */
 const generatePeriodCode = (academicYear: string, period: string, type: string): number => {
   try {
     if (!academicYear) return 0;
-    // Handle separator "/" or "-"
+    // Handle separator "/" or "-" (e.g. "2025/2026" or "2025-2026")
     const years = academicYear.replace(/\s/g, '').split(/[\/-]/);
     const startYear = parseInt(years[0]);
     const endYear = parseInt(years[1]);
@@ -55,6 +56,7 @@ const generatePeriodCode = (academicYear: string, period: string, type: string):
     const monthIndex = monthMap[normalizePeriod];
     if (!monthIndex) return 0; 
 
+    // Tahun Kalender: Juli-Desember ikut StartYear, Januari-Juni ikut EndYear
     const year = (monthIndex >= 7) ? startYear : endYear;
     return (year * 100) + monthIndex;
   } catch (e) {
@@ -76,7 +78,7 @@ const safeCalculatePages = (rangeStr: string | undefined): number => {
 /**
  * NORMALIZER LAYER
  * Memastikan data yang dibaca dari Firestore selalu memiliki format standar.
- * Ini menangani data Legacy secara on-the-fly.
+ * Ini menangani data Legacy secara on-the-fly tanpa perlu migrasi database fisik instan.
  */
 const normalizeReportData = (docId: string, data: any): Report => {
   // 1. Fix Legacy Type
@@ -134,19 +136,16 @@ export const recalculateTotalHafalan = async (studentId: string): Promise<void> 
     // 3. Calculation Engine with Legacy Fallback
     for (const report of allReports) {
       if (!baselineFound && report.type === 'Laporan Semester') {
-        // FOUND BASELINE
+        // FOUND BASELINE (Snapshot Point)
+        // Saat ketemu Laporan Semester, kita ambil totalnya sebagai baseline mutlak.
+        // Laporan bulanan sebelumnya (yang lebih tua) diabaikan (subsumed).
         
-        // JALUR UTAMA: Gunakan totalHafalan object jika ada (Lebih akurat untuk legacy & new)
+        // JALUR UTAMA: Gunakan totalHafalan object jika ada
         if (report.totalHafalan && (report.totalHafalan.juz > 0 || report.totalHafalan.pages > 0)) {
            const baseJuz = Number(report.totalHafalan.juz || 0);
            const basePages = Number(report.totalHafalan.pages || 0);
            totalPagesAccumulated += (baseJuz * 20) + basePages;
         } 
-        // JALUR ALTERNATIF: Parse string hafalanRange (Format SDQ Baru)
-        else if (report.hafalanRange) {
-           // Parse "X Juz Y Hal" string manual jika perlu, atau andalkan totalHafalan yang disave
-           // Disini kita asumsi totalHafalan sudah disinkronkan saat save.
-        }
         
         baselineFound = true;
         // Stop loop, abaikan laporan yang lebih tua dari semester ini
@@ -166,7 +165,7 @@ export const recalculateTotalHafalan = async (studentId: string): Promise<void> 
         }
       });
     } else {
-      // Tidak ada semester sama sekali -> Sum semua bulanan
+      // Tidak ada semester sama sekali -> Sum semua bulanan yang ada
       allReports.forEach(report => {
         if (report.type === 'Laporan Bulanan') {
           totalPagesAccumulated += safeCalculatePages(report.tahfizh?.individual);
@@ -174,7 +173,7 @@ export const recalculateTotalHafalan = async (studentId: string): Promise<void> 
       });
     }
 
-    // 5. Update Master Data
+    // 5. Update Master Data Siswa
     const finalHafalan = {
       juz: Math.floor(totalPagesAccumulated / 20),
       pages: totalPagesAccumulated % 20,
@@ -196,16 +195,19 @@ export const recalculateTotalHafalan = async (studentId: string): Promise<void> 
 export const saveSDQReport = async (reportData: Omit<Report, 'id' | 'createdAt'>): Promise<void> => {
   if (!db) throw new Error("Firestore not initialized");
   
+  // 1. Sanitasi ID agar Deterministik (Idempotent Key)
   const safeYear = (reportData.academicYear || '2025-2026').replace(/[\/\s]/g, '');
   const safePeriod = reportData.month.trim().replace(/\s/g, '_');
   const safeType = reportData.type === 'Laporan Semester' ? 'smt' : 'bln';
   
+  // Format ID: studentId_20252026_Desember_bln
   const deterministicId = `${reportData.studentId}_${safeYear}_${safePeriod}_${safeType}`;
   const reportRef = doc(db, 'laporan', deterministicId);
   
-  // Kalkulasi periodCode saat save
+  // 2. Hitung Period Code on saving time
   const pCode = generatePeriodCode(reportData.academicYear || '', reportData.month, reportData.type);
 
+  // 3. Simpan dengan setDoc (Overwrite aman)
   await setDoc(reportRef, {
     ...reportData,
     id: deterministicId,
@@ -214,12 +216,13 @@ export const saveSDQReport = async (reportData: Omit<Report, 'id' | 'createdAt'>
     updatedAt: serverTimestamp()
   });
 
+  // 4. Trigger Recalculate
   await recalculateTotalHafalan(reportData.studentId);
 };
 
 export const getReportsByTeacher = async (teacherId: string): Promise<Report[]> => {
   if (!db) return [];
-  // Gunakan periodCode untuk sorting yang lebih akurat jika tersedia
+  
   const q = query(
     collection(db, 'laporan'), 
     where('teacherId', '==', teacherId)
@@ -231,11 +234,11 @@ export const getReportsByTeacher = async (teacherId: string): Promise<Report[]> 
   const reports = snapshot.docs.map(doc => normalizeReportData(doc.id, doc.data()));
   
   return reports.sort((a, b) => {
-    // Sort by Period Code Descending
+    // Priority Sort: Period Code Descending
     const codeA = a.periodCode || 0;
     const codeB = b.periodCode || 0;
     if (codeA !== codeB) return codeB - codeA;
-    // Fallback createdAt
+    // Fallback Sort: CreatedAt
     return b.createdAt.localeCompare(a.createdAt);
   });
 };
@@ -250,7 +253,6 @@ export const subscribeToReportsByTeacher = (teacherId: string, onUpdate: (report
   return onSnapshot(q, (snapshot) => {
     const reports = snapshot.docs.map(doc => normalizeReportData(doc.id, doc.data()));
     
-    // Client-side sort untuk handling mixed data
     const sortedReports = reports.sort((a, b) => {
         const codeA = a.periodCode || 0;
         const codeB = b.periodCode || 0;
@@ -286,7 +288,7 @@ export const deleteReport = async (reportId: string): Promise<void> => {
   }
 };
 
-// --- SEMESTER REPORT SPECIAL HANDLING (UNCHANGED LOGIC) ---
+// --- SEMESTER REPORT SPECIAL HANDLING ---
 
 export const saveSemesterReport = async (report: SemesterReport): Promise<void> => {
   if (!db) throw new Error("Firestore not initialized");
@@ -297,6 +299,7 @@ export const saveSemesterReport = async (report: SemesterReport): Promise<void> 
   
   await setDoc(docRef, { ...report, id: reportId, updatedAt: serverTimestamp() });
 
+  // Parsing data hafalan dari string rapor untuk dijadikan baseline
   let baseJuz = 0, basePages = 0;
   try {
     const jumlahStr = report.statusHafalan?.dimiliki?.jumlah || "";
@@ -310,7 +313,7 @@ export const saveSemesterReport = async (report: SemesterReport): Promise<void> 
     studentId: report.studentId,
     studentName: "Student", 
     teacherId: report.teacherId,
-    type: 'Laporan Semester',
+    type: 'Laporan Semester', // Kunci untuk dideteksi sebagai Baseline
     month: report.semester,
     academicYear: report.academicYear,
     tilawah: { method: 'Al-Quran', individual: '-', classical: '-' },
@@ -320,20 +323,26 @@ export const saveSemesterReport = async (report: SemesterReport): Promise<void> 
     date: new Date().toISOString().split('T')[0]
   };
 
+  // Simpan via saveSDQReport agar logic deterministic ID & recalculate jalan otomatis
   await saveSDQReport(reportPayload);
 };
 
 export const deleteSemesterReport = async (studentId: string, academicYear: string, semester: string): Promise<void> => {
   if (!db) throw new Error("Firestore not initialized");
   const safeYear = academicYear.replace(/[\/\s]/g, '');
+  
+  // 1. Hapus Dokumen Rapor
   const raporId = `${studentId}_${safeYear}_${semester}_rapor`;
   await deleteDoc(doc(db, 'rapor_semester', raporId));
 
+  // 2. Hapus Baseline di Collection Laporan
+  // ID Match: studentId_20252026_Ganjil_smt
   const baselineId = `${studentId}_${safeYear}_${semester}_smt`;
   const baselineRef = doc(db, 'laporan', baselineId);
   const snap = await getDoc(baselineRef);
   if (snap.exists()) {
     await deleteDoc(baselineRef);
+    // 3. Recalculate: Hafalan akan turun/kembali ke state sebelumnya
     await recalculateTotalHafalan(studentId);
   }
 };
