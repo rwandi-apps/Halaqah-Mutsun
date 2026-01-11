@@ -9,6 +9,12 @@
  * 4. Defensive Parsing: Menangani typo, format pendek, dan data legacy tanpa crash
  */
 import {
+  AyahPointer,
+  SDQCalculationResult,
+  CalculationBreakdown,
+  QuranAyahData
+} from './types';
+import {
   QURAN_FULL_MAP,
   JUZ_BOUNDARIES,
   IQRA_PAGES
