@@ -232,8 +232,8 @@ export class TahfizhEngineSDQ {
       if (startCoord.juz === endCoord.juz) {
         // Hitung posisi absolut baris dari awal mushaf (Halaman 1, Baris 1)
         // Karena dalam 1 juz, urutan fisik halaman selalu naik
-        const absStart = (startCoord.page * LINES_PER_PAGE) + startCoord.line;
-        const absEnd = (endCoord.page * LINES_PER_PAGE) + endCoord.line;
+        const absStart = ((startCoord.page - 1) * LINES_PER_PAGE) + startCoord.line;
+const absEnd   = ((endCoord.page - 1) * LINES_PER_PAGE) + endCoord.line;
 
         if (absEnd < absStart) {
           return { valid: false, pages: 0, lines: 0, totalLines: 0, reason: "Ayat terbalik (Mundur dalam satu Juz)" };
