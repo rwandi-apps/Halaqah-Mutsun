@@ -225,4 +225,9 @@ export class TahfizhEngineSDQ {
 
     return this.calculate(a.surah, a.ayah, b.surah, b.ayah);
   }
+  // Alias untuk backward compatibility
+public static parseAndCalculate(input: string): CalculationResult {
+  return this.parse(input);
+}
+
 }
