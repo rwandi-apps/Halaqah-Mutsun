@@ -1,248 +1,242 @@
-import {
-  AyahPointer,
-  SDQCalculationResult,
-  CalculationBreakdown,
-  QuranAyahData
-} from './types';
-import { QURAN_FULL_MAP, IQRA_PAGES } from './quranFullData';
+import { QuranAyahData } from './types';
+import { QURAN_FULL_MAP } from './quranFullData';
 import { QURAN_METADATA } from './quranData';
+
+// =====================================================
+// 1. TYPE & KONSTANTA
+// =====================================================
+
+export interface SafeCalculationResult {
+  valid: boolean;
+  pages: number;
+  lines: number;
+  totalLines: number;
+  reason?: string;
+}
+
+// Urutan resmi kurikulum SDQ
+// Index kecil → lebih dulu dipelajari
+const SDQ_JUZ_ORDER = [
+  30, 29, 28, 27, 26,
+  1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+  11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+  21, 22, 23, 24, 25
+];
+
+// Map juz → index SDQ
+const SDQ_INDEX_MAP: Record<number, number> = {};
+SDQ_JUZ_ORDER.forEach((juz, i) => {
+  SDQ_INDEX_MAP[juz] = i;
+});
+
+// Mushaf Madinah
+const LINES_PER_PAGE = 15;
+
+// Batas halaman fisik per juz (AKURAT – STATIC)
+const JUZ_PAGE_LIMITS: Record<number, { start: number; end: number }> = {
+  1: { start: 1, end: 21 },
+  2: { start: 22, end: 41 },
+  3: { start: 42, end: 61 },
+  4: { start: 62, end: 81 },
+  5: { start: 82, end: 101 },
+  6: { start: 102, end: 121 },
+  7: { start: 122, end: 141 },
+  8: { start: 142, end: 161 },
+  9: { start: 162, end: 181 },
+  10: { start: 182, end: 201 },
+  11: { start: 202, end: 221 },
+  12: { start: 222, end: 241 },
+  13: { start: 242, end: 261 },
+  14: { start: 262, end: 281 },
+  15: { start: 282, end: 301 },
+  16: { start: 302, end: 321 },
+  17: { start: 322, end: 341 },
+  18: { start: 342, end: 361 },
+  19: { start: 362, end: 381 },
+  20: { start: 382, end: 401 },
+  21: { start: 402, end: 421 },
+  22: { start: 422, end: 441 },
+  23: { start: 442, end: 461 },
+  24: { start: 462, end: 481 },
+  25: { start: 482, end: 501 },
+  26: { start: 502, end: 521 },
+  27: { start: 522, end: 541 },
+  28: { start: 542, end: 561 },
+  29: { start: 562, end: 581 },
+  30: { start: 582, end: 604 }
+};
+
+// =====================================================
+// 2. ENGINE
+// =====================================================
 
 export class TahfizhEngineSDQ {
 
-  /** ===============================
-   *  KONSTANTA RESMI SDQ
-   *  =============================== */
+  // -------------------------------
+  // NORMALISASI NAMA SURAT
+  // -------------------------------
+  private static normalizeSurah(input: string): string {
+    if (!input) return '';
+    let s = input.toLowerCase().trim();
+    s = s.replace(/['`’‘]/g, "'");
+    s = s.replace(/\bal\s+/g, 'al-');
 
-  private static readonly LINES_PER_PAGE = 15;
-
-  /**
-   * Urutan resmi kurikulum SDQ (WAJIB)
-   */
-  private static readonly SDQ_JUZ_ORDER = [
-    30, 29, 28, 27, 26,
-    1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-    11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-    21, 22, 23, 24, 25
-  ];
-
-  /** ===============================
-   *  UTIL DASAR
-   *  =============================== */
-
-  private static normalizeName(name: string): string {
-    return name
-      .replace(/[’‘`]/g, "'")
-      .replace(/Al\s+/gi, 'Al-')
-      .trim();
-  }
-
-  private static isIqra(name: string): boolean {
-    const n = name.toLowerCase();
-    return n.includes('iqra') || n.includes('jilid');
-  }
-
-  private static getIqraJilid(name: string): number {
-    const match = name.match(/\d+/);
-    return match ? parseInt(match[0], 10) : 0;
-  }
-
-  /** ===============================
-   *  SDQ POSITION ENGINE (INTI)
-   *  =============================== */
-
-  private static getSDQJuzIndex(juz: number): number {
-    const idx = this.SDQ_JUZ_ORDER.indexOf(juz);
-    if (idx === -1) {
-      throw new Error(`Juz ${juz} tidak terdaftar dalam kurikulum SDQ`);
-    }
-    return idx;
-  }
-
-  private static compareSDQPosition(a: QuranAyahData, b: QuranAyahData): number {
-    const juzA = this.getSDQJuzIndex(a.juz);
-    const juzB = this.getSDQJuzIndex(b.juz);
-
-    if (juzA !== juzB) return juzA - juzB;
-    if (a.page !== b.page) return a.page - b.page;
-    return a.line - b.line;
-  }
-
-  /** ===============================
-   *  MAPPING AYAT → POSISI MUSHAF
-   *  =============================== */
-
-  private static getAyahCoordinates(surah: string, ayah: number): QuranAyahData {
-    const normalized = this.normalizeName(surah);
-    const key = `${normalized}:${ayah}`;
-
-    // Presisi utama
-    if (QURAN_FULL_MAP[key]) return QURAN_FULL_MAP[key];
-
-    // Fallback estimasi (aman)
-    const meta = QURAN_METADATA[normalized];
-    if (!meta) throw new Error(`Surah "${surah}" tidak ditemukan`);
-
-    const totalPages = meta.endPage - meta.startPage + 1;
-    const progress = Math.max(0, Math.min(1, (ayah - 1) / meta.totalAyah));
-
-    const page = meta.startPage + Math.floor(progress * totalPages);
-    const line = Math.min(
-      15,
-      Math.max(1, Math.floor((progress * totalPages % 1) * 15) + 1)
-    );
-
-    let juz = 1;
-    if (page >= 2) juz = Math.min(30, Math.floor((page - 2) / 20) + 1);
-    if (page >= 582) juz = 30;
-
-    return { juz, page, line };
-  }
-
-  /** ===============================
-   *  API UTAMA ENGINE
-   *  =============================== */
-
-  static calculateCapaian(
-    start: AyahPointer,
-    end: AyahPointer
-  ): SDQCalculationResult {
-
-    // Guard kosong / "-"
-    if (!start?.surah || !end?.surah) {
-      return {
-        iqra: { totalHalaman: 0 },
-        quran: { totalHalaman: 0, totalBaris: 0 },
-        total: { halaman: 0, baris: 0 },
-        breakdown: []
-      };
-    }
-
-    const result: SDQCalculationResult = {
-      iqra: { totalHalaman: 0 },
-      quran: { totalHalaman: 0, totalBaris: 0 },
-      total: { halaman: 0, baris: 0 },
-      breakdown: []
+    const map: Record<string, string> = {
+      "ali imran": "Ali 'Imran",
+      "al-imran": "Ali 'Imran",
+      "yasin": "Ya-Sin",
+      "ya sin": "Ya-Sin",
+      "amma": "An-Naba'",
+      "an naba": "An-Naba'",
+      "al masad": "Al-Lahab",
+      "al-lahab": "Al-Lahab",
+      "alam nasyrah": "Al-Insyirah",
+      "al-insyirah": "Al-Insyirah"
     };
 
-    const isStartIqra = this.isIqra(start.surah);
-    const isEndIqra = this.isIqra(end.surah);
-
-    /** ===============================
-     *  IQRA
-     *  =============================== */
-    if (isStartIqra && isEndIqra) {
-      const iqra = this.calculateIqra(
-        this.getIqraJilid(start.surah), start.ayah,
-        this.getIqraJilid(end.surah), end.ayah
-      );
-
-      result.iqra.totalHalaman = iqra.halaman;
-      result.total.halaman = iqra.halaman;
-      result.breakdown = iqra.breakdown;
-      return result;
-    }
-
-    /** ===============================
-     *  QURAN (SDQ-AWARE)
-     *  =============================== */
-    const p1 = this.getAyahCoordinates(start.surah, start.ayah);
-    const p2 = this.getAyahCoordinates(end.surah, end.ayah);
-
-    // VALIDASI SDQ (BUKAN MUSHAF)
-    if (this.compareSDQPosition(p1, p2) > 0) {
-      throw new Error(
-        `Range tidak valid menurut kurikulum SDQ: ${start.surah}:${start.ayah} → ${end.surah}:${end.ayah}`
-      );
-    }
-
-    const quran = this.calculateQuranRange(
-      p1, p2,
-      `${this.normalizeName(start.surah)}:${start.ayah}`,
-      `${this.normalizeName(end.surah)}:${end.ayah}`
-    );
-
-    result.quran.totalHalaman = quran.halaman;
-    result.quran.totalBaris = quran.totalBarisFull;
-    result.total.halaman = quran.halaman;
-    result.total.baris = quran.sisaBaris;
-    result.breakdown = quran.breakdown;
-
-    return result;
+    if (map[s]) return map[s];
+    return s.replace(/\b\w/g, c => c.toUpperCase());
   }
 
-  /** ===============================
-   *  IQRA CALCULATION
-   *  =============================== */
-
-  private static calculateIqra(
-    sJilid: number,
-    sPage: number,
-    eJilid: number,
-    ePage: number
-  ): { halaman: number; breakdown: CalculationBreakdown[] } {
-
-    let total = 0;
-    const breakdown: CalculationBreakdown[] = [];
-
-    for (let j = sJilid; j <= eJilid; j++) {
-      const maxPage = IQRA_PAGES[j] || 30;
-      const from = j === sJilid ? sPage : 1;
-      const to = j === eJilid ? ePage : maxPage;
-
-      const count = Math.max(0, to - from + 1);
-      total += count;
-
-      breakdown.push({
-        type: 'iqra',
-        name: `Iqra ${j}`,
-        from: `Hal ${from}`,
-        to: `Hal ${to}`,
-        halaman: count,
-        baris: 0
-      });
-    }
-
-    return { halaman: total, breakdown };
+  // -------------------------------
+  // ABSOLUTE LINE (GLOBAL)
+  // -------------------------------
+  private static absLine(page: number, line: number): number {
+    return ((page - 1) * LINES_PER_PAGE) + line;
   }
 
-  /** ===============================
-   *  QURAN CALCULATION
-   *  =============================== */
+  // -------------------------------
+  // ABS LINE DALAM SATU JUZ
+  // -------------------------------
+  private static absLineInJuz(page: number, line: number, juz: number): number {
+    const startPage = JUZ_PAGE_LIMITS[juz].start;
+    return ((page - startPage) * LINES_PER_PAGE) + line;
+  }
 
-  private static calculateQuranRange(
-    p1: QuranAyahData,
-    p2: QuranAyahData,
-    fromLabel: string,
-    toLabel: string
-  ): {
-    halaman: number;
-    sisaBaris: number;
-    totalBarisFull: number;
-    breakdown: CalculationBreakdown[];
-  } {
+  private static totalLinesInJuz(juz: number): number {
+    const { start, end } = JUZ_PAGE_LIMITS[juz];
+    return (end - start + 1) * LINES_PER_PAGE;
+  }
 
-    const totalBaris =
-      ((p2.page - p1.page) * this.LINES_PER_PAGE) +
-      (p2.line - p1.line + 1);
+  // -------------------------------
+  // RESOLVE KOORDINAT AYAT (WAJIB EXACT)
+  // -------------------------------
+  private static getCoordinates(surahRaw: string, ayah: number): QuranAyahData | null {
+    const surah = this.normalizeSurah(surahRaw);
 
-    const finalBaris = Math.max(0, totalBaris);
-    const halaman = Math.floor(finalBaris / this.LINES_PER_PAGE);
-    const sisaBaris = finalBaris % this.LINES_PER_PAGE;
+    const metaKey = Object.keys(QURAN_METADATA)
+      .find(k => this.normalizeSurah(k) === surah);
+
+    if (!metaKey) return null;
+
+    const meta = QURAN_METADATA[metaKey];
+    if (ayah < 1 || ayah > meta.totalAyah) return null;
+
+    const key = `${metaKey}:${ayah}`;
+    if (!QURAN_FULL_MAP[key]) return null;
+
+    return QURAN_FULL_MAP[key];
+  }
+
+  // =====================================================
+  // CORE CALCULATION
+  // =====================================================
+  public static calculateRange(
+    startSurah: string,
+    startAyah: number,
+    endSurah: string,
+    endAyah: number
+  ): SafeCalculationResult {
+
+    const start = this.getCoordinates(startSurah, startAyah);
+    const end = this.getCoordinates(endSurah, endAyah);
+
+    if (!start || !end) {
+      return { valid: false, pages: 0, lines: 0, totalLines: 0, reason: 'Ayat tidak ditemukan' };
+    }
+
+    const startIdx = SDQ_INDEX_MAP[start.juz];
+    const endIdx = SDQ_INDEX_MAP[end.juz];
+
+    // Validasi arah SDQ
+    if (endIdx < startIdx) {
+      return { valid: false, pages: 0, lines: 0, totalLines: 0, reason: 'Mundur kurikulum SDQ' };
+    }
+
+    let totalLines = 0;
+
+    // ===== JUZ SAMA =====
+    if (start.juz === end.juz) {
+      const a = this.absLine(start.page, start.line);
+      const b = this.absLine(end.page, end.line);
+
+      if (b < a) {
+        return { valid: false, pages: 0, lines: 0, totalLines: 0, reason: 'Ayat terbalik' };
+      }
+
+      totalLines = b - a + 1;
+    }
+    // ===== LINTAS JUZ =====
+    else {
+      const startJuzTotal = this.totalLinesInJuz(start.juz);
+      const startPos = this.absLineInJuz(start.page, start.line, start.juz);
+      const linesStart = startJuzTotal - startPos + 1;
+
+      const linesEnd = this.absLineInJuz(end.page, end.line, end.juz);
+
+      let middle = 0;
+      for (let i = startIdx + 1; i < endIdx; i++) {
+        middle += this.totalLinesInJuz(SDQ_JUZ_ORDER[i]);
+      }
+
+      totalLines = linesStart + middle + linesEnd;
+    }
+
+    // ===== KONVERSI BARIS → HALAMAN =====
+    const pages = Math.floor((totalLines - 1) / LINES_PER_PAGE);
+    const lines = ((totalLines - 1) % LINES_PER_PAGE) + 1;
 
     return {
-      halaman,
-      sisaBaris,
-      totalBarisFull: finalBaris,
-      breakdown: [{
-        type: 'juz',
-        name: p1.juz === p2.juz
-          ? `Juz ${p1.juz}`
-          : `Juz ${p1.juz} → ${p2.juz}`,
-        from: fromLabel,
-        to: toLabel,
-        halaman,
-        baris: sisaBaris
-      }]
+      valid: true,
+      pages,
+      lines,
+      totalLines
     };
+  }
+
+  // =====================================================
+  // PARSER STRING INPUT
+  // =====================================================
+  public static parseAndCalculate(rangeStr: string): SafeCalculationResult {
+    if (!rangeStr || rangeStr.trim() === '' || rangeStr.trim() === '-') {
+      return { valid: true, pages: 0, lines: 0, totalLines: 0 };
+    }
+
+    const parts = rangeStr.split(/\s*[-–]\s*/);
+    if (parts.length !== 2) {
+      return { valid: false, pages: 0, lines: 0, totalLines: 0, reason: 'Format salah' };
+    }
+
+    const parse = (s: string) => {
+      const m = s.match(/^(.*?)\s*:\s*(\d+)$/);
+      return m ? { surah: m[1], ayah: parseInt(m[2]) } : null;
+    };
+
+    const start = parse(parts[0]);
+    if (!start) return { valid: false, pages: 0, lines: 0, totalLines: 0 };
+
+    let endSurah = start.surah;
+    let endAyah = 0;
+
+    if (/^\d+$/.test(parts[1])) {
+      endAyah = parseInt(parts[1]);
+    } else {
+      const end = parse(parts[1]);
+      if (!end) return { valid: false, pages: 0, lines: 0, totalLines: 0 };
+      endSurah = end.surah;
+      endAyah = end.ayah;
+    }
+
+    return this.calculateRange(start.surah, start.ayah, endSurah, endAyah);
   }
 }
