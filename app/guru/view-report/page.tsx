@@ -85,13 +85,15 @@ const formatKlasikalDisplay = (klasikal: any, type: 'tahfizh' | 'tilawah' = 'tah
   return { text: "-", isNew: false };
 };
 
+// Helper: Menampilkan hasil perhitungan engine dengan format manusiawi
 const getCalculationDisplay = (rangeStr: string | undefined) => {
   if (!rangeStr || rangeStr === '-' || rangeStr.trim() === '' || rangeStr.trim() === 'Belum Ada') return "-";
   
+  // Menggunakan engine yang sudah direvisi (fisik mushaf)
   const result = calculateFromRangeString(rangeStr);
   
-  // Jika engine menyatakan tidak valid atau total baris 0, tampilkan dash
-  if (!result.valid || result.totalLines === 0) return "-";
+  // Jika valid=false atau total baris <= 0, tampilkan dash
+  if (!result.valid || result.totalLines <= 0) return "-";
 
   const parts = [];
   if (result.pages > 0) parts.push(`${result.pages} Halaman`);
@@ -177,6 +179,11 @@ const GuruViewReportPage: React.FC<GuruViewReportPageProps> = ({ teacherId = '1'
       const klasikalData = klasikalMap[report.month]?.klasikal;
       const tRes = formatKlasikalDisplay(klasikalData || report.tahfizh.classical, 'tahfizh');
       const lRes = formatKlasikalDisplay(klasikalData || report.tilawah.classical, 'tilawah');
+      
+      const tahfizhSource = (report.tahfizh.individual && report.tahfizh.individual !== '-' && report.tahfizh.individual.trim() !== '') ? report.tahfizh.individual : tRes.text;
+      const tahfizhCalc = calculateFromRangeString(tahfizhSource);
+      const tahfizhHasil = tahfizhCalc.valid ? `${tahfizhCalc.pages} Halaman ${tahfizhCalc.lines} Baris` : '-';
+
       return {
         "No": idx + 1,
         "Nama Siswa": report.studentName,
@@ -185,6 +192,7 @@ const GuruViewReportPage: React.FC<GuruViewReportPageProps> = ({ teacherId = '1'
         "Total Hafalan": formatTotalHafalan(report.totalHafalan),
         "Tahfizh Klasikal": tRes.text,
         "Tahfizh Individu": formatCompactRangeString(report.tahfizh.individual),
+        "Hasil Tahfizh": tahfizhHasil,
         "Tilawah Klasikal": lRes.text,
         "Tilawah Individu": formatCompactRangeString(report.tilawah.individual),
         "Catatan": report.notes
@@ -270,6 +278,7 @@ const GuruViewReportPage: React.FC<GuruViewReportPageProps> = ({ teacherId = '1'
                   const compactIndividualTahfizh = formatCompactRangeString(report.tahfizh.individual);
                   const compactIndividualTilawah = formatCompactRangeString(report.tilawah.individual);
 
+                  // Prioritas: Jika ada individual range, pakai itu. Jika tidak, pakai klasikal.
                   const effectiveTahfizhRange = (report.tahfizh.individual && report.tahfizh.individual !== '-') ? report.tahfizh.individual : resTahfizh.text;
                   const effectiveTilawahRange = (report.tilawah.individual && report.tilawah.individual !== '-') ? report.tilawah.individual : resTilawah.text;
 

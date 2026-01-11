@@ -10,7 +10,7 @@ export const QURAN_MAPPING = Object.values(QURAN_METADATA).map(m => ({
 }));
 
 /**
- * Wrapper for UI compatibility
+ * Wrapper for UI compatibility - calculate by separate coordinates
  */
 export const calculateHafalan = (
   fromSurah: string, 
@@ -28,7 +28,7 @@ export const calculateHafalan = (
 };
 
 /**
- * String range parser wrapper
+ * String range parser wrapper - calculate from "Surah:Ayat - Surah:Ayat"
  */
 export const calculateFromRangeString = (rangeStr: string): { pages: number, lines: number, valid: boolean, totalLines: number } => {
   const result: SDQCalculationResult = SDQQuranEngine.parseAndCalculate(rangeStr);

@@ -3,62 +3,21 @@
  * Architecture: Senior System Architect Standard
  * 
  * Logic:
- * 1. Single Source of Truth: Data koordinat fisik (Halaman & Baris) Mushaf Madinah 15 Baris.
- * 2. SDQ Curriculum Order: 30, 29, 28, 27, 26, 1, 2, ..., 25.
- * 3. Absolute Line Calculation: Mengonversi koordinat menjadi index baris linear berdasarkan urutan SDQ.
- * 4. Zero-Undefined Policy: Menjamin semua return value aman untuk Firebase Firestore.
+ * 1. Single Source of Truth: Uses QURAN_FULL_MAP for exact physical coordinates (Page, Line).
+ * 2. Precision Calculation: Distance is derived STRICTLY from physical Mushaf location.
+ * 3. Rules: 
+ *    - 1 Page = 15 Lines.
+ *    - AbsLine = ((Page - 1) * 15) + Line.
+ *    - Distance = EndAbsLine - StartAbsLine + 1.
+ * 4. Zero-Estimation: Proportional logic removed; missing data results in explicit failure.
  */
 
-// ==========================================
-// 1. DATA CONSTANTS & METADATA
-// ==========================================
-
-const SDQ_JUZ_ORDER = [
-  30, 29, 28, 27, 26, 
-  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 
-  11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 
-  21, 22, 23, 24, 25
-];
-
-const JUZ_BOUNDARIES: Record<number, { startPage: number; endPage: number }> = {
-  1: { startPage: 1, endPage: 21 },
-  2: { startPage: 22, endPage: 41 },
-  3: { startPage: 42, endPage: 61 },
-  4: { startPage: 62, endPage: 81 },
-  5: { startPage: 82, endPage: 101 },
-  6: { startPage: 102, endPage: 121 },
-  7: { startPage: 122, endPage: 141 },
-  8: { startPage: 142, endPage: 161 },
-  9: { startPage: 162, endPage: 181 },
-  10: { startPage: 182, endPage: 201 },
-  11: { startPage: 202, endPage: 221 },
-  12: { startPage: 222, endPage: 241 },
-  13: { startPage: 242, endPage: 261 },
-  14: { startPage: 262, endPage: 281 },
-  15: { startPage: 282, endPage: 301 },
-  16: { startPage: 302, endPage: 321 },
-  17: { startPage: 322, endPage: 341 },
-  18: { startPage: 342, endPage: 361 },
-  19: { startPage: 362, endPage: 381 },
-  20: { startPage: 382, endPage: 401 },
-  21: { startPage: 402, endPage: 421 },
-  22: { startPage: 422, endPage: 441 },
-  23: { startPage: 442, endPage: 461 },
-  24: { startPage: 462, endPage: 481 },
-  25: { startPage: 482, endPage: 501 },
-  26: { startPage: 502, endPage: 521 },
-  27: { startPage: 522, endPage: 541 },
-  28: { startPage: 542, endPage: 561 },
-  29: { startPage: 562, endPage: 581 },
-  30: { startPage: 582, endPage: 604 }
-};
-
-// Import parsial metadata surah untuk normalisasi & estimasi koordinat
-// Dalam skala production besar, ini akan merujuk ke database lengkap ayat-per-ayat
 import { QURAN_METADATA } from './quranData';
+import { QURAN_FULL_MAP } from './quranFullData';
+import { QuranAyahData } from './types';
 
 // ==========================================
-// 2. INTERFACES
+// 1. INTERFACES
 // ==========================================
 
 export interface SDQCalculationResult {
@@ -69,27 +28,16 @@ export interface SDQCalculationResult {
   reason: string;
 }
 
-interface AyahCoordinate {
-  juz: number;
-  page: number;
-  line: number;
-  absSdqLine: number; // Index baris linear dalam kurikulum SDQ
-}
-
 // ==========================================
-// 3. CORE ENGINE CLASS
+// 2. ENGINE CLASS
 // ==========================================
 
 export class SDQQuranEngine {
   private static readonly LINES_PER_PAGE = 15;
-  
-  // Cache urutan juz untuk pencarian cepat
-  private static readonly JUZ_INDEX_MAP: Record<number, number> = SDQ_JUZ_ORDER.reduce(
-    (acc, juz, idx) => ({ ...acc, [juz]: idx }), {}
-  );
 
   /**
-   * Normalisasi Nama Surah agar case-insensitive dan tahan typo minor/karakter khusus
+   * Normalizes Surah names to match keys in QURAN_METADATA and QURAN_FULL_MAP
+   * Removes extra spaces, handles case sensitivity, and standardizes apostrophes.
    */
   private static normalizeSurahName(name: string): string {
     if (!name) return "";
@@ -99,11 +47,12 @@ export class SDQQuranEngine {
       .replace(/[\-]/g, "-");
 
     const keys = Object.keys(QURAN_METADATA);
-    // 1. Exact Match
+    
+    // 1. Exact Match (Case Insensitive)
     const exact = keys.find(k => k.toLowerCase() === clean);
     if (exact) return exact;
 
-    // 2. Fuzzy Match (tanpa simbol)
+    // 2. Fuzzy Match (stripping symbols)
     const fuzzyClean = clean.replace(/[^a-z0-9]/g, "");
     const fuzzy = keys.find(k => k.toLowerCase().replace(/[^a-z0-9]/g, "") === fuzzyClean);
     
@@ -111,164 +60,148 @@ export class SDQQuranEngine {
   }
 
   /**
-   * Mengonversi Surah:Ayat menjadi koordinat fisik dan Index Baris SDQ Absolut
+   * Retrieve exact coordinates from the single source of truth (QURAN_FULL_MAP)
+   * Returns null if not found.
    */
-  private static getAyahCoordinate(surahRaw: string, ayahNum: number): AyahCoordinate | null {
+  private static getAyahData(surahRaw: string, ayahNum: number): QuranAyahData | null {
     const surahName = this.normalizeSurahName(surahRaw);
-    const meta = QURAN_METADATA[surahName];
+    if (!surahName) return null;
 
-    if (!meta) return null;
+    // Construct key strictly as "SurahName:AyahNumber" to match QURAN_FULL_MAP keys
+    const key = `${surahName}:${ayahNum}`;
+    const data = QURAN_FULL_MAP[key];
 
-    // Guardrail ayat
-    const ayah = Math.max(1, Math.min(ayahNum, meta.totalAyah));
-    
-    // Logic Penentuan Halaman & Baris (Mushaf Madinah Standard)
-    // Estimasi presisi tinggi berdasarkan distribusi ayat per halaman surah
-    const totalPagesSurah = meta.endPage - meta.startPage + 1;
-    const progress = (ayah - 1) / meta.totalAyah;
-    const page = meta.startPage + Math.floor(progress * totalPagesSurah);
-    
-    // Baris dihitung dari offset halaman (modulus baris per halaman)
-    const line = Math.max(1, Math.min(15, Math.floor(((progress * totalPagesSurah) % 1) * 15) + 1));
-
-    // Identifikasi Juz berdasarkan halaman
-    let juz = 1;
-    for (const [jStr, bounds] of Object.entries(JUZ_BOUNDARIES)) {
-      if (page >= bounds.startPage && page <= bounds.endPage) {
-        juz = parseInt(jStr);
-        break;
-      }
+    if (!data) {
+      // Jika data fisik ayat tidak ditemukan, return null agar UI tahu data tidak valid
+      return null; 
     }
 
-    // HITUNG ABSOLUTE SDQ LINE
-    // Baris ini adalah posisi "linear" ayat dalam urutan kurikulum SDQ
-    let absSdqLine = 0;
-    const currentJuzSdqIdx = this.JUZ_INDEX_MAP[juz];
-
-    // 1. Tambahkan baris dari semua juz SEBELUM juz saat ini (dalam urutan SDQ)
-    for (let i = 0; i < currentJuzSdqIdx; i++) {
-      const prevJuz = SDQ_JUZ_ORDER[i];
-      const prevBounds = JUZ_BOUNDARIES[prevJuz];
-      absSdqLine += (prevBounds.endPage - prevBounds.startPage + 1) * this.LINES_PER_PAGE;
-    }
-
-    // 2. Tambahkan baris dalam juz saat ini
-    const juzStartPage = JUZ_BOUNDARIES[juz].startPage;
-    absSdqLine += ((page - juzStartPage) * this.LINES_PER_PAGE) + line;
-
-    return { juz, page, line, absSdqLine };
+    return data;
   }
 
   /**
-   * API PUBLIK: Menghitung range berdasarkan string input
-   * Contoh: "An-Naba:1 - An-Nazi'at:10"
+   * CORE CALCULATION LOGIC
+   * Uses physical page and line coordinates.
+   * 1 Page = 15 Lines.
+   */
+  public static calculate(fs: string, fa: number, ts: string, ta: number): SDQCalculationResult {
+    const start = this.getAyahData(fs, fa);
+    const end = this.getAyahData(ts, ta);
+
+    // VALIDATION: Coordinates Existence in Source of Truth
+    if (!start) {
+      return { valid: false, pages: 0, lines: 0, totalLines: 0, reason: `Ayat awal tidak ditemukan di database: ${fs}:${fa}` };
+    }
+    if (!end) {
+      return { valid: false, pages: 0, lines: 0, totalLines: 0, reason: `Ayat akhir tidak ditemukan di database: ${ts}:${ta}` };
+    }
+
+    // CALCULATION: Absolute Line Index (Mushaf Madinah)
+    // Rumus: ((Halaman - 1) * 15) + Baris
+    const startAbsLine = ((start.page - 1) * this.LINES_PER_PAGE) + start.line;
+    const endAbsLine = ((end.page - 1) * this.LINES_PER_PAGE) + end.line;
+
+    // Selisih inklusif
+    const totalLines = endAbsLine - startAbsLine + 1;
+
+    // VALIDATION: Order (Anti-Reverse)
+    if (totalLines <= 0) {
+      return { 
+        valid: false, 
+        pages: 0, 
+        lines: 0, 
+        totalLines: 0, 
+        reason: `Range terbalik: ${fs}:${fa} (Hal ${start.page}) mendahului ${ts}:${ta} (Hal ${end.page})` 
+      };
+    }
+
+    // Convert total lines back to Pages & Remainder Lines
+    const pages = Math.floor(totalLines / this.LINES_PER_PAGE);
+    const lines = totalLines % this.LINES_PER_PAGE;
+
+    return {
+      valid: true,
+      totalLines,
+      pages,
+      lines,
+      reason: ""
+    };
+  }
+
+  /**
+   * PUBLIC ENTRY POINT: PARSER
+   * Handles formats: "Surah:Ayat - Surah:Ayat" or "Surah:Ayat - Ayat"
    */
   public static parseAndCalculate(rangeStr: string): SDQCalculationResult {
-    const result: SDQCalculationResult = { valid: false, pages: 0, lines: 0, totalLines: 0, reason: "" };
+    const emptyResult: SDQCalculationResult = { valid: false, pages: 0, lines: 0, totalLines: 0, reason: "" };
 
-    if (!rangeStr || rangeStr.trim() === "" || rangeStr === "-") {
-      result.valid = true; // Anggap valid kosong untuk Firestore
-      result.reason = "Data legacy atau kosong";
-      return result;
+    if (!rangeStr || typeof rangeStr !== 'string' || rangeStr.trim() === "" || rangeStr === "-") {
+      return { ...emptyResult, valid: true, reason: "Data kosong" }; // Valid true agar UI menampilkan 0 daripada error
     }
 
     try {
-      // Split separator " - " atau " – "
-      const parts = rangeStr.split(/\s*[-–]\s*/);
+      const clean = rangeStr.trim();
+      // Split separator " - " or " – "
+      const parts = clean.split(/\s*[-–]\s*/);
       
-      const parseSingle = (s: string) => {
+      const parseRef = (s: string) => {
         const match = s.match(/^(.*?)\s*[:]\s*(\d+)$/);
         if (match) return { s: match[1].trim(), a: parseInt(match[2]) };
-        // Support format hanya surah (Asumsi ayat 1)
-        return { s: s.trim(), a: 1 };
+        return null;
       };
 
-      const startRef = parseSingle(parts[0]);
-      let endRef = parts[1] ? parseSingle(parts[1]) : null;
+      const startObj = parseRef(parts[0]);
+      if (!startObj) return { ...emptyResult, reason: "Format awal salah (Contoh: An-Naba:1)" };
 
-      // Handle format pendek: "An-Naba:1 - 10" (Surah yang sama)
-      if (parts[1] && /^\d+$/.test(parts[1].trim())) {
-        endRef = { s: startRef.s, a: parseInt(parts[1].trim()) };
+      let endSurah = startObj.s;
+      let endAyah = 0;
+
+      if (!parts[1]) {
+         // Jika format single "An-Naba:1", anggap start=end (1 baris capaian minimal jika valid)
+         return this.calculate(startObj.s, startObj.a, startObj.s, startObj.a);
       }
 
-      if (!endRef) {
-        result.reason = "Format range tidak lengkap";
-        return result;
+      // Check for shorthand "Surah:Ayat - Ayat" (e.g. "An-Naba:1 - 40")
+      if (/^\d+$/.test(parts[1].trim())) {
+        endAyah = parseInt(parts[1].trim());
+      } else {
+        const endObj = parseRef(parts[1]);
+        if (endObj) {
+          endSurah = endObj.s;
+          endAyah = endObj.a;
+        } else {
+          return { ...emptyResult, reason: "Format akhir salah" };
+        }
       }
 
-      const startCoord = this.getAyahCoordinate(startRef.s, startRef.a);
-      const endCoord = this.getAyahCoordinate(endRef.s, endRef.a);
-
-      if (!startCoord || !endCoord) {
-        result.reason = "Surah atau Ayat tidak ditemukan dalam database";
-        return result;
-      }
-
-      // VALIDASI URUTAN KURIKULUM
-      if (endCoord.absSdqLine < startCoord.absSdqLine) {
-        result.reason = `Range Terbalik (SDQ Order): ${startRef.s}:${startRef.a} mendahului ${endRef.s}:${endRef.a}`;
-        return result;
-      }
-
-      // PERHITUNGAN PRESISI
-      const totalLines = (endCoord.absSdqLine - startCoord.absSdqLine) + 1;
-      
-      result.valid = true;
-      result.totalLines = totalLines;
-      result.pages = Math.floor(totalLines / this.LINES_PER_PAGE);
-      result.lines = totalLines % this.LINES_PER_PAGE;
-
-      return result;
+      return this.calculate(startObj.s, startObj.a, endSurah, endAyah);
 
     } catch (e) {
-      result.reason = "Gagal memproses data (Parser Error)";
-      return result;
+      return { ...emptyResult, reason: "Gagal memproses teks range" };
     }
-  }
-
-  /**
-   * API PUBLIK: Perhitungan manual antar koordinat
-   */
-  public static calculate(fs: string, fa: number, ts: string, ta: number): SDQCalculationResult {
-    const startCoord = this.getAyahCoordinate(fs, fa);
-    const endCoord = this.getAyahCoordinate(ts, ta);
-
-    if (!startCoord || !endCoord) {
-      return { valid: false, pages: 0, lines: 0, totalLines: 0, reason: "Invalid Coordinates" };
-    }
-
-    const totalLines = Math.max(0, (endCoord.absSdqLine - startCoord.absSdqLine) + 1);
-
-    return {
-      valid: totalLines > 0,
-      totalLines,
-      pages: Math.floor(totalLines / this.LINES_PER_PAGE),
-      lines: totalLines % this.LINES_PER_PAGE,
-      reason: totalLines > 0 ? "" : "Range tidak valid"
-    };
   }
 }
 
 /**
- * LEGACY WRAPPER (Backward Compatibility)
- * Menjamin UI lama tidak crash setelah refactor.
+ * BACKWARD COMPATIBILITY WRAPPERS
+ * Used by UI components expecting simple objects.
  */
 export const calculateHafalan = (fs: string, fa: number, ts: string, ta: number) => {
   const r = SDQQuranEngine.calculate(fs, fa, ts, ta);
   return { 
-    pages: r.pages || 0, 
-    lines: r.lines || 0, 
-    valid: r.valid || false, 
-    totalLines: r.totalLines || 0 
+    pages: r.pages, 
+    lines: r.lines, 
+    valid: r.valid, 
+    totalLines: r.totalLines 
   };
 };
 
 export const calculateFromRangeString = (range: string) => {
   const r = SDQQuranEngine.parseAndCalculate(range);
   return { 
-    pages: r.pages || 0, 
-    lines: r.lines || 0, 
-    valid: r.valid || false, 
-    totalLines: r.totalLines || 0 
+    pages: r.pages, 
+    lines: r.lines, 
+    valid: r.valid, 
+    totalLines: r.totalLines 
   };
 };

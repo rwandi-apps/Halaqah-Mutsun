@@ -37,6 +37,7 @@ export interface QuranAyahData {
   juz: number;
   page: number;
   line: number;
+  globalIndex: number; // SDQ Curriculum Linear Index
 }
 
 export interface SurahMeta {
