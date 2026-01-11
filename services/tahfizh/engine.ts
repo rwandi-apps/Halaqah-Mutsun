@@ -336,6 +336,39 @@ export class TahfizhEngineSDQ {
     };
 
     if (map[n]) return map[n];
+      // ==========================================
+  // 5. COMPATIBILITY WRAPPER (FIX ERROR)
+  // ==========================================
+
+  /**
+   * Wrapper untuk menjaga kompatibilitas dengan Kode Lama / UI Lama.
+   * Mengubah panggilan lama (4 argumen) menjadi format baru (1 string).
+   */
+  public static calculateRange(
+    fromRaw: string,
+    fromAyah: number,
+    toRaw: string,
+    toAyah: number
+  ): { valid: boolean; pages: number; lines: number; totalLines: number; reason?: string } {
+    
+    // 1. Format ulang input menjadi string yang dipahami engine baru
+    // Contoh: "Al-Baqarah:1 - An-Nisa:5"
+    const rangeStr = `${fromRaw}:${fromAyah} - ${toRaw}:${toAyah}`;
+
+    // 2. Panggil Engine Baru (parseAndCalculate)
+    const ultimateResult = this.parseAndCalculate(rangeStr);
+
+    // 3. Konversi hasil UltimateCalculationResult -> SafeCalculationResult (Format Lama)
+    const totalLines = (ultimateResult.total.halaman * this.LINES_PER_PAGE) + ultimateResult.total.baris;
+
+    return {
+      valid: ultimateResult.valid,
+      pages: ultimateResult.total.halaman, // Mapping: halaman -> pages
+      lines: ultimateResult.total.baris,   // Mapping: baris -> lines
+      totalLines: totalLines,              // Hitung total absolut baris
+      reason: ultimateResult.reason
+    };
+  }
 
     // Capitalize Standard
     return n.replace(/(^|-)(\w)/g, (match) => match.toUpperCase());
