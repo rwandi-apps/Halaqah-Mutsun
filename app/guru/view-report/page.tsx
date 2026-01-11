@@ -85,21 +85,25 @@ const formatKlasikalDisplay = (klasikal: any, type: 'tahfizh' | 'tilawah' = 'tah
   return { text: "-", isNew: false };
 };
 
-// Helper: Menampilkan hasil perhitungan engine dengan format manusiawi
+/**
+ * UI FIX: Menampilkan hasil perhitungan engine dengan format absolut.
+ * Aturan: Angka 0 adalah nilai sah dan wajib ditampilkan.
+ */
 const getCalculationDisplay = (rangeStr: string | undefined) => {
-  if (!rangeStr || rangeStr === '-' || rangeStr.trim() === '' || rangeStr.trim() === 'Belum Ada') return "-";
+  if (!rangeStr || rangeStr === '-' || rangeStr.trim() === '' || rangeStr.trim() === 'Belum Ada') {
+    return "-";
+  }
   
-  // Menggunakan engine yang sudah direvisi (fisik mushaf)
   const result = calculateFromRangeString(rangeStr);
   
-  // Jika valid=false atau total baris <= 0, tampilkan dash
-  if (!result.valid || result.totalLines <= 0) return "-";
+  // Jika engine menyatakan tidak valid, baru tampilkan dash
+  if (!result.valid) {
+    return "-";
+  }
 
-  const parts = [];
-  if (result.pages > 0) parts.push(`${result.pages} Halaman`);
-  if (result.lines > 0) parts.push(`${result.lines} Baris`);
-  
-  return parts.length > 0 ? parts.join(' ') : "0 Baris";
+  // Format HARUS lengkap: "{pages} Halaman {lines} Baris"
+  // JANGAN gunakan conditional rendering (result.pages > 0) karena akan menghilangkan angka 0
+  return `${result.pages} Halaman ${result.lines} Baris`;
 };
 
 // Helper: Teks Keterangan Tanpa Angka (Neutral & Pembinaan)
@@ -169,7 +173,6 @@ const GuruViewReportPage: React.FC<GuruViewReportPageProps> = ({ teacherId = '1'
   }, [search, filterYear, filterType, filterMonth, filterSemester, reports]);
 
   const handleEditReport = (report: Report) => {
-    // Navigasi ke form input dengan membawa data edit
     navigate('/guru/laporan', { state: { editReportId: report.id, reportData: report } });
   };
 
@@ -278,7 +281,6 @@ const GuruViewReportPage: React.FC<GuruViewReportPageProps> = ({ teacherId = '1'
                   const compactIndividualTahfizh = formatCompactRangeString(report.tahfizh.individual);
                   const compactIndividualTilawah = formatCompactRangeString(report.tilawah.individual);
 
-                  // Prioritas: Jika ada individual range, pakai itu. Jika tidak, pakai klasikal.
                   const effectiveTahfizhRange = (report.tahfizh.individual && report.tahfizh.individual !== '-') ? report.tahfizh.individual : resTahfizh.text;
                   const effectiveTilawahRange = (report.tilawah.individual && report.tilawah.individual !== '-') ? report.tilawah.individual : resTilawah.text;
 
