@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { User, Student } from '../types';
@@ -6,8 +5,7 @@ import { getTeacherById, getStudentsByTeacher } from '../services/firestoreServi
 import { Button, StatCard } from '../components/UIComponents';
 import { ArrowLeft, Users, Star, BookOpen, UserCheck } from 'lucide-react';
 
-export const CoordinatorTeacherDetail: React.FC = () => {
-  // Fix: Match the route param ':id' from App.tsx
+const CoordinatorTeacherDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [teacher, setTeacher] = useState<User | null>(null);

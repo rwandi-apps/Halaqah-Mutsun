@@ -1,17 +1,18 @@
 
 import React, { useState } from 'react';
-import { Outlet, Navigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { Menu, X, Mail, Bell, ChevronDown } from 'lucide-react';
-import { User, Role } from '../types';
+import { User } from '../types';
 import { SidebarCoordinator } from '../components/SidebarCoordinator';
 import { SidebarGuru } from '../components/SidebarGuru';
 
 interface LayoutProps {
   user: User | null;
   onLogout: () => void;
+  children?: React.ReactNode;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
+export const Layout: React.FC<LayoutProps> = ({ user, onLogout, children }) => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
 
   if (!user) {
@@ -92,7 +93,7 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
 
         {/* Page Content Outlet */}
         <main className="flex-1 overflow-y-auto p-4 lg:p-8">
-          <Outlet />
+          {children}
         </main>
       </div>
     </div>

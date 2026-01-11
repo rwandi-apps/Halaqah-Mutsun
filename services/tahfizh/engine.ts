@@ -208,15 +208,6 @@ export class TahfizhEngineSDQ {
 
       const startIdx = SDQ_INDEX_MAP[startCoord.juz];
       const endIdx = SDQ_INDEX_MAP[endCoord.juz];
-      if (startIdx === undefined || endIdx === undefined) {
-  return {
-    valid: false,
-    pages: 0,
-    lines: 0,
-    totalLines: 0,
-    reason: "Juz tidak valid dalam urutan SDQ"
-  };
-}
 
       // --- VALIDASI RANGE (SDQ LOGIC) ---
       
@@ -232,8 +223,8 @@ export class TahfizhEngineSDQ {
       if (startCoord.juz === endCoord.juz) {
         // Hitung posisi absolut baris dari awal mushaf (Halaman 1, Baris 1)
         // Karena dalam 1 juz, urutan fisik halaman selalu naik
-        const absStart = ((startCoord.page - 1) * LINES_PER_PAGE) + startCoord.line;
-const absEnd   = ((endCoord.page - 1) * LINES_PER_PAGE) + endCoord.line;
+        const absStart = (startCoord.page * LINES_PER_PAGE) + startCoord.line;
+        const absEnd = (endCoord.page * LINES_PER_PAGE) + endCoord.line;
 
         if (absEnd < absStart) {
           return { valid: false, pages: 0, lines: 0, totalLines: 0, reason: "Ayat terbalik (Mundur dalam satu Juz)" };
@@ -300,16 +291,7 @@ const absEnd   = ((endCoord.page - 1) * LINES_PER_PAGE) + endCoord.line;
     if (cleanStr === '-' || cleanStr === '' || cleanStr === 'Belum Ada') {
       return { valid: true, pages: 0, lines: 0, totalLines: 0, reason: "Empty Input" };
     }
-// BACKWARD COMPATIBILITY: jika string TIDAK mengandung ":"
-if (!cleanStr.includes(':')) {
-  return {
-    valid: true,
-    pages: 0,
-    lines: 0,
-    totalLines: 0,
-    reason: "Legacy / Non-range data"
-  };
-}
+
     try {
       // Split " - " atau " – " (em dash)
       const parts = cleanStr.split(/\s*[-–]\s*/); 

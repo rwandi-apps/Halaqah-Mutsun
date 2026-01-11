@@ -7,7 +7,7 @@ import { Button } from '../../../../components/Button';
 import { StatCard } from '../../../../components/StatCard';
 import { ArrowLeft, Users, Star, BookOpen, UserCheck, BadgeCheck } from 'lucide-react';
 
-export default function CoordinatorTeacherDetail() {
+const CoordinatorTeacherDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [teacher, setTeacher] = useState<User | null>(null);
@@ -80,7 +80,6 @@ export default function CoordinatorTeacherDetail() {
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Pass Icon components directly to satisfy LucideIcon type requirements */}
         <StatCard title="Total Siswa" value={students.length} icon={Users} color="bg-blue-50/50" />
         <StatCard title="Rata-rata Kehadiran" value={`${avgAttendance}%`} icon={UserCheck} trend={avgAttendance > 90 ? "Sangat Baik" : "Perlu ditingkatkan"} />
         <StatCard title="Nilai Perilaku Rata-rata" value={avgBehavior} icon={Star} color="bg-yellow-50/50" />
@@ -145,4 +144,6 @@ export default function CoordinatorTeacherDetail() {
       </div>
     </div>
   );
-}
+};
+
+export default CoordinatorTeacherDetail;

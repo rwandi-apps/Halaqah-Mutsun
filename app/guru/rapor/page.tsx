@@ -7,7 +7,12 @@ import { extractClassLevel } from '../../../services/sdqTargets';
 import { Button } from '../../../components/Button';
 import { FileText, Printer, ArrowLeft, Search, ChevronLeft, ChevronRight, Edit2, Trash2 } from 'lucide-react';
 
-export default function GuruRaporPage({ teacherId, teacherName }: { teacherId?: string, teacherName?: string }) {
+interface GuruRaporProps {
+  teacherId?: string;
+  teacherName?: string;
+}
+
+const GuruRaporPage: React.FC<GuruRaporProps> = ({ teacherId, teacherName }) => {
   const navigate = useNavigate();
   const [students, setStudents] = useState<Student[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
@@ -289,3 +294,5 @@ export default function GuruRaporPage({ teacherId, teacherName }: { teacherId?: 
     </div>
   );
 }
+
+export default GuruRaporPage;

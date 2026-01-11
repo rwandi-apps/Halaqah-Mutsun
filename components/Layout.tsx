@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Users, 
@@ -16,8 +15,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import LogoSDQ from './LogoSDQ';
-import Button from './Button';
-import { User, Role } from '../types';
+import { User } from '../types';
 
 interface LayoutProps {
   user?: User | null;
@@ -27,7 +25,7 @@ interface LayoutProps {
   title?: string;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ 
+const Layout: React.FC<LayoutProps> = ({ 
   user, 
   onLogout = () => {}, 
   children,
@@ -35,7 +33,6 @@ export const Layout: React.FC<LayoutProps> = ({
   title
 }) => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
-  const navigate = useNavigate();
 
   const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
 
@@ -107,19 +104,14 @@ export const Layout: React.FC<LayoutProps> = ({
                       end={item.to.split('/').length === 2}
                       onClick={() => setSidebarOpen(false)}
                       className={({ isActive }) => `
-                        flex items-center justify-between px-3 py-3 rounded-lg transition-colors mb-1 group
-                        ${isActive ? sidebarActive : `text-white/80 ${sidebarHover}`}
+                        flex items-center justify-between px-3 py-3 rounded-lg transition-colors mb-1 group text-white/80 ${isActive ? sidebarActive : sidebarHover}
                       `}
                     >
-                      {({ isActive }) => (
-                        <>
-                          <div className="flex items-center gap-3">
-                            {item.icon && <item.icon size={20} className={isActive ? 'text-white' : 'text-white/70'} />}
-                            <span className="font-medium text-sm">{item.label}</span>
-                          </div>
-                          {item.hasDropdown && <ChevronDown size={16} className="text-white/50" />}
-                        </>
-                      )}
+                      <div className="flex items-center gap-3">
+                        {item.icon && <item.icon size={20} className="text-white/70" />}
+                        <span className="font-medium text-sm">{item.label}</span>
+                      </div>
+                      {item.hasDropdown && <ChevronDown size={16} className="text-white/50" />}
                     </NavLink>
                   );
                 })}
@@ -182,7 +174,7 @@ export const Layout: React.FC<LayoutProps> = ({
 
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto p-6 lg:p-8">
-          {children ? children : <Outlet />}
+          {children}
         </main>
       </div>
     </div>

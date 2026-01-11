@@ -16,7 +16,6 @@ const ACADEMIC_YEARS = ["2023/2024", "2024/2025", "2025/2026"];
 const MONTHS = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
 // Helper: Format Rentang Surat (Compact Mode)
-// Input: "Al-Baqarah: 1 - Al-Baqarah: 5" -> Output: "Al-Baqarah: 1–5"
 const formatCompactRangeString = (rangeStr: string | undefined) => {
   if (!rangeStr || rangeStr === '-' || rangeStr.trim() === '') return "-";
   
@@ -84,9 +83,17 @@ const formatKlasikalDisplay = (klasikal: any, type: 'tahfizh' | 'tilawah' = 'tah
 };
 
 const getCalculationDisplay = (rangeStr: string | undefined) => {
-  if (!rangeStr || rangeStr === '-' || rangeStr === '') return "-";
+  if (!rangeStr || rangeStr === '-' || rangeStr.trim() === '') return "-";
+  
   const result = calculateFromRangeString(rangeStr);
-  return result.pages > 0 ? `${result.pages} Hal` : (result.lines > 0 ? `${result.lines} Brs` : "0 Brs");
+  
+  // Jika hasil hitung > 0, tampilkan
+  if (result.pages > 0) return `${result.pages} Hal`;
+  if (result.lines > 0) return `${result.lines} Brs`;
+  
+  // Jika hasil 0 tapi string input valid (misal salah ketik format), tetap return 0 Brs
+  // TAPI jika string kosong atau dash, return "-" agar tidak membingungkan
+  return "-"; 
 };
 
 // Helper: Teks Keterangan Tanpa Angka (Neutral & Pembinaan)
@@ -103,7 +110,7 @@ const getStatusBadge = (rangeStr: string | undefined, reportType: string) => {
   return <div className="flex items-center justify-center gap-1 text-orange-500 font-extrabold text-[10px] tracking-tighter uppercase"><AlertCircle size={12}/> BELUM TERCAPAI</div>;
 };
 
-export default function GuruViewReportPage({ teacherId = '1' }: GuruViewReportPageProps) {
+const GuruViewReportPage: React.FC<GuruViewReportPageProps> = ({ teacherId = '1' }) => {
   const navigate = useNavigate();
   const [reports, setReports] = useState<Report[]>([]);
   const [filteredReports, setFilteredReports] = useState<Report[]>([]);
@@ -281,7 +288,7 @@ export default function GuruViewReportPage({ teacherId = '1' }: GuruViewReportPa
                       
                       {/* STATUS & NOTES */}
                       <td className="px-4 py-4 border-r border-gray-50 text-center">{getStatusBadge(effectiveTahfizhRange, report.type)}</td>
-                      <td className="px-4 py-4 border-r border-gray-50 min-w-[150px]"><div className="text-gray-500 italic max-w-[200px] whitespace-normal line-clamp-2 leading-relaxed">"{report.notes || "-"}"</div></td>
+                      <td className="px-4 py-4 border-r border-gray-50 min-w-[150px]"><div className="text-gray-500 italic max-w-[200px] whitespace-normal line-clamp-2 leading-relaxed">"{report.notes || "-"}</div></td>
                       
                       {/* AKSI */}
                       <td className="px-4 py-4 text-center">
@@ -303,3 +310,5 @@ export default function GuruViewReportPage({ teacherId = '1' }: GuruViewReportPa
     </div>
   );
 }
+
+export default GuruViewReportPage;

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './app/layout';
 import LoginPage from './app/(auth)/login/page';
@@ -47,36 +47,38 @@ function App() {
   return (
     <HashRouter>
       <Routes>
-        <Route path="/login" element={
-          !user ? <LoginPage onLogin={handleLogin} /> : <Navigate to="/" replace />
+        <Route path="/login" element={!user ? <LoginPage onLogin={handleLogin} /> : <Navigate to="/" replace />} />
+
+        <Route path="/*" element={
+           <Layout user={user} onLogout={handleLogout}>
+             <Routes>
+                <Route path="/" element={
+                  user?.role === 'KOORDINATOR' 
+                    ? <Navigate to="/coordinator/dashboard" replace /> 
+                    : <Navigate to="/guru/dashboard" replace />
+                } />
+                
+                <Route path="/coordinator/dashboard" element={<CoordinatorDashboard />} />
+                <Route path="/coordinator/guru" element={<CoordinatorGuruPage />} />
+                <Route path="/coordinator/guru/:id" element={<CoordinatorTeacherDetail />} />
+                <Route path="/coordinator/siswa" element={<CoordinatorSiswaPage />} />
+                <Route path="/coordinator/kelas" element={<CoordinatorKelasPage />} />
+                <Route path="/coordinator/reports" element={<CoordinatorReportsPage />} />
+                <Route path="/coordinator/rapor" element={<CoordinatorRaporPage />} />
+                <Route path="/coordinator/evaluations" element={<CoordinatorEvaluationsPage />} />
+                
+                <Route path="/guru/dashboard" element={<GuruDashboard teacherId={user?.id} />} />
+                <Route path="/guru/halaqah" element={<GuruHalaqahPage teacherId={user?.id} />} />
+                <Route path="/guru/laporan" element={<GuruLaporanPage teacherId={user?.id} />} />
+                <Route path="/guru/view-report" element={<GuruViewReportPage teacherId={user?.id} />} />
+                <Route path="/guru/evaluation" element={<GuruEvaluationPage teacherId={user?.id} />} />
+                <Route path="/guru/grades" element={<GuruGradesPage teacherId={user?.id} />} />
+                <Route path="/guru/rapor" element={<GuruRaporPage teacherId={user?.id} teacherName={user?.name} />} />
+
+                <Route path="*" element={<Navigate to="/" replace />} />
+             </Routes>
+           </Layout>
         } />
-
-        <Route element={<Layout user={user} onLogout={handleLogout} />}>
-          <Route path="/" element={
-            user?.role === 'KOORDINATOR' 
-              ? <Navigate to="/coordinator/dashboard" replace /> 
-              : <Navigate to="/guru/dashboard" replace />
-          } />
-          
-          <Route path="/coordinator/dashboard" element={<CoordinatorDashboard />} />
-          <Route path="/coordinator/guru" element={<CoordinatorGuruPage />} />
-          <Route path="/coordinator/guru/:id" element={<CoordinatorTeacherDetail />} />
-          <Route path="/coordinator/siswa" element={<CoordinatorSiswaPage />} />
-          <Route path="/coordinator/kelas" element={<CoordinatorKelasPage />} />
-          <Route path="/coordinator/reports" element={<CoordinatorReportsPage />} />
-          <Route path="/coordinator/rapor" element={<CoordinatorRaporPage />} />
-          <Route path="/coordinator/evaluations" element={<CoordinatorEvaluationsPage />} />
-          
-          <Route path="/guru/dashboard" element={<GuruDashboard teacherId={user?.id} />} />
-          <Route path="/guru/halaqah" element={<GuruHalaqahPage teacherId={user?.id} />} />
-          <Route path="/guru/laporan" element={<GuruLaporanPage teacherId={user?.id} />} />
-          <Route path="/guru/view-report" element={<GuruViewReportPage teacherId={user?.id} />} />
-          <Route path="/guru/evaluation" element={<GuruEvaluationPage teacherId={user?.id} />} />
-          <Route path="/guru/grades" element={<GuruGradesPage teacherId={user?.id} />} />
-          <Route path="/guru/rapor" element={<GuruRaporPage teacherId={user?.id} teacherName={user?.name} />} />
-        </Route>
-
-        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </HashRouter>
   );

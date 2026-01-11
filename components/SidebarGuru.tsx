@@ -44,10 +44,7 @@ export const SidebarGuru: React.FC<SidebarProps> = ({ onLogout, onCloseMobile })
                 key={item.to}
                 to={item.to!}
                 onClick={onCloseMobile}
-                className={({ isActive }) => `
-                  flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors mb-1 group
-                  ${isActive ? 'bg-white/10' : 'text-white/80 hover:bg-white/10'}
-                `}
+                className={({ isActive }) => `flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors mb-1 group text-white/80 hover:bg-white/10 ${isActive ? 'bg-white/10' : ''}`}
               >
                 <div className="flex items-center gap-3">
                   {item.icon && <item.icon size={18} />}

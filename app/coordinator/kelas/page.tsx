@@ -5,7 +5,7 @@ import { getClassHalaqahSummary, ClassSummary } from '../../../services/firestor
 import { Button } from '../../../components/Button';
 import { Building2, ArrowRight, User as UserIcon, Loader2 } from 'lucide-react';
 
-export default function CoordinatorKelasPage() {
+const CoordinatorKelasPage: React.FC = () => {
   const navigate = useNavigate();
   const [classes, setClasses] = useState<ClassSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -109,3 +109,5 @@ export default function CoordinatorKelasPage() {
     </div>
   );
 }
+
+export default CoordinatorKelasPage;

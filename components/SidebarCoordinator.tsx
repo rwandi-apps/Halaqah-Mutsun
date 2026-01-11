@@ -44,10 +44,7 @@ export const SidebarCoordinator: React.FC<SidebarProps> = ({ onLogout, onCloseMo
                 key={item.to}
                 to={item.to!}
                 onClick={onCloseMobile}
-                className={({ isActive }) => `
-                  flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors mb-1 group
-                  ${isActive ? 'bg-primary-600' : 'text-white/80 hover:bg-primary-600'}
-                `}
+                className={({ isActive }) => `flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors mb-1 group text-white/80 hover:bg-primary-600 ${isActive ? 'bg-primary-600' : ''}`}
               >
                 <div className="flex items-center gap-3">
                   {item.icon && <item.icon size={18} />}

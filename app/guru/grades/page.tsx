@@ -8,7 +8,11 @@ import { extractClassLevel } from '../../../services/sdqTargets';
 import { Button } from '../../../components/Button';
 import { Save, BookOpen, ClipboardCheck, GraduationCap, User, FileText, Info, Sparkles, Loader2, MessageSquare } from 'lucide-react';
 
-export default function GuruGradesPage({ teacherId }: { teacherId?: string }) {
+interface GuruGradesProps {
+  teacherId?: string;
+}
+
+const GuruGradesPage: React.FC<GuruGradesProps> = ({ teacherId }) => {
   const location = useLocation();
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
@@ -40,7 +44,8 @@ export default function GuruGradesPage({ teacherId }: { teacherId?: string }) {
     if (teacherId) {
       getStudentsByTeacher(teacherId).then(data => {
         setStudents(data);
-        const stateId = location.state?.studentId;
+        const state = location.state as any;
+        const stateId = state?.studentId;
         if (stateId) handleStudentChange(stateId, data);
       });
     }
@@ -371,3 +376,5 @@ export default function GuruGradesPage({ teacherId }: { teacherId?: string }) {
     </div>
   );
 }
+
+export default GuruGradesPage;

@@ -2,12 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User } from '../types';
 import { getAllTeachers } from '../services/firestoreService';
-import { Users, ChevronRight, Mail } from 'lucide-react';
+import { ChevronRight, Mail } from 'lucide-react';
 import { Button } from '../components/UIComponents';
 
-export const CoordinatorTeachers: React.FC = () => {
-  const [teachers, setTeachers] = useState<User[]>([]);
+const CoordinatorTeachers: React.FC = () => {
   const navigate = useNavigate();
+  const [teachers, setTeachers] = useState<User[]>([]);
 
   useEffect(() => {
     getAllTeachers().then(setTeachers);

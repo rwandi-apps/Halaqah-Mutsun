@@ -6,7 +6,8 @@ import { getAllTeachers, addTeacher, updateTeacher } from '../../../services/fir
 import { Users, ChevronRight, Mail, Plus, X, ShieldCheck, Edit2 } from 'lucide-react';
 import { Button } from '../../../components/Button';
 
-export default function CoordinatorGuruPage() {
+const CoordinatorGuruPage: React.FC = () => {
+  const navigate = useNavigate();
   const [teachers, setTeachers] = useState<User[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -17,8 +18,6 @@ export default function CoordinatorGuruPage() {
   const [newNickname, setNewNickname] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newRole, setNewRole] = useState<Role>('GURU');
-
-  const navigate = useNavigate();
 
   useEffect(() => {
     loadTeachers();
@@ -249,3 +248,5 @@ export default function CoordinatorGuruPage() {
     </div>
   );
 }
+
+export default CoordinatorGuruPage;
