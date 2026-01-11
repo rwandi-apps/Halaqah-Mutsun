@@ -8,7 +8,11 @@
  * 3. Zero-Undefined Policy: Semua return value dijamin aman untuk Firestore
  * 4. Defensive Parsing: Menangani typo, format pendek, dan data legacy tanpa crash
  */
-
+import {
+  QURAN_FULL_MAP,
+  JUZ_BOUNDARIES,
+  IQRA_PAGES
+} from './quranFullData';
 // ==========================================
 // 1. DATA CONSTANTS (Self-Contained)
 // ==========================================
