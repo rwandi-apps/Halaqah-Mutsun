@@ -208,6 +208,15 @@ export class TahfizhEngineSDQ {
 
       const startIdx = SDQ_INDEX_MAP[startCoord.juz];
       const endIdx = SDQ_INDEX_MAP[endCoord.juz];
+      if (startIdx === undefined || endIdx === undefined) {
+  return {
+    valid: false,
+    pages: 0,
+    lines: 0,
+    totalLines: 0,
+    reason: "Juz tidak valid dalam urutan SDQ"
+  };
+}
 
       // --- VALIDASI RANGE (SDQ LOGIC) ---
       
@@ -291,7 +300,16 @@ export class TahfizhEngineSDQ {
     if (cleanStr === '-' || cleanStr === '' || cleanStr === 'Belum Ada') {
       return { valid: true, pages: 0, lines: 0, totalLines: 0, reason: "Empty Input" };
     }
-
+// BACKWARD COMPATIBILITY: jika string TIDAK mengandung ":"
+if (!cleanStr.includes(':')) {
+  return {
+    valid: true,
+    pages: 0,
+    lines: 0,
+    totalLines: 0,
+    reason: "Legacy / Non-range data"
+  };
+}
     try {
       // Split " - " atau " – " (em dash)
       const parts = cleanStr.split(/\s*[-–]\s*/); 
