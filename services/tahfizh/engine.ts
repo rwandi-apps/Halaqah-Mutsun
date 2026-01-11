@@ -3,7 +3,7 @@ import { QURAN_FULL_MAP } from './quranFullData';
 import { QURAN_METADATA } from './quranData';
 
 // ==========================================
-// 1. TYPE DEFINITIONS (UPDATED)
+// 1. TYPE DEFINITION (Strict)
 // ==========================================
 
 export interface SafeCalculationResult {
@@ -11,12 +11,11 @@ export interface SafeCalculationResult {
   pages: number;
   lines: number;
   totalLines: number;
-  // UPDATE: Menggunakan string | null agar Firestore tidak error (jangan undefined)
-  reason: string | null; 
+  reason: string | null; // Selalu string atau null (Firestore friendly)
 }
 
 // ==========================================
-// 2. CONSTANTS & CONFIGURATION
+// 2. CONSTANTS
 // ==========================================
 
 const LINES_PER_PAGE = 15;
@@ -29,45 +28,22 @@ const SDQ_JUZ_ORDER = [
 ];
 
 const JUZ_PAGE_LIMITS: Record<number, { start: number; end: number }> = {
-  1: { start: 1, end: 21 },
-  2: { start: 22, end: 41 },
-  3: { start: 42, end: 61 },
-  4: { start: 62, end: 81 },
-  5: { start: 82, end: 101 },
-  6: { start: 102, end: 121 },
-  7: { start: 122, end: 141 },
-  8: { start: 142, end: 161 },
-  9: { start: 162, end: 181 },
-  10: { start: 182, end: 201 },
-  11: { start: 202, end: 221 },
-  12: { start: 222, end: 241 },
-  13: { start: 242, end: 261 },
-  14: { start: 262, end: 281 },
-  15: { start: 282, end: 301 },
-  16: { start: 302, end: 321 },
-  17: { start: 322, end: 341 },
-  18: { start: 342, end: 361 },
-  19: { start: 362, end: 381 },
-  20: { start: 382, end: 401 },
-  21: { start: 402, end: 421 },
-  22: { start: 422, end: 441 },
-  23: { start: 442, end: 461 },
-  24: { start: 462, end: 481 },
-  25: { start: 482, end: 501 },
-  26: { start: 502, end: 521 },
-  27: { start: 522, end: 541 },
-  28: { start: 542, end: 561 },
-  29: { start: 562, end: 581 },
-  30: { start: 582, end: 604 }
+  1: { start: 1, end: 21 }, 2: { start: 22, end: 41 }, 3: { start: 42, end: 61 },
+  4: { start: 62, end: 81 }, 5: { start: 82, end: 101 }, 6: { start: 102, end: 121 },
+  7: { start: 122, end: 141 }, 8: { start: 142, end: 161 }, 9: { start: 162, end: 181 },
+  10: { start: 182, end: 201 }, 11: { start: 202, end: 221 }, 12: { start: 222, end: 241 },
+  13: { start: 242, end: 261 }, 14: { start: 262, end: 281 }, 15: { start: 282, end: 301 },
+  16: { start: 302, end: 321 }, 17: { start: 322, end: 341 }, 18: { start: 342, end: 361 },
+  19: { start: 362, end: 381 }, 20: { start: 382, end: 401 }, 21: { start: 402, end: 421 },
+  22: { start: 422, end: 441 }, 23: { start: 442, end: 461 }, 24: { start: 462, end: 481 },
+  25: { start: 482, end: 501 }, 26: { start: 502, end: 521 }, 27: { start: 522, end: 541 },
+  28: { start: 542, end: 561 }, 29: { start: 562, end: 581 }, 30: { start: 582, end: 604 }
 };
-
-// ==========================================
-// 3. PRE-CALCULATION
-// ==========================================
 
 const SDQ_INDEX_MAP: Record<number, number> = {};
 const SDQ_JUZ_START_OFFSET: Record<number, number> = {};
 
+// Pre-calculate offsets
 (() => {
   let cumulativeLines = 0;
   SDQ_JUZ_ORDER.forEach((juz, index) => {
@@ -80,7 +56,7 @@ const SDQ_JUZ_START_OFFSET: Record<number, number> = {};
 })();
 
 // ==========================================
-// 4. THE ENGINE CLASS
+// 3. ENGINE CLASS
 // ==========================================
 
 export class TahfizhEngineSDQ {
@@ -101,7 +77,6 @@ export class TahfizhEngineSDQ {
     };
 
     if (map[normalized]) return map[normalized];
-    if (map[normalized.replace("al-", "al ")]) return map[normalized.replace("al-", "al ")];
     return normalized.replace(/\b\w/g, c => c.toUpperCase());
   }
 
@@ -114,10 +89,9 @@ export class TahfizhEngineSDQ {
     if (ayah < 1 || ayah > meta.totalAyah) return null;
 
     const key = `${metaKey}:${ayah}`;
-    if (QURAN_FULL_MAP[key]) {
-      return QURAN_FULL_MAP[key];
-    }
+    if (QURAN_FULL_MAP[key]) return QURAN_FULL_MAP[key];
 
+    // Fallback logic
     const totalPages = meta.endPage - meta.startPage + 1;
     const relativePage = Math.floor(((ayah - 1) / meta.totalAyah) * totalPages);
     const estimatedPage = Math.min(meta.endPage, meta.startPage + relativePage);
@@ -130,129 +104,99 @@ export class TahfizhEngineSDQ {
         break;
       }
     }
-
     return { juz: estimatedJuz, page: estimatedPage, line: 1 };
   }
 
   private static getGlobalSDQLine(coord: QuranAyahData): number {
-    const juzOffset = SDQ_JUZ_START_OFFSET[coord.juz];
-    if (juzOffset === undefined) throw new Error(`Juz ${coord.juz} not found`);
-
-    const juzStartPage = JUZ_PAGE_LIMITS[coord.juz].start;
-    const pageIndexInJuz = coord.page - juzStartPage;
-    if (pageIndexInJuz < 0) return juzOffset; 
-
-    const pageOffsetLines = pageIndexInJuz * LINES_PER_PAGE;
-    return juzOffset + pageOffsetLines + coord.line;
+    const juzOffset = SDQ_JUZ_START_OFFSET[coord.juz] ?? 0;
+    const juzStartPage = JUZ_PAGE_LIMITS[coord.juz]?.start ?? 1;
+    const pageIndexInJuz = Math.max(0, coord.page - juzStartPage);
+    return juzOffset + (pageIndexInJuz * LINES_PER_PAGE) + coord.line;
   }
 
-  // =========================================================
-  // UPDATE: Return 'null' instead of 'undefined' for reason
-  // =========================================================
-
+  /**
+   * Menghitung range dengan jaminan tidak ada nilai 'undefined'
+   */
   public static calculateRange(startSurah: string, startAyah: number, endSurah: string, endAyah: number): SafeCalculationResult {
+    // Default Failure Object
+    const fail = (msg: string): SafeCalculationResult => ({
+      valid: false,
+      pages: 0,
+      lines: 0,
+      totalLines: 0,
+      reason: msg
+    });
+
     try {
       const startCoord = this.getCoordinates(startSurah, startAyah);
       const endCoord = this.getCoordinates(endSurah, endAyah);
 
       if (!startCoord || !endCoord) {
-        return { 
-          valid: false, pages: 0, lines: 0, totalLines: 0, 
-          reason: `Surah/Ayat tidak ditemukan: ${!startCoord ? startSurah : endSurah}` 
-        };
+        return fail(`Surah/Ayat tidak ditemukan: ${!startCoord ? startSurah : endSurah}`);
       }
 
       const startIdx = SDQ_INDEX_MAP[startCoord.juz];
       const endIdx = SDQ_INDEX_MAP[endCoord.juz];
 
-      if (endIdx < startIdx) {
-        return { 
-          valid: false, pages: 0, lines: 0, totalLines: 0, 
-          reason: "Mundur Kurikulum (Urutan Juz Terbalik)" 
-        };
-      }
+      if (endIdx < startIdx) return fail("Mundur Kurikulum (Juz Terbalik)");
 
       const absStart = this.getGlobalSDQLine(startCoord);
       const absEnd = this.getGlobalSDQLine(endCoord);
 
-      if (absEnd < absStart) {
-        return { 
-          valid: false, pages: 0, lines: 0, totalLines: 0, 
-          reason: "Ayat terbalik (Akhir < Awal)" 
-        };
-      }
+      if (absEnd < absStart) return fail("Ayat terbalik (Akhir < Awal)");
 
       const totalLines = absEnd - absStart + 1;
-      const pages = Math.floor(totalLines / LINES_PER_PAGE);
-      const lines = totalLines % LINES_PER_PAGE;
-
+      
       return {
         valid: true,
-        pages,
-        lines,
-        totalLines,
-        reason: null // SUCCESS: Kirim null (bukan undefined) agar aman di Firestore
+        pages: Math.floor(totalLines / LINES_PER_PAGE),
+        lines: totalLines % LINES_PER_PAGE,
+        totalLines: totalLines,
+        reason: null // Firestore safe
       };
 
-    } catch (e: any) {
-      console.error("SDQ Engine Error:", e);
-      return { 
-        valid: false, pages: 0, lines: 0, totalLines: 0, 
-        reason: "Internal Calculation Error" 
-      };
+    } catch (e) {
+      return fail("Internal Engine Error");
     }
   }
 
   public static parseAndCalculate(rangeStr: string): SafeCalculationResult {
-    // 1. Validasi Input Awal
-    if (!rangeStr || typeof rangeStr !== 'string') {
-      return { valid: false, pages: 0, lines: 0, totalLines: 0, reason: "Input Kosong" };
-    }
-    const cleanStr = rangeStr.trim();
-    if (cleanStr === '-' || cleanStr === '') {
-      return { valid: false, pages: 0, lines: 0, totalLines: 0, reason: "Input Kosong" };
+    const fail = (msg: string): SafeCalculationResult => ({
+      valid: false, pages: 0, lines: 0, totalLines: 0, reason: msg
+    });
+
+    if (!rangeStr || rangeStr.trim() === '-' || rangeStr.trim() === '') {
+      // Jika kosong, kembalikan valid: true tapi nol agar tidak error di Firestore
+      return { valid: true, pages: 0, lines: 0, totalLines: 0, reason: null };
     }
 
     try {
-      const parts = cleanStr.split(/\s*[-–]\s*/);
-      
-      if (parts.length < 2) {
-        return { valid: false, pages: 0, lines: 0, totalLines: 0, reason: "Format harus 'Awal - Akhir'" };
-      }
-
-      const startRaw = parts[0].trim();
-      let endRaw = parts[1].trim();
+      const parts = rangeStr.split(/\s*[-–]\s*/);
+      if (parts.length < 2) return fail("Format salah (Gunakan separator '-')");
 
       const parseRef = (s: string) => {
         const match = s.match(/^(.*?)[\s:]+(\d+)$/);
-        if (match) return { surah: match[1].trim(), ayah: parseInt(match[2]) };
-        return null;
+        return match ? { surah: match[1].trim(), ayah: parseInt(match[2]) } : null;
       };
 
-      const startObj = parseRef(startRaw);
-      if (!startObj) {
-        return { valid: false, pages: 0, lines: 0, totalLines: 0, reason: "Format Awal Salah" };
-      }
+      const startObj = parseRef(parts[0]);
+      if (!startObj) return fail("Format awal salah");
 
       let endSurah = startObj.surah;
       let endAyah = 0;
 
-      if (/^\d+$/.test(endRaw)) {
-        endAyah = parseInt(endRaw);
+      if (/^\d+$/.test(parts[1].trim())) {
+        endAyah = parseInt(parts[1].trim());
       } else {
-        const endObj = parseRef(endRaw);
-        if (endObj) {
-          endSurah = endObj.surah;
-          endAyah = endObj.ayah;
-        } else {
-          return { valid: false, pages: 0, lines: 0, totalLines: 0, reason: "Format Akhir Salah" };
-        }
+        const endObj = parseRef(parts[1]);
+        if (!endObj) return fail("Format akhir salah");
+        endSurah = endObj.surah;
+        endAyah = endObj.ayah;
       }
 
       return this.calculateRange(startObj.surah, startObj.ayah, endSurah, endAyah);
-
-    } catch (e) {
-      return { valid: false, pages: 0, lines: 0, totalLines: 0, reason: "Gagal memproses teks input" };
+    } catch {
+      return fail("Parser Error");
     }
   }
 }
