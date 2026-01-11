@@ -110,7 +110,7 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
   const [academicYear, setAcademicYear] = useState('2025/2026');
   const [month, setMonth] = useState('Desember');
   
-  // Default State Klasikal (Value '' agar dropdown "Pilih...")
+  // Default State Klasikal
   const [klasikalTahfizh, setKlasikalTahfizh] = useState<{
     from: { surah: string; ayah: number | string };
     to: { surah: string; ayah: number | string };
@@ -121,12 +121,12 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
 
   const [klasikalTilawah, setKlasikalTilawah] = useState<{
     type: 'quran' | 'iqra';
-    from: { surah: string; ayah: number | string; jilid: number; halaman: number | string };
-    to: { surah: string; ayah: number | string; jilid: number; halaman: number | string };
+    from: { surah: string; ayah: number | string; jilid: number | string; halaman: number | string };
+    to: { surah: string; ayah: number | string; jilid: number | string; halaman: number | string };
   }>({
     type: 'quran',
-    from: { surah: '', ayah: '', jilid: 0, halaman: '' },
-    to: { surah: '', ayah: '', jilid: 0, halaman: '' }
+    from: { surah: '', ayah: '', jilid: '', halaman: '' },
+    to: { surah: '', ayah: '', jilid: '', halaman: '' }
   });
 
   const [attendance, setAttendance] = useState<number>(100);
@@ -169,19 +169,31 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
       if (!teacherId || !month) return;
       const existing = await getHalaqahMonthlyReport(teacherId, month);
       if (existing) {
-        setKlasikalTahfizh(existing.klasikal.tahfizh);
+        setKlasikalTahfizh({
+          from: { surah: existing.klasikal.tahfizh.from.surah, ayah: existing.klasikal.tahfizh.from.ayah || '' },
+          to: { surah: existing.klasikal.tahfizh.to.surah, ayah: existing.klasikal.tahfizh.to.ayah || '' }
+        });
         setKlasikalTilawah({
           type: existing.klasikal.tilawah.type,
-          from: { ...klasikalTilawah.from, ...existing.klasikal.tilawah.from },
-          to: { ...klasikalTilawah.to, ...existing.klasikal.tilawah.to }
+          from: { 
+            surah: existing.klasikal.tilawah.from.surah || '', 
+            ayah: existing.klasikal.tilawah.from.ayah || '', 
+            jilid: existing.klasikal.tilawah.from.jilid || '', 
+            halaman: existing.klasikal.tilawah.from.halaman || '' 
+          },
+          to: { 
+            surah: existing.klasikal.tilawah.to.surah || '', 
+            ayah: existing.klasikal.tilawah.to.ayah || '', 
+            jilid: existing.klasikal.tilawah.to.jilid || '', 
+            halaman: existing.klasikal.tilawah.to.halaman || '' 
+          }
         });
       } else {
-        // Reset ke state kosong jika tidak ada data
         setKlasikalTahfizh({ from: { surah: '', ayah: '' }, to: { surah: '', ayah: '' } });
         setKlasikalTilawah({
           type: 'quran',
-          from: { surah: '', ayah: '', jilid: 0, halaman: '' },
-          to: { surah: '', ayah: '', jilid: 0, halaman: '' }
+          from: { surah: '', ayah: '', jilid: '', halaman: '' },
+          to: { surah: '', ayah: '', jilid: '', halaman: '' }
         });
       }
     };
@@ -201,24 +213,23 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
       setBehaviorScore(r.behaviorScore || 10);
       setNotes(r.notes || '');
 
-      // Load Total Hafalan if exists
       if (r.totalHafalan) {
-        setBaselineJuz(r.totalHafalan.juz || 0);
-        setBaselinePages(r.totalHafalan.pages || 0);
-        setBaselineLines(r.totalHafalan.lines || 0);
+        setBaselineJuz(r.totalHafalan.juz ?? 0);
+        setBaselinePages(r.totalHafalan.pages ?? 0);
+        setBaselineLines(r.totalHafalan.lines ?? 0);
       }
 
       const parseRange = (range: string) => {
         if (!range || range === '-') return { fs: '', fv: '', ts: '', tv: '' };
         const parts = range.split(' - ');
-        const p1 = parts[0].split(':');
-        const p2 = parts[1]?.split(':') || p1;
-        return { 
-          fs: p1[0].trim(), 
-          fv: parseInt(p1[1]) || '', 
-          ts: p2[0].trim(), 
-          tv: parseInt(p2[1]) || '' 
+        const parsePart = (p: string) => {
+          const m = p.match(/^(.*?)\s*:\s*(.*)$/);
+          if (m) return { s: m[1].trim(), v: m[2].trim() === '-' ? '' : m[2].trim() };
+          return { s: p.trim(), v: '' };
         };
+        const p1 = parsePart(parts[0]);
+        const p2 = parts[1] ? parsePart(parts[1]) : p1;
+        return { fs: p1.s, fv: p1.v, ts: p2.s, tv: p2.v };
       };
 
       const tfObj = parseRange(r.tahfizh.individual);
@@ -232,8 +243,7 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
     }
   }, [location]);
 
-  // Calculations
-  const safeNum = (val: string | number) => (typeof val === 'number' ? val : 0);
+  const safeNum = (val: string | number) => (val === '' ? 0 : Number(val));
 
   useEffect(() => {
     const result = calculateHafalan(tilawahFromSurah, safeNum(tilawahFromVerse), tilawahToSurah, safeNum(tilawahToVerse));
@@ -259,9 +269,6 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
     
     setIsSaving(true);
     try {
-      // Clean up klasikal data before save (convert empty strings to numbers where needed for backend compatibility if strict)
-      // But Firestore handles mixed types fine.
-      
       await saveHalaqahMonthlyReport({
         halaqahId: teacherId || '',
         teacherId: teacherId || '',
@@ -276,10 +283,10 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
             type: klasikalTilawah.type,
             from: klasikalTilawah.type === 'quran' 
               ? { surah: klasikalTilawah.from.surah, ayah: safeNum(klasikalTilawah.from.ayah) } 
-              : { jilid: klasikalTilawah.from.jilid, halaman: safeNum(klasikalTilawah.from.halaman) },
+              : { jilid: safeNum(klasikalTilawah.from.jilid), halaman: safeNum(klasikalTilawah.from.halaman) },
             to: klasikalTilawah.type === 'quran' 
               ? { surah: klasikalTilawah.to.surah, ayah: safeNum(klasikalTilawah.to.ayah) } 
-              : { jilid: klasikalTilawah.to.jilid, halaman: safeNum(klasikalTilawah.to.halaman) },
+              : { jilid: safeNum(klasikalTilawah.to.jilid), halaman: safeNum(klasikalTilawah.to.halaman) },
           }
         }
       });
@@ -287,7 +294,6 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
       const fmt = (surah: string, verse: number | string) => (surah ? `${surah}: ${verse === '' ? '-' : verse}` : '-');
       const makeRange = (fs: string, fv: number | string, ts: string, tv: number | string) => (!fs && !ts ? '-' : `${fmt(fs, fv)} - ${fmt(ts, tv)}`);
 
-      // SAVE REPORT: Selalu sertakan Total Hafalan untuk semua tipe laporan
       await saveSDQReport({
         studentId, studentName: selectedStudent.name, teacherId: teacherId || '', className: selectedStudent.className, 
         type: reportType, month, academicYear, date: new Date().toISOString().split('T')[0], evaluation: '',
@@ -306,7 +312,6 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
       if (state?.editReportId) navigate('/guru/view-report');
       else { 
         setNotes(''); 
-        // Reset individual input but keep accumulated data logic? Usually reset individual.
         setTahfizhFromVerse(''); setTahfizhToVerse('');
         setTilawahFromVerse(''); setTilawahToVerse('');
       }
@@ -360,26 +365,24 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
            <div className="flex items-center gap-3"><Layers className="text-primary-600" /><div><h3 className="font-bold text-primary-900 text-sm uppercase">Capaian Klasikal Halaqah</h3></div></div>
         </div>
         <div className="p-6 space-y-8">
-           {/* Tahfizh Klasikal */}
            <div className="space-y-4">
               <h4 className="text-[11px] font-black text-gray-700 uppercase tracking-widest flex items-center gap-2"><Book size={14} className="text-emerald-500" /> Tahfizh Klasikal</h4>
               <div className="flex flex-col md:flex-row gap-4 items-end bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
                  <div className="flex-1 space-y-2"><p className="text-[10px] font-bold text-gray-400 ml-1 uppercase">Dari</p>
                     <div className="flex gap-2">
-                       <SourceSelect placeholder="Pilih..." value={klasikalTahfizh.from.surah} onChange={v => setKlasikalTahfizh({...klasikalTahfizh, from: {...klasikalTahfizh.from, surah: v}})} method="Al-Quran" />
+                       <SourceSelect value={klasikalTahfizh.from.surah} onChange={v => setKlasikalTahfizh({...klasikalTahfizh, from: {...klasikalTahfizh.from, surah: v}})} method="Al-Quran" />
                        <CounterInput label="Ayat" value={klasikalTahfizh.from.ayah} onChange={v => setKlasikalTahfizh({...klasikalTahfizh, from: {...klasikalTahfizh.from, ayah: v}})} />
                     </div>
                  </div>
                  <div className="flex-1 space-y-2"><p className="text-[10px] font-bold text-gray-400 ml-1 uppercase">Sampai</p>
                     <div className="flex gap-2">
-                       <SourceSelect placeholder="Pilih..." value={klasikalTahfizh.to.surah} onChange={v => setKlasikalTahfizh({...klasikalTahfizh, to: {...klasikalTahfizh.to, surah: v}})} method="Al-Quran" />
+                       <SourceSelect value={klasikalTahfizh.to.surah} onChange={v => setKlasikalTahfizh({...klasikalTahfizh, to: {...klasikalTahfizh.to, surah: v}})} method="Al-Quran" />
                        <CounterInput label="Ayat" value={klasikalTahfizh.to.ayah} onChange={v => setKlasikalTahfizh({...klasikalTahfizh, to: {...klasikalTahfizh.to, ayah: v}})} />
                     </div>
                  </div>
               </div>
            </div>
 
-           {/* Tilawah Klasikal */}
            <div className="space-y-4">
               <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                 <h4 className="text-[11px] font-black text-gray-700 uppercase tracking-widest flex items-center gap-2"><BookOpen size={14} className="text-blue-500" /> Tilawah Klasikal</h4>
@@ -393,13 +396,13 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
                     <>
                       <div className="flex-1 space-y-2"><p className="text-[10px] font-bold text-gray-400 ml-1 uppercase">Dari</p>
                         <div className="flex gap-2">
-                          <SourceSelect placeholder="Pilih..." value={klasikalTilawah.from.surah} onChange={v => setKlasikalTilawah({...klasikalTilawah, from: {...klasikalTilawah.from, surah: v}})} method="Al-Quran" />
+                          <SourceSelect value={klasikalTilawah.from.surah} onChange={v => setKlasikalTilawah({...klasikalTilawah, from: {...klasikalTilawah.from, surah: v}})} method="Al-Quran" />
                           <CounterInput label="Ayat" value={klasikalTilawah.from.ayah} onChange={v => setKlasikalTilawah({...klasikalTilawah, from: {...klasikalTilawah.from, ayah: v}})} />
                         </div>
                       </div>
                       <div className="flex-1 space-y-2"><p className="text-[10px] font-bold text-gray-400 ml-1 uppercase">Sampai</p>
                         <div className="flex gap-2">
-                          <SourceSelect placeholder="Pilih..." value={klasikalTilawah.to.surah} onChange={v => setKlasikalTilawah({...klasikalTilawah, to: {...klasikalTilawah.to, surah: v}})} method="Al-Quran" />
+                          <SourceSelect value={klasikalTilawah.to.surah} onChange={v => setKlasikalTilawah({...klasikalTilawah, to: {...klasikalTilawah.to, surah: v}})} method="Al-Quran" />
                           <CounterInput label="Ayat" value={klasikalTilawah.to.ayah} onChange={v => setKlasikalTilawah({...klasikalTilawah, to: {...klasikalTilawah.to, ayah: v}})} />
                         </div>
                       </div>
@@ -408,7 +411,7 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
                     <>
                       <div className="flex-1 space-y-2"><p className="text-[10px] font-bold text-gray-400 ml-1 uppercase">Dari</p>
                         <div className="flex gap-2">
-                          <select value={klasikalTilawah.from.jilid || ''} onChange={e => setKlasikalTilawah({...klasikalTilawah, from: {...klasikalTilawah.from, jilid: parseInt(e.target.value)}})} className="flex-1 p-2 border border-gray-200 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500">
+                          <select value={klasikalTilawah.from.jilid} onChange={e => setKlasikalTilawah({...klasikalTilawah, from: {...klasikalTilawah.from, jilid: e.target.value}})} className="flex-1 p-2 border border-gray-200 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500">
                             <option value="">Pilih...</option>
                             {IQRA_JILIDS.map(j => <option key={j} value={j}>Iqra' {j}</option>)}
                           </select>
@@ -417,7 +420,7 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
                       </div>
                       <div className="flex-1 space-y-2"><p className="text-[10px] font-bold text-gray-400 ml-1 uppercase">Sampai</p>
                         <div className="flex gap-2">
-                          <select value={klasikalTilawah.to.jilid || ''} onChange={e => setKlasikalTilawah({...klasikalTilawah, to: {...klasikalTilawah.to, jilid: parseInt(e.target.value)}})} className="flex-1 p-2 border border-gray-200 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500">
+                          <select value={klasikalTilawah.to.jilid} onChange={e => setKlasikalTilawah({...klasikalTilawah, to: {...klasikalTilawah.to, jilid: e.target.value}})} className="flex-1 p-2 border border-gray-200 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500">
                             <option value="">Pilih...</option>
                             {IQRA_JILIDS.map(j => <option key={j} value={j}>Iqra' {j}</option>)}
                           </select>

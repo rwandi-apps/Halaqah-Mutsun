@@ -15,7 +15,6 @@ interface GuruViewReportPageProps {
 const ACADEMIC_YEARS = ["2023/2024", "2024/2025", "2025/2026"];
 const MONTHS = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
-// Helper: Format Rentang Surat (Compact Mode)
 const formatCompactRangeString = (rangeStr: string | undefined) => {
   if (!rangeStr || rangeStr === '-' || rangeStr.trim() === '') return "-";
   
@@ -23,8 +22,8 @@ const formatCompactRangeString = (rangeStr: string | undefined) => {
   if (parts.length !== 2) return rangeStr;
 
   const parse = (s: string) => {
-    const match = s.match(/^(.*?):?\s*(\d+)$/);
-    if (match) return { surah: match[1].trim(), ayah: match[2] };
+    const match = s.match(/^(.*?):?\s*(.*)$/);
+    if (match) return { surah: match[1].trim(), ayah: match[2].trim() };
     return null;
   };
 
@@ -38,7 +37,6 @@ const formatCompactRangeString = (rangeStr: string | undefined) => {
   return rangeStr;
 };
 
-// Helper: Format Total Hafalan Adaptif
 const formatTotalHafalan = (total: { juz: number; pages: number; lines: number } | undefined) => {
   if (!total) return '-';
   const j = Number(total.juz || 0);
@@ -49,7 +47,6 @@ const formatTotalHafalan = (total: { juz: number; pages: number; lines: number }
   return parts.length > 0 ? parts.join(' ') : '0 Juz'; 
 };
 
-// Logika Kompatibilitas Data Klasikal (String vs Object) + Formatter Compact
 const formatKlasikalDisplay = (klasikal: any, type: 'tahfizh' | 'tilawah' = 'tahfizh') => {
   if (!klasikal) return { text: "-", isNew: false };
   
@@ -67,14 +64,17 @@ const formatKlasikalDisplay = (klasikal: any, type: 'tahfizh' | 'tilawah' = 'tah
       if (!from || !to) return { text: "-", isNew: false };
       
       let formattedText = "";
-      if (target.type === 'iqra' || (from.jilid !== undefined)) {
+      const startV = from.ayah !== undefined ? from.ayah : from.halaman;
+      const endV = to.ayah !== undefined ? to.ayah : to.halaman;
+
+      if (target.type === 'iqra' || (from.jilid !== undefined && from.jilid !== null)) {
         formattedText = from.jilid === to.jilid 
-          ? `Iqra ${from.jilid}: ${from.halaman}–${to.halaman}` 
-          : `Iqra ${from.jilid}:${from.halaman} – ${to.jilid}:${to.halaman}`;
+          ? `Iqra ${from.jilid}: ${startV}–${endV}` 
+          : `Iqra ${from.jilid}:${startV} – ${to.jilid}:${endV}`;
       } else {
         formattedText = from.surah === to.surah 
-          ? `${from.surah}: ${from.ayah}–${to.ayah}` 
-          : `${from.surah}:${from.ayah} – ${to.surah}:${to.ayah}`;
+          ? `${from.surah}: ${startV}–${endV}` 
+          : `${from.surah}:${startV} – ${to.surah}:${endV}`;
       }
       return { text: formattedText, isNew: true };
     } catch (e) { return { text: "-", isNew: false }; }
@@ -83,20 +83,20 @@ const formatKlasikalDisplay = (klasikal: any, type: 'tahfizh' | 'tilawah' = 'tah
 };
 
 const getCalculationDisplay = (rangeStr: string | undefined) => {
-  if (!rangeStr || rangeStr === '-' || rangeStr.trim() === '') return "-";
+  if (!rangeStr || rangeStr === '-' || rangeStr.trim() === '' || rangeStr.trim() === 'Belum Ada') return "-";
   
   const result = calculateFromRangeString(rangeStr);
   
-  // Jika hasil hitung > 0, tampilkan
-  if (result.pages > 0) return `${result.pages} Hal`;
-  if (result.lines > 0) return `${result.lines} Brs`;
+  const totalL = (result.pages * 15) + result.lines;
+  if (totalL === 0) return "-";
+
+  const parts = [];
+  if (result.pages > 0) parts.push(`${result.pages} Hal`);
+  if (result.lines > 0) parts.push(`${result.lines} Brs`);
   
-  // Jika hasil 0 tapi string input valid (misal salah ketik format), tetap return 0 Brs
-  // TAPI jika string kosong atau dash, return "-" agar tidak membingungkan
-  return "-"; 
+  return parts.join(' ');
 };
 
-// Helper: Teks Keterangan Tanpa Angka (Neutral & Pembinaan)
 const getStatusBadge = (rangeStr: string | undefined, reportType: string) => {
   if (!rangeStr || rangeStr === '-') return <span className="text-[10px] font-extrabold text-orange-500 uppercase tracking-tighter">BELUM TERCAPAI</span>;
   
@@ -117,7 +117,6 @@ const GuruViewReportPage: React.FC<GuruViewReportPageProps> = ({ teacherId = '1'
   const [klasikalMap, setKlasikalMap] = useState<Record<string, HalaqahMonthlyReport>>({});
   const [isLoading, setIsLoading] = useState(true);
 
-  // Filter States
   const [search, setSearch] = useState('');
   const [filterYear, setFilterYear] = useState('2025/2026');
   const [filterType, setFilterType] = useState('Laporan Bulanan');
@@ -163,7 +162,6 @@ const GuruViewReportPage: React.FC<GuruViewReportPageProps> = ({ teacherId = '1'
   }, [search, filterYear, filterType, filterMonth, filterSemester, reports]);
 
   const handleEditReport = (report: Report) => {
-    // Navigasi ke form input dengan membawa data edit
     navigate('/guru/laporan', { state: { editReportId: report.id, reportData: report } });
   };
 
@@ -276,21 +274,17 @@ const GuruViewReportPage: React.FC<GuruViewReportPageProps> = ({ teacherId = '1'
                       </td>
                       <td className="px-4 py-4 border-r border-gray-50 text-center font-black text-teal-700 bg-teal-50/20">{formatTotalHafalan(report.totalHafalan)}</td>
                       
-                      {/* TILAWAH */}
                       <td className="px-2 py-4 border-r border-gray-50 text-center text-gray-400 italic font-medium whitespace-normal min-w-[100px]">{resTilawah.text}</td>
                       <td className="px-2 py-4 border-r border-gray-50 text-center font-bold text-gray-700">{compactIndividualTilawah}</td>
                       <td className="px-2 py-4 border-r border-gray-50 text-center font-black text-blue-600 bg-blue-50/30">{getCalculationDisplay(effectiveTilawahRange)}</td>
                       
-                      {/* TAHFIZH */}
                       <td className="px-2 py-4 border-r border-gray-50 text-center text-gray-400 italic font-medium whitespace-normal min-w-[100px]">{resTahfizh.text}</td>
                       <td className="px-2 py-4 border-r border-gray-50 text-center font-bold text-gray-700">{compactIndividualTahfizh}</td>
                       <td className="px-2 py-4 border-r border-gray-50 text-center font-black text-emerald-600 bg-emerald-50/30">{getCalculationDisplay(effectiveTahfizhRange)}</td>
                       
-                      {/* STATUS & NOTES */}
                       <td className="px-4 py-4 border-r border-gray-50 text-center">{getStatusBadge(effectiveTahfizhRange, report.type)}</td>
                       <td className="px-4 py-4 border-r border-gray-50 min-w-[150px]"><div className="text-gray-500 italic max-w-[200px] whitespace-normal line-clamp-2 leading-relaxed">"{report.notes || "-"}</div></td>
                       
-                      {/* AKSI */}
                       <td className="px-4 py-4 text-center">
                         <div className="flex gap-2 justify-center">
                            <button onClick={() => handleEditReport(report)} className="p-2 text-primary-600 hover:bg-primary-50 rounded-xl transition-all shadow-sm bg-white border border-gray-100" title="Edit Laporan"><Edit2 size={14} /></button>
