@@ -336,7 +336,21 @@ export class TahfizhEngineSDQ {
     };
 
     if (map[n]) return map[n];
-      // ==========================================
+
+    // Capitalize Standard
+    return n.replace(/(^|-)(\w)/g, (match) => match.toUpperCase());
+  }
+
+  private static isIqra(name: string): boolean {
+    const n = name.toLowerCase();
+    return n.includes('iqra') || n.includes('jilid');
+  }
+
+  private static getIqraJilid(name: string): number {
+    const m = name.match(/\d+/);
+    return m ? parseInt(m[0], 10) : 0;
+  }
+  // ==========================================
   // 5. COMPATIBILITY WRAPPER (FIX ERROR)
   // ==========================================
 
@@ -368,19 +382,5 @@ export class TahfizhEngineSDQ {
       totalLines: totalLines,              // Hitung total absolut baris
       reason: ultimateResult.reason
     };
-  }
-
-    // Capitalize Standard
-    return n.replace(/(^|-)(\w)/g, (match) => match.toUpperCase());
-  }
-
-  private static isIqra(name: string): boolean {
-    const n = name.toLowerCase();
-    return n.includes('iqra') || n.includes('jilid');
-  }
-
-  private static getIqraJilid(name: string): number {
-    const m = name.match(/\d+/);
-    return m ? parseInt(m[0], 10) : 0;
   }
 }
