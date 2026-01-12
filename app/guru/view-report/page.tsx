@@ -86,15 +86,31 @@ const formatKlasikalDisplay = (klasikal: any, type: 'tahfizh' | 'tilawah' = 'tah
 };
 
 /**
+ * Normalisasi Input Range sebelum masuk Engine.
+ * Membersihkan format UI yang kotor (prefix colon, en-dash, dll).
+ */
+const normalizeRangeInput = (raw: string | undefined): string => {
+  if (!raw || typeof raw !== 'string') return "";
+  
+  return raw
+    .replace(/^[:\s]+/, '') // Hapus prefix colon dan spasi di awal (": ")
+    .replace(/–/g, '-')     // Ganti en-dash (–) menjadi hyphen standard (-)
+    .replace(/\s+/g, ' ')   // Normalisasi spasi berlebih
+    .trim();
+};
+
+/**
  * UI FIX: Menampilkan hasil perhitungan engine dengan format absolut.
  * Aturan: Angka 0 adalah nilai sah dan wajib ditampilkan.
  */
 const getCalculationDisplay = (rangeStr: string | undefined) => {
-  if (!rangeStr || rangeStr === '-' || rangeStr.trim() === '' || rangeStr.trim() === 'Belum Ada') {
+  const cleanRange = normalizeRangeInput(rangeStr);
+
+  if (!cleanRange || cleanRange === '-' || cleanRange === '' || cleanRange === 'Belum Ada') {
     return "-";
   }
   
-  const result = calculateFromRangeString(rangeStr);
+  const result = calculateFromRangeString(cleanRange);
   
   // Jika engine menyatakan tidak valid, baru tampilkan dash
   if (!result.valid) {
@@ -108,9 +124,10 @@ const getCalculationDisplay = (rangeStr: string | undefined) => {
 
 // Helper: Teks Keterangan Tanpa Angka (Neutral & Pembinaan)
 const getStatusBadge = (rangeStr: string | undefined, reportType: string) => {
-  if (!rangeStr || rangeStr === '-') return <span className="text-[10px] font-extrabold text-orange-500 uppercase tracking-tighter">BELUM TERCAPAI</span>;
+  const cleanRange = normalizeRangeInput(rangeStr);
+  if (!cleanRange || cleanRange === '-') return <span className="text-[10px] font-extrabold text-orange-500 uppercase tracking-tighter">BELUM TERCAPAI</span>;
   
-  const result = calculateFromRangeString(rangeStr);
+  const result = calculateFromRangeString(cleanRange);
   const targetPages = reportType === 'Laporan Semester' ? 10 : 2; 
 
   if (result.pages >= targetPages) {
@@ -184,7 +201,10 @@ const GuruViewReportPage: React.FC<GuruViewReportPageProps> = ({ teacherId = '1'
       const lRes = formatKlasikalDisplay(klasikalData || report.tilawah.classical, 'tilawah');
       
       const tahfizhSource = (report.tahfizh.individual && report.tahfizh.individual !== '-' && report.tahfizh.individual.trim() !== '') ? report.tahfizh.individual : tRes.text;
-      const tahfizhCalc = calculateFromRangeString(tahfizhSource);
+      
+      // Calculate Tahfizh Result with Normalization
+      const cleanTahfizhSource = normalizeRangeInput(tahfizhSource);
+      const tahfizhCalc = calculateFromRangeString(cleanTahfizhSource);
       const tahfizhHasil = tahfizhCalc.valid ? `${tahfizhCalc.pages} Halaman ${tahfizhCalc.lines} Baris` : '-';
 
       return {
