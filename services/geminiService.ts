@@ -185,7 +185,7 @@ export const generateStudentEvaluation = async (student: Student): Promise<strin
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-3-flash-preview',
       contents: userPrompt,
       config: { 
         systemInstruction: systemInstruction,
