@@ -15,34 +15,42 @@ interface GuruViewReportPageProps {
 const ACADEMIC_YEARS = ["2023/2024", "2024/2025", "2025/2026"];
 const MONTHS = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
-// Helper: Format Rentang Surat (Compact Mode)
-// Rules:
-// 1. Repetisi: "Al-Baqarah:51 - Al-Baqarah:223" -> "Al-Baqarah:51-223"
-// 2. Beda Surat: "Al-Baqarah:135 - An-Nisa':35" (Tetap)
-const formatCompactRangeString = (rangeStr: string | undefined) => {
-  if (!rangeStr || rangeStr === '-' || rangeStr.trim() === '' || rangeStr.trim() === '0 - 0') return "-";
+/**
+ * Normalisasi Input Range sebelum masuk ke Engine Perhitungan.
+ * Menangani karakter kotor dari UI (prefix colon, en-dash, spasi ganda).
+ */
+const normalizeRangeInput = (raw: string | undefined): string => {
+  if (!raw || typeof raw !== 'string') return "";
   
-  // Normalisasi separator
-  const parts = rangeStr.split(/\s*[-–]\s*/);
-  if (parts.length !== 2) return rangeStr;
+  return raw
+    .replace(/^[:\s]+/, '') // Hapus ": " atau spasi di awal string
+    .replace(/–/g, '-')     // Ganti en-dash (–) menjadi hyphen standard (-)
+    .replace(/\s+/g, ' ')   // Bersihkan spasi berlebih
+    .trim();
+};
+
+// Helper: Format Rentang Surat untuk tampilan kolom (Compact Mode)
+const formatCompactRangeString = (rangeStr: string | undefined) => {
+  const clean = normalizeRangeInput(rangeStr);
+  if (!clean || clean === '-' || clean === '0 - 0' || clean === 'Belum Ada') return "-";
+  
+  const parts = clean.split(/\s*[-]\s*/);
+  if (parts.length !== 2) return clean;
 
   const parse = (s: string) => {
-    // Regex: Tangkap nama surat (bisa ada spasi/tanda petik) dan nomor ayat di akhir
     const match = s.match(/^(.*?)\s*:\s*(\d+)$/);
     if (match) return { surah: match[1].trim(), ayah: match[2].trim() };
     return null;
   };
 
-  const start = parse(parts[0].trim());
-  const end = parse(parts[1].trim());
+  const start = parse(parts[0]);
+  const end = parse(parts[1]);
 
-  // Rule 1: Jika Nama Surat Sama -> Gabungkan
   if (start && end && start.surah === end.surah) {
     return `${start.surah}:${start.ayah}-${end.ayah}`;
   }
 
-  // Rule 2: Jika Beda, kembalikan dengan separator bersih
-  return `${parts[0].trim()} - ${parts[1].trim()}`;
+  return `${parts[0]} - ${parts[1]}`;
 };
 
 // Helper: Format Total Hafalan Adaptif
@@ -56,7 +64,7 @@ const formatTotalHafalan = (total: { juz: number; pages: number; lines: number }
   return parts.length > 0 ? parts.join(' ') : '0 Juz'; 
 };
 
-// Logika Kompatibilitas Data Klasikal (String vs Object) + Formatter Compact
+// Logika Kompatibilitas Data Klasikal
 const formatKlasikalDisplay = (klasikal: any, type: 'tahfizh' | 'tilawah' = 'tahfizh') => {
   if (!klasikal) return { text: "-", isNew: false };
   
@@ -80,7 +88,7 @@ const formatKlasikalDisplay = (klasikal: any, type: 'tahfizh' | 'tilawah' = 'tah
       if (target.type === 'iqra' || (from.jilid !== undefined && from.jilid !== null)) {
         formattedText = from.jilid === to.jilid 
           ? `Iqra ${from.jilid}: ${startV}-${endV}` 
-          : `Iqra ${from.jilid}:${startV} - Iqra ${to.jilid}:${endV}`; // Explicit logic for Iqra different volumes
+          : `Iqra ${from.jilid}:${startV} - Iqra ${to.jilid}:${endV}`;
       } else {
         formattedText = from.surah === to.surah 
           ? `${from.surah}:${startV}-${endV}` 
@@ -93,22 +101,8 @@ const formatKlasikalDisplay = (klasikal: any, type: 'tahfizh' | 'tilawah' = 'tah
 };
 
 /**
- * Normalisasi Input Range sebelum masuk Engine.
- * Membersihkan format UI yang kotor (prefix colon, en-dash, dll).
- */
-const normalizeRangeInput = (raw: string | undefined): string => {
-  if (!raw || typeof raw !== 'string') return "";
-  
-  return raw
-    .replace(/^[:\s]+/, '') // Hapus prefix colon dan spasi di awal (": ")
-    .replace(/–/g, '-')     // Ganti en-dash (–) menjadi hyphen standard (-)
-    .replace(/\s+/g, ' ')   // Normalisasi spasi berlebih
-    .trim();
-};
-
-/**
  * UI FIX: Menampilkan hasil perhitungan engine dengan format absolut.
- * Aturan: Angka 0 adalah nilai sah dan wajib ditampilkan.
+ * Sekarang mendukung input kotor lewat normalisasi.
  */
 const getCalculationDisplay = (rangeStr: string | undefined) => {
   const cleanRange = normalizeRangeInput(rangeStr);
@@ -119,17 +113,17 @@ const getCalculationDisplay = (rangeStr: string | undefined) => {
   
   const result = calculateFromRangeString(cleanRange);
   
-  // Jika engine menyatakan tidak valid, baru tampilkan dash
+  // Jika engine menyatakan tidak valid (data tidak ada di QURAN_FULL_MAP), tampilkan dash
   if (!result.valid) {
     return "-";
   }
 
-  // Format HARUS lengkap: "{pages} Halaman {lines} Baris"
-  // JANGAN gunakan conditional rendering (result.pages > 0) karena akan menghilangkan angka 0
+  // OUTPUT SELALU EKSPLISIT: "{pages} Halaman {lines} Baris"
+  // Angka 0 tetap ditampilkan karena merupakan nilai capaian yang sah
   return `${result.pages} Halaman ${result.lines} Baris`;
 };
 
-// Helper: Teks Keterangan Tanpa Angka (Neutral & Pembinaan)
+// Helper: Badge Status Capaian
 const getStatusBadge = (rangeStr: string | undefined, reportType: string) => {
   const cleanRange = normalizeRangeInput(rangeStr);
   if (!cleanRange || cleanRange === '-') return <span className="text-[10px] font-extrabold text-orange-500 uppercase tracking-tighter">BELUM TERCAPAI</span>;
@@ -151,7 +145,6 @@ const GuruViewReportPage: React.FC<GuruViewReportPageProps> = ({ teacherId = '1'
   const [klasikalMap, setKlasikalMap] = useState<Record<string, HalaqahMonthlyReport>>({});
   const [isLoading, setIsLoading] = useState(true);
 
-  // Filter States
   const [search, setSearch] = useState('');
   const [filterYear, setFilterYear] = useState('2025/2026');
   const [filterType, setFilterType] = useState('Laporan Bulanan');
@@ -208,23 +201,15 @@ const GuruViewReportPage: React.FC<GuruViewReportPageProps> = ({ teacherId = '1'
       const lRes = formatKlasikalDisplay(klasikalData || report.tilawah.classical, 'tilawah');
       
       const tahfizhSource = (report.tahfizh.individual && report.tahfizh.individual !== '-' && report.tahfizh.individual.trim() !== '') ? report.tahfizh.individual : tRes.text;
-      
-      // Calculate Tahfizh Result with Normalization
-      const cleanTahfizhSource = normalizeRangeInput(tahfizhSource);
-      const tahfizhCalc = calculateFromRangeString(cleanTahfizhSource);
-      const tahfizhHasil = tahfizhCalc.valid ? `${tahfizhCalc.pages} Halaman ${tahfizhCalc.lines} Baris` : '-';
+      const tilawahSource = (report.tilawah.individual && report.tilawah.individual !== '-' && report.tilawah.individual.trim() !== '') ? report.tilawah.individual : lRes.text;
 
       return {
         "No": idx + 1,
         "Nama Siswa": report.studentName,
         "Tahun Ajaran": report.academicYear,
         "Periode": report.month,
-        "Total Hafalan": formatTotalHafalan(report.totalHafalan),
-        "Tahfizh Klasikal": tRes.text,
-        "Tahfizh Individu": formatCompactRangeString(report.tahfizh.individual),
-        "Hasil Tahfizh": tahfizhHasil,
-        "Tilawah Klasikal": lRes.text,
-        "Tilawah Individu": formatCompactRangeString(report.tilawah.individual),
+        "Hasil Tahfizh": getCalculationDisplay(tahfizhSource),
+        "Hasil Tilawah": getCalculationDisplay(tilawahSource),
         "Catatan": report.notes
       };
     });
@@ -308,8 +293,8 @@ const GuruViewReportPage: React.FC<GuruViewReportPageProps> = ({ teacherId = '1'
                   const compactIndividualTahfizh = formatCompactRangeString(report.tahfizh.individual);
                   const compactIndividualTilawah = formatCompactRangeString(report.tilawah.individual);
 
-                  const effectiveTahfizhRange = (report.tahfizh.individual && report.tahfizh.individual !== '-') ? report.tahfizh.individual : resTahfizh.text;
-                  const effectiveTilawahRange = (report.tilawah.individual && report.tilawah.individual !== '-') ? report.tilawah.individual : resTilawah.text;
+                  const effectiveTahfizhRange = (report.tahfizh.individual && report.tahfizh.individual !== '-' && report.tahfizh.individual.trim() !== '') ? report.tahfizh.individual : resTahfizh.text;
+                  const effectiveTilawahRange = (report.tilawah.individual && report.tilawah.individual !== '-' && report.tilawah.individual.trim() !== '') ? report.tilawah.individual : resTilawah.text;
 
                   return (
                     <tr key={report.id} className="hover:bg-gray-50/50 transition-colors group">
