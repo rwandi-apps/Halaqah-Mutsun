@@ -67,23 +67,28 @@ export default function CoordinatorReportsPage() {
   }, [search, filterMonth, filterType, reports]);
 
   const formatRangeDisplay = (rangeStr: string | undefined) => {
-    if (!rangeStr || rangeStr === '-' || rangeStr.trim() === '') return "-";
-    const parts = rangeStr.split(' - ');
+    if (!rangeStr || rangeStr === '-' || rangeStr.trim() === '' || rangeStr.trim() === '0 - 0') return "-";
+    
+    // Normalisasi separator
+    const parts = rangeStr.split(/\s*[-–]\s*/);
     if (parts.length !== 2) return rangeStr;
-    const startPart = parts[0].trim();
-    const endPart = parts[1].trim();
+
     const parse = (s: string) => {
-      const match = s.match(/^(.*)[:\s]+(\d+)$/);
-      if (match) return { surah: match[1].trim(), ayat: match[2] };
+      const match = s.match(/^(.*?)\s*:\s*(\d+)$/);
+      if (match) return { surah: match[1].trim(), ayah: match[2].trim() };
       return null;
     };
-    const startObj = parse(startPart);
-    const endObj = parse(endPart);
-    if (startObj && endObj) {
-      if (startObj.surah === endObj.surah) return `${startObj.surah}: ${startObj.ayat}-${endObj.ayat}`;
-      return `${startPart} - ${endPart}`;
+
+    const start = parse(parts[0].trim());
+    const end = parse(parts[1].trim());
+
+    // Rule 1: Gabungkan jika Surah Sama
+    if (start && end && start.surah === end.surah) {
+      return `${start.surah}:${start.ayah}-${end.ayah}`;
     }
-    return rangeStr;
+    
+    // Rule 2: Biarkan format lengkap tapi bersih
+    return `${parts[0].trim()} - ${parts[1].trim()}`;
   };
 
   const getCalculationDisplay = (rangeStr: string | undefined) => {

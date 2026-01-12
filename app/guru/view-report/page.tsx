@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Report, HalaqahMonthlyReport } from '../../../types';
@@ -15,14 +16,19 @@ const ACADEMIC_YEARS = ["2023/2024", "2024/2025", "2025/2026"];
 const MONTHS = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
 // Helper: Format Rentang Surat (Compact Mode)
+// Rules:
+// 1. Repetisi: "Al-Baqarah:51 - Al-Baqarah:223" -> "Al-Baqarah:51-223"
+// 2. Beda Surat: "Al-Baqarah:135 - An-Nisa':35" (Tetap)
 const formatCompactRangeString = (rangeStr: string | undefined) => {
-  if (!rangeStr || rangeStr === '-' || rangeStr.trim() === '') return "-";
+  if (!rangeStr || rangeStr === '-' || rangeStr.trim() === '' || rangeStr.trim() === '0 - 0') return "-";
   
-  const parts = rangeStr.split(' - ');
+  // Normalisasi separator
+  const parts = rangeStr.split(/\s*[-–]\s*/);
   if (parts.length !== 2) return rangeStr;
 
   const parse = (s: string) => {
-    const match = s.match(/^(.*?):?\s*(.*)$/);
+    // Regex: Tangkap nama surat (bisa ada spasi/tanda petik) dan nomor ayat di akhir
+    const match = s.match(/^(.*?)\s*:\s*(\d+)$/);
     if (match) return { surah: match[1].trim(), ayah: match[2].trim() };
     return null;
   };
@@ -30,11 +36,13 @@ const formatCompactRangeString = (rangeStr: string | undefined) => {
   const start = parse(parts[0].trim());
   const end = parse(parts[1].trim());
 
+  // Rule 1: Jika Nama Surat Sama -> Gabungkan
   if (start && end && start.surah === end.surah) {
-    return `${start.surah}: ${start.ayah}–${end.ayah}`;
+    return `${start.surah}:${start.ayah}-${end.ayah}`;
   }
 
-  return rangeStr;
+  // Rule 2: Jika Beda, kembalikan dengan separator bersih
+  return `${parts[0].trim()} - ${parts[1].trim()}`;
 };
 
 // Helper: Format Total Hafalan Adaptif
@@ -71,12 +79,12 @@ const formatKlasikalDisplay = (klasikal: any, type: 'tahfizh' | 'tilawah' = 'tah
 
       if (target.type === 'iqra' || (from.jilid !== undefined && from.jilid !== null)) {
         formattedText = from.jilid === to.jilid 
-          ? `Iqra ${from.jilid}: ${startV}–${endV}` 
-          : `Iqra ${from.jilid}:${startV} – ${to.jilid}:${endV}`;
+          ? `Iqra ${from.jilid}: ${startV}-${endV}` 
+          : `Iqra ${from.jilid}:${startV} - Iqra ${to.jilid}:${endV}`; // Explicit logic for Iqra different volumes
       } else {
         formattedText = from.surah === to.surah 
-          ? `${from.surah}: ${startV}–${endV}` 
-          : `${from.surah}:${startV} – ${to.surah}:${endV}`;
+          ? `${from.surah}:${startV}-${endV}` 
+          : `${from.surah}:${startV} - ${to.surah}:${endV}`;
       }
       return { text: formattedText, isNew: true };
     } catch (e) { return { text: "-", isNew: false }; }
@@ -88,29 +96,19 @@ const formatKlasikalDisplay = (klasikal: any, type: 'tahfizh' | 'tilawah' = 'tah
  * Normalisasi Input Range sebelum masuk Engine.
  * Membersihkan format UI yang kotor (prefix colon, en-dash, dll).
  */
-/**
- * Normalisasi Input Range sebelum masuk Engine.
- * Memastikan nama surah seperti Al-Baqarah tidak rusak menjadi Al - Baqarah
- */
-/**
- * Normalisasi Input Range sebelum masuk Engine.
- * Menghilangkan spasi setelah titik dua agar engine SDQ valid.
- */
 const normalizeRangeInput = (raw: string | undefined): string => {
   if (!raw || typeof raw !== 'string') return "";
   
   return raw
-    .replace(/^[^a-zA-Z0-9'"]+/, '') // Hapus titik dua/spasi di awal
-    .replace(/[–—]/g, '-')           // Normalisasi dash
-    .replace(/\s*:\s*/g, ':')        // PENTING: Al-Baqarah: 51 -> Al-Baqarah:51 (Tanpa Spasi)
-    .replace(/\s*-\s*/g, ' - ')      // Pastikan pemisah antar surah ada spasi: "Surah:1 - Surah:2"
-    .replace(/([Aa]l|[Aa]n|[Aa]t|[Aa]z|[Aa]s|[Aa]d)\s+-\s+/g, '$1-') // Gabung nama surah yang pecah
-    .replace(/\s+/g, ' ')
+    .replace(/^[:\s]+/, '') // Hapus prefix colon dan spasi di awal (": ")
+    .replace(/–/g, '-')     // Ganti en-dash (–) menjadi hyphen standard (-)
+    .replace(/\s+/g, ' ')   // Normalisasi spasi berlebih
     .trim();
 };
 
 /**
- * UI FIX: Menampilkan hasil perhitungan engine.
+ * UI FIX: Menampilkan hasil perhitungan engine dengan format absolut.
+ * Aturan: Angka 0 adalah nilai sah dan wajib ditampilkan.
  */
 const getCalculationDisplay = (rangeStr: string | undefined) => {
   const cleanRange = normalizeRangeInput(rangeStr);
@@ -121,22 +119,17 @@ const getCalculationDisplay = (rangeStr: string | undefined) => {
   
   const result = calculateFromRangeString(cleanRange);
   
-  // Debug log untuk memastikan format sudah benar-benar rapat
-  console.log("Input ke Engine:", cleanRange, "Result Valid:", result.valid);
-
+  // Jika engine menyatakan tidak valid, baru tampilkan dash
   if (!result.valid) {
-    if (cleanRange.toLowerCase().includes('iqra')) {
-      return "Progres Iqra"; 
-    }
     return "-";
   }
 
+  // Format HARUS lengkap: "{pages} Halaman {lines} Baris"
+  // JANGAN gunakan conditional rendering (result.pages > 0) karena akan menghilangkan angka 0
   return `${result.pages} Halaman ${result.lines} Baris`;
 };
 
-/**
- * Helper: Badge Status Capaian
- */
+// Helper: Teks Keterangan Tanpa Angka (Neutral & Pembinaan)
 const getStatusBadge = (rangeStr: string | undefined, reportType: string) => {
   const cleanRange = normalizeRangeInput(rangeStr);
   if (!cleanRange || cleanRange === '-') return <span className="text-[10px] font-extrabold text-orange-500 uppercase tracking-tighter">BELUM TERCAPAI</span>;
@@ -246,7 +239,7 @@ const GuruViewReportPage: React.FC<GuruViewReportPageProps> = ({ teacherId = '1'
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
         <div>
           <h2 className="text-2xl font-black text-gray-900 tracking-tight uppercase">Arsip Laporan</h2>
-          <p className="text-gray-500 text-sm font-medium">Riwayat setoran dan capaian target siswa.</p>
+          <p className="text-gray-500 text-sm font-medium">Riwayat setoran dan capaian target santri.</p>
         </div>
         <Button variant="secondary" onClick={handleExportExcel} className="shadow-sm border-gray-200">
           <FileSpreadsheet size={18} className="mr-2 text-emerald-600"/> Export ke Excel
@@ -272,7 +265,7 @@ const GuruViewReportPage: React.FC<GuruViewReportPageProps> = ({ teacherId = '1'
             )}
           </div>
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-1.5"><Search size={12} /> Cari siswa</label>
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-1.5"><Search size={12} /> Cari Santri</label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
               <input type="text" placeholder="Ketik nama siswa..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl bg-gray-50 text-sm focus:ring-2 focus:ring-primary-500 outline-none" />
