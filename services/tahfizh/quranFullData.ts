@@ -1,5 +1,3 @@
-QuranFullData
-
 import { QuranAyahData } from './types';
 
 /**
