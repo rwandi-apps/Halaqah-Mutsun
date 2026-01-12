@@ -92,15 +92,13 @@ const normalizeRangeInput = (raw: string | undefined): string => {
   if (!raw || typeof raw !== 'string') return "";
   
   return raw
-    .replace(/^[^a-zA-Z0-9'"]+/, '') // Hapus karakter aneh di awal (termasuk titik dua)
-    .replace(/[–—]/g, '-')           // Ubah dash panjang ke hyphen biasa
-    // Regex di bawah ini merapikan spasi di sekitar pemisah range (" - ") 
-    // TANPA merusak tanda hubung di dalam nama surah (seperti Al-Baqarah)
-    .replace(/\s*-\s*(?=[A-Z'Iqra])/g, ' - ') 
+    .replace(/^[^a-zA-Z0-9'"]+/, '') // Hapus titik dua atau spasi di awal
+    .replace(/[–—]/g, '-')           // Normalisasi semua jenis dash ke hyphen biasa
+    // Hanya tambahkan spasi jika hyphen diapit angka atau nama surah (Pemisah Range)
+    .replace(/(\d|[a-zA-Z'])\s*-\s*([a-zA-Z'Iqra])/g, '$1 - $2')
     .replace(/\s+/g, ' ')
     .trim();
 };
-
 /**
  * UI FIX: Menampilkan hasil perhitungan engine dengan format absolut.
  * Aturan: Angka 0 adalah nilai sah dan wajib ditampilkan.
@@ -108,13 +106,23 @@ const normalizeRangeInput = (raw: string | undefined): string => {
 const getCalculationDisplay = (rangeStr: string | undefined) => {
   const cleanRange = normalizeRangeInput(rangeStr);
 
-  // TAMBAHKAN INI UNTUK DEBUG
-  console.log("Raw Input:", rangeStr);
-  console.log("Cleaned Input:", cleanRange);
-
   if (!cleanRange || cleanRange === '-' || cleanRange === '' || cleanRange === 'Belum Ada') {
     return "-";
   }
+  
+  const result = calculateFromRangeString(cleanRange);
+  
+  // Jika engine gagal (valid: false)
+  if (!result.valid) {
+    // Jika input mengandung kata 'Iqra', jangan tampilkan dash, tapi teks keterangan
+    if (cleanRange.toLowerCase().includes('iqra')) {
+      return "Progres Iqra"; 
+    }
+    return "-";
+  }
+
+  return `${result.pages} Halaman ${result.lines} Baris`;
+};
   
   const result = calculateFromRangeString(cleanRange);
   // TAMBAHKAN INI UNTUK DEBUG
