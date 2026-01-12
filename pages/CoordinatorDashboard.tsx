@@ -76,7 +76,7 @@ export const CoordinatorDashboard: React.FC = () => {
             iconColor="text-orange-500"
           />
           <DashboardStatCard 
-            title="Total Santri"
+            title="Total siswa"
             value="135 Siswa"
             icon={GraduationCap}
             iconBg="bg-green-50"

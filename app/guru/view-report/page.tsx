@@ -246,7 +246,7 @@ const GuruViewReportPage: React.FC<GuruViewReportPageProps> = ({ teacherId = '1'
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
         <div>
           <h2 className="text-2xl font-black text-gray-900 tracking-tight uppercase">Arsip Laporan</h2>
-          <p className="text-gray-500 text-sm font-medium">Riwayat setoran dan capaian target santri.</p>
+          <p className="text-gray-500 text-sm font-medium">Riwayat setoran dan capaian target siswa.</p>
         </div>
         <Button variant="secondary" onClick={handleExportExcel} className="shadow-sm border-gray-200">
           <FileSpreadsheet size={18} className="mr-2 text-emerald-600"/> Export ke Excel
@@ -272,7 +272,7 @@ const GuruViewReportPage: React.FC<GuruViewReportPageProps> = ({ teacherId = '1'
             )}
           </div>
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-1.5"><Search size={12} /> Cari Santri</label>
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-1.5"><Search size={12} /> Cari siswa</label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
               <input type="text" placeholder="Ketik nama siswa..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl bg-gray-50 text-sm focus:ring-2 focus:ring-primary-500 outline-none" />
