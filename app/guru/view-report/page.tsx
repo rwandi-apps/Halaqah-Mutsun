@@ -88,6 +88,10 @@ const formatKlasikalDisplay = (klasikal: any, type: 'tahfizh' | 'tilawah' = 'tah
  * Normalisasi Input Range sebelum masuk Engine.
  * Membersihkan format UI yang kotor (prefix colon, en-dash, dll).
  */
+/**
+ * Normalisasi Input Range sebelum masuk Engine.
+ * Memastikan nama surah seperti Al-Baqarah tidak rusak menjadi Al - Baqarah
+ */
 const normalizeRangeInput = (raw: string | undefined): string => {
   if (!raw || typeof raw !== 'string') return "";
   
@@ -99,9 +103,9 @@ const normalizeRangeInput = (raw: string | undefined): string => {
     .replace(/\s+/g, ' ')
     .trim();
 };
+
 /**
- * UI FIX: Menampilkan hasil perhitungan engine dengan format absolut.
- * Aturan: Angka 0 adalah nilai sah dan wajib ditampilkan.
+ * UI FIX: Menampilkan hasil perhitungan engine.
  */
 const getCalculationDisplay = (rangeStr: string | undefined) => {
   const cleanRange = normalizeRangeInput(rangeStr);
@@ -112,33 +116,23 @@ const getCalculationDisplay = (rangeStr: string | undefined) => {
   
   const result = calculateFromRangeString(cleanRange);
   
+  // LOG UNTUK DEBUGGING (Bisa dihapus jika sudah jalan)
+  console.log("Input:", cleanRange, "Valid:", result.valid);
+
   // Jika engine gagal (valid: false)
   if (!result.valid) {
-    // Jika input mengandung kata 'Iqra', jangan tampilkan dash, tapi teks keterangan
+    // Jika input mengandung kata 'Iqra', tampilkan teks keterangan khusus
     if (cleanRange.toLowerCase().includes('iqra')) {
       return "Progres Iqra"; 
     }
     return "-";
   }
 
-  return `${result.pages} Halaman ${result.lines} Baris`;
-};
-  
-  const result = calculateFromRangeString(cleanRange);
-  // TAMBAHKAN INI UNTUK DEBUG
-  console.log("Engine Result:", result);
-  
-  // Jika engine menyatakan tidak valid, baru tampilkan dash
-  if (!result.valid) {
-    return "-";
-  }
-
-  // Format HARUS lengkap: "{pages} Halaman {lines} Baris"
-  // JANGAN gunakan conditional rendering (result.pages > 0) karena akan menghilangkan angka 0
+  // Jika valid, tampilkan hasil kalkulasi
   return `${result.pages} Halaman ${result.lines} Baris`;
 };
 
-// Helper: Teks Keterangan Tanpa Angka (Neutral & Pembinaan)
+// Helper: Teks Keterangan Status Capaian
 const getStatusBadge = (rangeStr: string | undefined, reportType: string) => {
   const cleanRange = normalizeRangeInput(rangeStr);
   if (!cleanRange || cleanRange === '-') return <span className="text-[10px] font-extrabold text-orange-500 uppercase tracking-tighter">BELUM TERCAPAI</span>;
