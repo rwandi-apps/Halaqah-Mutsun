@@ -95,13 +95,25 @@ const formatKlasikalDisplay = (klasikal: any, type: 'tahfizh' | 'tilawah' = 'tah
 const normalizeRangeInput = (raw: string | undefined): string => {
   if (!raw || typeof raw !== 'string') return "";
   
-  return raw
-    .replace(/^[^a-zA-Z0-9'"]+/, '') // Hapus titik dua atau spasi di awal
-    .replace(/[–—]/g, '-')           // Normalisasi semua jenis dash ke hyphen biasa
-    // Hanya tambahkan spasi jika hyphen diapit angka atau nama surah (Pemisah Range)
-    .replace(/(\d|[a-zA-Z'])\s*-\s*([a-zA-Z'Iqra])/g, '$1 - $2')
-    .replace(/\s+/g, ' ')
+  let clean = raw
+    .replace(/^[^a-zA-Z0-9'"]+/, '') 
+    .replace(/[–—]/g, '-')
     .trim();
+
+  // Memperbaiki nama surah yang terlanjur pecah (Al - Baqarah -> Al-Baqarah)
+  // Ini mencari pola "Huruf - Huruf" dan menyambungnya
+  clean = clean.replace(/([Aa]l|[Aa]n|[Aa]t|[Aa]z|[Aa]s|[Aa]d)\s+-\s+/g, '$1-');
+  
+  // Memastikan pemisah range (antara dua surah) tetap punya spasi agar engine kenal
+  // Contoh: "Al-Baqarah:1-Al-Baqarah:10" -> "Al-Baqarah:1 - Al-Baqarah:10"
+  if (clean.includes('-') && !clean.includes(' - ')) {
+      const parts = clean.split('-');
+      if (parts.length === 2) {
+          return `${parts[0].trim()} - ${parts[1].trim()}`;
+      }
+  }
+
+  return clean;
 };
 
 /**
