@@ -16,16 +16,16 @@ const ACADEMIC_YEARS = ["2023/2024", "2024/2025", "2025/2026"];
 const MONTHS = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
 /**
- * Normalisasi Input Range sebelum masuk ke Engine Perhitungan.
- * Menangani karakter kotor dari UI (prefix colon, en-dash, spasi ganda).
+ * 🛠️ NORMALISASI INPUT RANGE (CRITICAL FIX)
+ * Menghapus ": ", mengganti "–" (en-dash) jadi "-", membersihkan spasi.
  */
 const normalizeRangeInput = (raw: string | undefined): string => {
   if (!raw || typeof raw !== 'string') return "";
   
   return raw
     .replace(/^[:\s]+/, '') // Hapus ": " atau spasi di awal string
-    .replace(/–/g, '-')     // Ganti en-dash (–) menjadi hyphen standard (-)
-    .replace(/\s+/g, ' ')   // Bersihkan spasi berlebih
+    .replace(/–/g, '-')     // Ganti en-dash (–) menjadi hyphen standar (-)
+    .replace(/\s+/g, ' ')   // Bersihkan spasi ganda
     .trim();
 };
 
@@ -87,7 +87,7 @@ const formatKlasikalDisplay = (klasikal: any, type: 'tahfizh' | 'tilawah' = 'tah
 
       if (target.type === 'iqra' || (from.jilid !== undefined && from.jilid !== null)) {
         formattedText = from.jilid === to.jilid 
-          ? `Iqra ${from.jilid}: ${startV}-${endV}` 
+          ? `Iqra ${from.jilid}:${startV}-${endV}` 
           : `Iqra ${from.jilid}:${startV} - Iqra ${to.jilid}:${endV}`;
       } else {
         formattedText = from.surah === to.surah 
@@ -101,25 +101,25 @@ const formatKlasikalDisplay = (klasikal: any, type: 'tahfizh' | 'tilawah' = 'tah
 };
 
 /**
- * UI FIX: Menampilkan hasil perhitungan engine dengan format absolut.
- * Sekarang mendukung input kotor lewat normalisasi.
+ * ✅ UI FIX: HASIL PERHITUNGAN ENGINE
+ * Menampilkan hasil absolut dari QURAN_FULL_MAP.
  */
 const getCalculationDisplay = (rangeStr: string | undefined) => {
   const cleanRange = normalizeRangeInput(rangeStr);
 
-  if (!cleanRange || cleanRange === '-' || cleanRange === '' || cleanRange === 'Belum Ada') {
+  if (!cleanRange || cleanRange === '-' || cleanRange === '' || cleanRange === 'Belum Ada' || cleanRange === '0 - 0') {
     return "-";
   }
   
   const result = calculateFromRangeString(cleanRange);
   
-  // Jika engine menyatakan tidak valid (data tidak ada di QURAN_FULL_MAP), tampilkan dash
+  // Jika engine menyatakan tidak valid (tidak ada di QURAN_FULL_MAP), tampilkan dash
   if (!result.valid) {
     return "-";
   }
 
-  // OUTPUT SELALU EKSPLISIT: "{pages} Halaman {lines} Baris"
-  // Angka 0 tetap ditampilkan karena merupakan nilai capaian yang sah
+  // OUTPUT WAJIB: "{pages} Halaman {lines} Baris"
+  // Angka 0 harus muncul (misal: "1 Halaman 0 Baris")
   return `${result.pages} Halaman ${result.lines} Baris`;
 };
 
