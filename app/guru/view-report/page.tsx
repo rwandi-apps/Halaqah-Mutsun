@@ -92,10 +92,12 @@ const normalizeRangeInput = (raw: string | undefined): string => {
   if (!raw || typeof raw !== 'string') return "";
   
   return raw
-    .replace(/^[^a-zA-Z0-9]+/, '') // Menghapus APAPUN di awal kecuali huruf atau angka
-    .replace(/[–—]/g, '-')         // Mengganti semua jenis dash (en-dash/em-dash) ke hyphen biasa
-    .replace(/\s*-\s*/g, ' - ')    // Memastikan format konsisten " - " (spasi strip spasi)
-    .replace(/\s+/g, ' ')          
+    .replace(/^[^a-zA-Z0-9'"]+/, '') // Hapus karakter aneh di awal (termasuk titik dua)
+    .replace(/[–—]/g, '-')           // Ubah dash panjang ke hyphen biasa
+    // Regex di bawah ini merapikan spasi di sekitar pemisah range (" - ") 
+    // TANPA merusak tanda hubung di dalam nama surah (seperti Al-Baqarah)
+    .replace(/\s*-\s*(?=[A-Z'Iqra])/g, ' - ') 
+    .replace(/\s+/g, ' ')
     .trim();
 };
 
