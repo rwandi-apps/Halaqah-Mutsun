@@ -92,28 +92,21 @@ const formatKlasikalDisplay = (klasikal: any, type: 'tahfizh' | 'tilawah' = 'tah
  * Normalisasi Input Range sebelum masuk Engine.
  * Memastikan nama surah seperti Al-Baqarah tidak rusak menjadi Al - Baqarah
  */
+/**
+ * Normalisasi Input Range sebelum masuk Engine.
+ * Menghilangkan spasi setelah titik dua agar engine SDQ valid.
+ */
 const normalizeRangeInput = (raw: string | undefined): string => {
   if (!raw || typeof raw !== 'string') return "";
   
-  let clean = raw
-    .replace(/^[^a-zA-Z0-9'"]+/, '') 
-    .replace(/[–—]/g, '-')
+  return raw
+    .replace(/^[^a-zA-Z0-9'"]+/, '') // Hapus titik dua/spasi di awal
+    .replace(/[–—]/g, '-')           // Normalisasi dash
+    .replace(/\s*:\s*/g, ':')        // PENTING: Al-Baqarah: 51 -> Al-Baqarah:51 (Tanpa Spasi)
+    .replace(/\s*-\s*/g, ' - ')      // Pastikan pemisah antar surah ada spasi: "Surah:1 - Surah:2"
+    .replace(/([Aa]l|[Aa]n|[Aa]t|[Aa]z|[Aa]s|[Aa]d)\s+-\s+/g, '$1-') // Gabung nama surah yang pecah
+    .replace(/\s+/g, ' ')
     .trim();
-
-  // Memperbaiki nama surah yang terlanjur pecah (Al - Baqarah -> Al-Baqarah)
-  // Ini mencari pola "Huruf - Huruf" dan menyambungnya
-  clean = clean.replace(/([Aa]l|[Aa]n|[Aa]t|[Aa]z|[Aa]s|[Aa]d)\s+-\s+/g, '$1-');
-  
-  // Memastikan pemisah range (antara dua surah) tetap punya spasi agar engine kenal
-  // Contoh: "Al-Baqarah:1-Al-Baqarah:10" -> "Al-Baqarah:1 - Al-Baqarah:10"
-  if (clean.includes('-') && !clean.includes(' - ')) {
-      const parts = clean.split('-');
-      if (parts.length === 2) {
-          return `${parts[0].trim()} - ${parts[1].trim()}`;
-      }
-  }
-
-  return clean;
 };
 
 /**
@@ -128,23 +121,22 @@ const getCalculationDisplay = (rangeStr: string | undefined) => {
   
   const result = calculateFromRangeString(cleanRange);
   
-  // LOG UNTUK DEBUGGING (Bisa dihapus jika sudah jalan)
-  console.log("Input:", cleanRange, "Valid:", result.valid);
+  // Debug log untuk memastikan format sudah benar-benar rapat
+  console.log("Input ke Engine:", cleanRange, "Result Valid:", result.valid);
 
-  // Jika engine gagal (valid: false)
   if (!result.valid) {
-    // Jika input mengandung kata 'Iqra', tampilkan teks keterangan khusus
     if (cleanRange.toLowerCase().includes('iqra')) {
       return "Progres Iqra"; 
     }
     return "-";
   }
 
-  // Jika valid, tampilkan hasil kalkulasi
   return `${result.pages} Halaman ${result.lines} Baris`;
 };
 
-// Helper: Teks Keterangan Status Capaian
+/**
+ * Helper: Badge Status Capaian
+ */
 const getStatusBadge = (rangeStr: string | undefined, reportType: string) => {
   const cleanRange = normalizeRangeInput(rangeStr);
   if (!cleanRange || cleanRange === '-') return <span className="text-[10px] font-extrabold text-orange-500 uppercase tracking-tighter">BELUM TERCAPAI</span>;
