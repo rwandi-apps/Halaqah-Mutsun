@@ -36,6 +36,19 @@ export interface Student {
   progress: number;
 }
 
+// Collection: halaqah_teacher_history
+export interface HalaqahTeacherHistory {
+  id?: string;
+  className: string; // Identifier unik halaqah (dalam konteks ini by Class)
+  previousTeacherId: string;
+  previousTeacherName: string;
+  newTeacherId: string;
+  newTeacherName: string;
+  reason?: string;
+  changedBy: string; // ID Koordinator
+  timestamp: string; // ISO String
+}
+
 // Single Source of Truth untuk data Klasikal
 // Collection: halaqah_monthly_reports
 export interface HalaqahMonthlyReport {

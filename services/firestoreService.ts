@@ -14,10 +14,11 @@ import {
   Timestamp,
   addDoc,
   onSnapshot,
-  Unsubscribe
+  Unsubscribe,
+  writeBatch
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { User, Student, Report, Role, SemesterReport, HalaqahEvaluation, HalaqahMonthlyReport } from '../types';
+import { User, Student, Report, Role, SemesterReport, HalaqahEvaluation, HalaqahMonthlyReport, HalaqahTeacherHistory } from '../types';
 import { extractClassLevel } from './sdqTargets';
 import { calculateFromRangeString } from './quranMapping';
 
@@ -192,6 +193,66 @@ export const recalculateTotalHafalan = async (studentId: string): Promise<void> 
 
 // --- DATA SERVICES ---
 
+/**
+ * FEATURE: HALAQAH REASSIGNMENT (Ganti Guru)
+ * Memindahkan siswa dari guru lama ke guru baru tanpa mengubah histori laporan lama.
+ */
+export const reassignHalaqahTeacher = async (
+  className: string, 
+  oldTeacherId: string, 
+  newTeacherId: string,
+  newTeacherName: string,
+  oldTeacherName: string,
+  coordinatorId: string
+): Promise<string> => {
+  if (!db) throw new Error("Firestore not initialized");
+
+  if (oldTeacherId === newTeacherId) {
+    throw new Error("Guru pengganti tidak boleh sama dengan guru saat ini.");
+  }
+
+  const batch = writeBatch(db);
+
+  // 1. Cari semua siswa di kelas tersebut yang masih dipegang guru lama
+  const studentsQuery = query(
+    collection(db, 'siswa'), 
+    where('className', '==', className),
+    where('teacherId', '==', oldTeacherId)
+  );
+  
+  const studentSnap = await getDocs(studentsQuery);
+  if (studentSnap.empty) {
+    throw new Error("Tidak ada siswa ditemukan untuk dipindahkan.");
+  }
+
+  // 2. Batch Update: Pindahkan hak asuh siswa ke Guru Baru
+  studentSnap.docs.forEach((docSnap) => {
+    const studentRef = doc(db, 'siswa', docSnap.id);
+    batch.update(studentRef, {
+      teacherId: newTeacherId,
+      updatedAt: serverTimestamp()
+    });
+  });
+
+  // 3. Catat Histori Pergantian (Audit Log)
+  const historyRef = doc(collection(db, 'halaqah_teacher_history'));
+  const historyData: HalaqahTeacherHistory = {
+    className,
+    previousTeacherId: oldTeacherId,
+    previousTeacherName: oldTeacherName,
+    newTeacherId,
+    newTeacherName,
+    changedBy: coordinatorId,
+    timestamp: new Date().toISOString()
+  };
+  batch.set(historyRef, historyData);
+
+  // 4. Commit Transaksi
+  await batch.commit();
+
+  return `Berhasil memindahkan ${studentSnap.size} siswa dari ${oldTeacherName} ke ${newTeacherName}.`;
+};
+
 export const saveSDQReport = async (reportData: Omit<Report, 'id' | 'createdAt'>): Promise<void> => {
   if (!db) throw new Error("Firestore not initialized");
   
@@ -361,7 +422,7 @@ export interface ClassSummary {
   className: string;
   totalStudents: number;
   status: string;
-  halaqahs: { teacherName: string, studentCount: number }[];
+  halaqahs: { teacherName: string, teacherId: string, studentCount: number }[]; // Updated type
 }
 
 export const getAllTeachers = async (): Promise<User[]> => {
@@ -501,7 +562,7 @@ export const getClassHalaqahSummary = async (): Promise<ClassSummary[]> => {
   const classGroups: Record<string, {
     className: string;
     totalStudents: number;
-    halaqahMap: Record<string, { teacherName: string, studentCount: number }>;
+    halaqahMap: Record<string, { teacherName: string, teacherId: string, studentCount: number }>;
   }> = {};
   allStudents.forEach(student => {
     const name = student.className;
@@ -513,6 +574,7 @@ export const getClassHalaqahSummary = async (): Promise<ClassSummary[]> => {
     if (!classGroups[name].halaqahMap[tId]) {
       classGroups[name].halaqahMap[tId] = {
         teacherName: teacherMap[tId] || 'Guru Tidak Teridentifikasi',
+        teacherId: tId,
         studentCount: 0
       };
     }
