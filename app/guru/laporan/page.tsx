@@ -16,30 +16,10 @@ const IQRA_VOLUMES = ["Iqra' 1", "Iqra' 2", "Iqra' 3", "Iqra' 4", "Iqra' 5", "Iq
 const MONTH_LIST = ["Juli", "Agustus", "September", "Oktober", "November", "Desember", "Januari", "Februari", "Maret", "April", "Mei", "Juni"];
 const ACADEMIC_YEARS = ["2024/2025", "2025/2026", "2026/2027"];
 
-const CounterInput = ({ 
-  label, 
-  value, 
-  onChange, 
-  min = 0 
-}: { 
-  label?: string, 
-  value: number | string, 
-  onChange: (v: number | string) => void, 
-  min?: number 
-}) => {
-  const handleDec = () => {
-    const current = typeof value === 'number' ? value : 0;
-    onChange(Math.max(min, current - 1));
-  };
-  const handleInc = () => {
-    const current = typeof value === 'number' ? value : 0;
-    onChange(current + 1);
-  };
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    onChange(val === '' ? '' : parseInt(val) || 0);
-  };
-
+const CounterInput = ({ label, value, onChange, min = 0 }: { label?: string, value: number | string, onChange: (v: number | string) => void, min?: number }) => {
+  const handleDec = () => { const current = typeof value === 'number' ? value : 0; onChange(Math.max(min, current - 1)); };
+  const handleInc = () => { const current = typeof value === 'number' ? value : 0; onChange(current + 1); };
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => { const val = e.target.value; onChange(val === '' ? '' : parseInt(val) || 0); };
   return (
     <div className="flex items-center gap-1 sm:gap-2 shrink-0">
       <button type="button" onClick={handleDec} className="w-8 h-9 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50 shadow-sm"><Minus size={14} /></button>
@@ -63,7 +43,7 @@ const InputRow = ({ label, children, badge }: { label: string, children?: React.
   <div className="space-y-1.5 sm:space-y-2">
     <div className="flex justify-between items-center px-1">
       <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest">{label}</p>
-      {badge && <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">{badge}</span>}
+      {badge && <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">Total: {badge}</span>}
     </div>
     <div className="flex flex-row items-center gap-2">{children}</div>
   </div>
@@ -74,7 +54,6 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-
   const [reportType, setReportType] = useState('Laporan Bulanan');
   const [studentId, setStudentId] = useState('');
   const [academicYear, setAcademicYear] = useState('2025/2026');
@@ -84,7 +63,6 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
   const [tilawahIndiv, setTilawahIndiv] = useState({ method: 'Al-Quran' as 'Al-Quran' | 'Iqra', fs: '', fv: '' as any, ts: '', tv: '' as any });
   const [tahfizhKlas, setTahfizhKlas] = useState({ fs: '', fv: '' as any, ts: '', tv: '' as any });
   const [tilawahKlas, setTilawahKlas] = useState({ method: 'Al-Quran' as 'Al-Quran' | 'Iqra', fs: '', fv: '' as any, ts: '', tv: '' as any });
-
   const [baselineJuz, setBaselineJuz] = useState<number | string>(0);
   const [baselinePages, setBaselinePages] = useState<number | string>(0);
   const [baselineLines, setBaselineLines] = useState<number | string>(0);
@@ -97,8 +75,7 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
     getStudentsByTeacher(teacherId).then(data => { setStudents(data); setIsLoading(false); });
   }, [teacherId]);
 
-  // Real-time Badge Results
-  const getBadge = (data: any, method: string) => {
+  const getResultText = (data: any, method: string) => {
     if (!data.fs || !data.ts) return '';
     const res = SDQQuranEngine.calculate(data.fs, safeNum(data.fv), data.ts, safeNum(data.tv));
     if (!res.valid) return '';
@@ -109,28 +86,21 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
     if (!studentId) return alert("Pilih siswa.");
     const selectedStudent = students.find(s => s.id === studentId);
     if (!selectedStudent) return;
-    
     setIsSaving(true);
     try {
-      const tfRes = SDQQuranEngine.calculate(tahfizhIndiv.fs, safeNum(tahfizhIndiv.fv), tahfizhIndiv.ts, safeNum(tahfizhIndiv.tv));
-      const tlRes = SDQQuranEngine.calculate(tilawahIndiv.fs, safeNum(tilawahIndiv.fv), tilawahIndiv.ts, safeNum(tilawahIndiv.tv));
-      
-      const tfResultStr = tfRes.valid ? `${tfRes.pages} Hal ${tfRes.lines} Baris` : "-";
-      const tlResultStr = tlRes.valid ? (tilawahIndiv.method === 'Iqra' ? `${tlRes.pages} Hal` : `${tlRes.pages} Hal ${tlRes.lines} Baris`) : "-";
-
+      const tfRes = getResultText(tahfizhIndiv, 'Al-Quran');
+      const tlRes = getResultText(tilawahIndiv, tilawahIndiv.method);
       const fmt = (s: string, v: any) => (s ? `${s}: ${v === '' ? '-' : v}` : '-');
       const makeRange = (data: any) => (!data.fs && !data.ts ? '-' : `${fmt(data.fs, data.fv)} - ${fmt(data.ts, data.tv)}`);
-
       await saveSDQReport({
         studentId, studentName: selectedStudent.name, teacherId: teacherId || '', className: selectedStudent.className, 
         type: reportType, month, academicYear, date: new Date().toISOString().split('T')[0], evaluation: '',
         attendance: 100, behaviorScore: 10,
-        tilawah: { method: tilawahIndiv.method, individual: makeRange(tilawahIndiv), classical: makeRange(tilawahKlas), result: tlResultStr },
-        tahfizh: { individual: makeRange(tahfizhIndiv), classical: makeRange(tahfizhKlas), result: tfResultStr },
+        tilawah: { method: tilawahIndiv.method, individual: makeRange(tilawahIndiv), classical: makeRange(tilawahKlas), result: tlRes || "-" },
+        tahfizh: { individual: makeRange(tahfizhIndiv), classical: makeRange(tahfizhKlas), result: tfRes || "-" },
         totalHafalan: { juz: safeNum(baselineJuz), pages: safeNum(baselinePages), lines: safeNum(baselineLines) },
         notes
       });
-
       alert("Laporan berhasil disimpan!");
       navigate('/guru/view-report');
     } catch (e) { alert("Gagal."); } finally { setIsSaving(false); }
@@ -139,29 +109,22 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12 px-2">
       <h2 className="text-2xl font-bold text-gray-900">Input Laporan Halaqah</h2>
-      
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-4">
         <select value={academicYear} onChange={(e) => setAcademicYear(e.target.value)} className="p-2 border rounded-xl bg-white text-sm">{ACADEMIC_YEARS.map(y => <option key={y} value={y}>{y}</option>)}</select>
-        <select value={reportType} onChange={(e) => setReportType(e.target.value)} className="p-2 border rounded-xl bg-white text-sm">
-          <option value="Laporan Bulanan">Laporan Bulanan</option>
-          <option value="Laporan Semester">Laporan Semester</option>
-        </select>
+        <select value={reportType} onChange={(e) => setReportType(e.target.value)} className="p-2 border rounded-xl bg-white text-sm"><option value="Laporan Bulanan">Laporan Bulanan</option><option value="Laporan Semester">Laporan Semester</option></select>
         <select value={month} onChange={(e) => setMonth(e.target.value)} className="p-2 border rounded-xl bg-white text-sm">
-          {reportType === 'Laporan Semester' 
-            ? ["Ganjil", "Genap"].map(s => <option key={s} value={s}>Semester {s}</option>)
-            : MONTH_LIST.map(m => <option key={m} value={m}>{m}</option>)
-          }
+          {reportType === 'Laporan Semester' ? ["Ganjil", "Genap"].map(s => <option key={s} value={s}>Semester {s}</option>) : MONTH_LIST.map(m => <option key={m} value={m}>{m}</option>)}
         </select>
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        {/* KLASIKAL SECTION */}
+        {/* KLASIKAL SECTION (DI ATAS) */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6 border-t-4 border-t-blue-500">
           <div className="flex items-center gap-2 mb-2 text-blue-600"><Users size={20}/><h3 className="font-bold text-gray-800 text-sm uppercase">Capaian Klasikal (Kelompok)</h3></div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4 border-t border-gray-50">
             <div className="space-y-4">
               <h4 className="text-xs font-bold text-emerald-700 flex items-center gap-2"><Book size={16} /> Tahfizh Klasikal</h4>
-              <InputRow label="DARI" badge={getBadge(tahfizhKlas, 'Al-Quran')}>
+              <InputRow label="DARI" badge={getResultText(tahfizhKlas, 'Al-Quran')}>
                 <SourceSelect value={tahfizhKlas.fs} onChange={(v) => setTahfizhKlas({...tahfizhKlas, fs: v, ts: v})} method="Al-Quran" />
                 <CounterInput label="Ayat" value={tahfizhKlas.fv} onChange={(v) => setTahfizhKlas({...tahfizhKlas, fv: v, tv: v})} />
               </InputRow>
@@ -173,7 +136,7 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
             <div className="space-y-4">
               <h4 className="text-xs font-bold text-blue-700 flex items-center gap-2"><BookOpen size={16} /> Tilawah Klasikal</h4>
               <div className="flex gap-2"><button onClick={() => setTilawahKlas({...tilawahKlas, method: 'Al-Quran'})} className={`flex-1 py-1 text-[9px] font-bold rounded-lg ${tilawahKlas.method === 'Al-Quran' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'}`}>AL-QUR'AN</button><button onClick={() => setTilawahKlas({...tilawahKlas, method: 'Iqra'})} className={`flex-1 py-1 text-[9px] font-bold rounded-lg ${tilawahKlas.method === 'Iqra' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'}`}>IQRA'</button></div>
-              <InputRow label="DARI" badge={getBadge(tilawahKlas, tilawahKlas.method)}>
+              <InputRow label="DARI" badge={getResultText(tilawahKlas, tilawahKlas.method)}>
                 <SourceSelect value={tilawahKlas.fs} onChange={(v) => setTilawahKlas({...tilawahKlas, fs: v, ts: v})} method={tilawahKlas.method} />
                 <CounterInput label={tilawahKlas.method === 'Al-Quran' ? 'Ayat' : 'Hal'} value={tilawahKlas.fv} onChange={(v) => setTilawahKlas({...tilawahKlas, fv: v, tv: v})} />
               </InputRow>
@@ -189,11 +152,10 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6 border-t-4 border-t-emerald-500">
           <div className="flex items-center gap-2 mb-2 text-emerald-600"><UserCheck size={20}/><h3 className="font-bold text-gray-800 text-sm uppercase">Capaian Individu Siswa</h3></div>
           <select value={studentId} onChange={(e) => setStudentId(e.target.value)} className="w-full p-2.5 border border-gray-200 rounded-xl outline-none bg-white text-sm"><option value="">-- Pilih Siswa --</option>{students.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select>
-
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4 border-t border-gray-50">
             <div className="space-y-4">
               <h4 className="text-xs font-bold text-emerald-700 flex items-center gap-2"><Book size={16} /> Tahfizh Individu</h4>
-              <InputRow label="DARI" badge={getBadge(tahfizhIndiv, 'Al-Quran')}>
+              <InputRow label="DARI" badge={getResultText(tahfizhIndiv, 'Al-Quran')}>
                 <SourceSelect value={tahfizhIndiv.fs} onChange={(v) => setTahfizhIndiv({...tahfizhIndiv, fs: v, ts: v})} method="Al-Quran" />
                 <CounterInput label="Ayat" value={tahfizhIndiv.fv} onChange={(v) => setTahfizhIndiv({...tahfizhIndiv, fv: v, tv: v})} />
               </InputRow>
@@ -205,7 +167,7 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
             <div className="space-y-4">
               <h4 className="text-xs font-bold text-blue-700 flex items-center gap-2"><BookOpen size={16} /> Tilawah Individu</h4>
               <div className="flex gap-2"><button onClick={() => setTilawahIndiv({...tilawahIndiv, method: 'Al-Quran'})} className={`flex-1 py-1 text-[9px] font-bold rounded-lg ${tilawahIndiv.method === 'Al-Quran' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'}`}>AL-QUR'AN</button><button onClick={() => setTilawahIndiv({...tilawahIndiv, method: 'Iqra'})} className={`flex-1 py-1 text-[9px] font-bold rounded-lg ${tilawahIndiv.method === 'Iqra' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'}`}>IQRA'</button></div>
-              <InputRow label="DARI" badge={getBadge(tilawahIndiv, tilawahIndiv.method)}>
+              <InputRow label="DARI" badge={getResultText(tilawahIndiv, tilawahIndiv.method)}>
                 <SourceSelect value={tilawahIndiv.fs} onChange={(v) => setTilawahIndiv({...tilawahIndiv, fs: v, ts: v})} method={tilawahIndiv.method} />
                 <CounterInput label={tilawahIndiv.method === 'Al-Quran' ? 'Ayat' : 'Hal'} value={tilawahIndiv.fv} onChange={(v) => setTilawahIndiv({...tilawahIndiv, fv: v, tv: v})} />
               </InputRow>
@@ -231,10 +193,8 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Catatan perkembangan..." className="w-full h-20 p-4 border border-gray-200 rounded-2xl outline-none text-sm"></textarea>
         </div>
       </div>
-
       <Button onClick={handleSave} className="w-full py-4 rounded-2xl shadow-lg font-bold" isLoading={isSaving} disabled={!studentId}>Simpan Laporan Lengkap</Button>
     </div>
   );
 }
-
 export default GuruLaporanPage;

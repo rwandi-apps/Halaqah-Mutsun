@@ -1,3 +1,4 @@
+
 import { QURAN_METADATA } from './quranData';
 import { QURAN_FULL_MAP } from './quranFullData';
 import { QuranAyahData } from './types';
@@ -11,51 +12,79 @@ export interface SDQCalculationResult {
   reason: string;
 }
 
+// Urutan Linear Kurikulum SDQ
+const SDQ_CURRICULUM_ORDER = [
+  // Juz 30
+  "An-Naba'", "An-Nazi'at", "'Abasa", "At-Takwir", "Al-Infitar", "Al-Muthaffifin", "Al-Insyiqaq", "Al-Buruj", "Ath-Thariq", "Al-A'la", "Al-Ghasyiyah", "Al-Fajr", "Al-Balad", "Asy-Syams", "Al-Lail", "Ad-Duha", "Al-Insyirah", "At-Tin", "Al-'Alaq", "Al-Qadr", "Al-Bayyinah", "Az-Zalzalah", "Al-'Adiyat", "Al-Qari'ah", "At-Takatsur", "Al-'Asr", "Al-Humazah", "Al-Fil", "Quraisy", "Al-Ma'un", "Al-Kautsar", "Al-Kafirun", "An-Nasr", "Al-Lahab", "Al-Ikhlas", "Al-Falaq", "An-Nas",
+  // Juz 29
+  "Al-Mulk", "Al-Qalam", "Al-Haqqah", "Al-Ma'arij", "Nuh", "Al-Jinn", "Al-Muzzammil", "Al-Muddassir", "Al-Qiyamah", "Al-Insan", "Al-Mursalat",
+  // Juz 28
+  "Al-Mujadilah", "Al-Hasyr", "Al-Mumtahanah", "As-Saff", "Al-Jumu'ah", "Al-Munafiqun", "At-Taghabun", "At-Talaq", "At-Tahrim",
+  // Juz 27 & 26 (Special handling Adz-Dzariyat di kode engine)
+  "Adz-Dzariyat_31_60", "At-Tur", "An-Najm", "Al-Qamar", "Ar-Rahman", "Al-Waqi'ah", "Al-Hadid",
+  "Al-Ahqaf", "Muhammad", "Al-Fath", "Al-Hujurat", "Qaf", "Adz-Dzariyat_1_30",
+  // 1 - 25 Linear
+  "Al-Fatihah", "Al-Baqarah", "Ali 'Imran", "An-Nisa'", "Al-Ma'idah", "Al-An'am", "Al-A'raf", "Al-Anfal", "At-Taubah", "Yunus", "Hud", "Yusuf", "Ar-Ra'd", "Ibrahim", "Al-Hijr", "An-Nahl", "Al-Isra'", "Al-Kahf", "Maryam", "Ta-Ha", "Al-Anbiya'", "Al-Hajj", "Al-Mu'minun", "An-Nur", "Al-Furqan", "Asy-Syu'ara'", "An-Naml", "Al-Qasas", "Al-'Ankabut", "Ar-Rum", "Luqman", "As-Sajdah", "Al-Ahzab", "Saba'", "Fatir", "Ya-Sin", "As-Saffat", "Sad", "Az-Zumar", "Ghafir", "Fussilat", "Asy-Syura", "Az-Zukhruf", "Ad-Dukhan", "Al-Jasiyah"
+];
+
 export class SDQQuranEngine {
   private static readonly LINES_PER_PAGE = 15;
 
   private static normalizeSurahName(name: string): string {
     if (!name) return "";
-    const clean = name.toLowerCase().trim()
-      .replace(/['`’‘]/g, "'")
-      .replace(/\s+/g, " ");
-
+    const clean = name.toLowerCase().trim().replace(/['`’‘]/g, "'").replace(/\s+/g, " ");
     const keys = Object.keys(QURAN_METADATA);
     const exact = keys.find(k => k.toLowerCase() === clean);
     if (exact) return exact;
-
     const fuzzyClean = clean.replace(/[^a-z0-9]/g, "");
-    const fuzzy = keys.find(k => k.toLowerCase().replace(/[^a-z0-9]/g, "") === fuzzyClean);
-    
-    return fuzzy || "";
+    return keys.find(k => k.toLowerCase().replace(/[^a-z0-9]/g, "") === fuzzyClean) || "";
   }
 
-  private static getAyahData(surahRaw: string, ayahNum: number): QuranAyahData | null {
+  private static getAyahAbsoluteLine(surahRaw: string, ayahNum: number): number {
     const surahName = this.normalizeSurahName(surahRaw);
-    if (!surahName) return null;
+    if (!surahName) return 0;
 
-    const key = `${surahName}:${ayahNum}`;
-    const physicalData = QURAN_FULL_MAP[key];
-
-    if (physicalData) return physicalData;
-
-    const meta = QURAN_METADATA[surahName];
-    if (meta) {
-      const totalPages = meta.endPage - meta.startPage + 1;
-      const progress = Math.min(1, ayahNum / meta.totalAyah);
-      
-      const estimatedPage = meta.startPage + Math.floor(progress * (totalPages - 1));
-      const fractionalPart = (progress * (totalPages - 1)) % 1;
-      const estimatedLine = Math.floor(fractionalPart * this.LINES_PER_PAGE) + 1;
-      
-      return {
-        juz: 0,
-        page: estimatedPage,
-        line: Math.min(15, Math.max(1, estimatedLine)),
-        globalIndex: 0
-      };
+    // Handle split Adz-Dzariyat
+    let lookupName = surahName;
+    if (surahName === "Adz-Dzariyat") {
+      lookupName = ayahNum <= 30 ? "Adz-Dzariyat_1_30" : "Adz-Dzariyat_31_60";
     }
-    return null;
+
+    // Hitung posisi di kurikulum
+    let totalLinesBefore = 0;
+    const currentIndex = SDQ_CURRICULUM_ORDER.indexOf(lookupName);
+    
+    if (currentIndex === -1) return 0;
+
+    for (let i = 0; i < currentIndex; i++) {
+      const sName = SDQ_CURRICULUM_ORDER[i];
+      const realName = sName.split('_')[0];
+      const meta = QURAN_METADATA[realName];
+      if (meta) {
+        if (sName.includes("_1_30")) {
+           totalLinesBefore += 11; // Estimasi 11 baris untuk 1-30
+        } else if (sName.includes("_31_60")) {
+           totalLinesBefore += 11; // Estimasi 11 baris untuk 31-60
+        } else {
+           totalLinesBefore += (meta.endPage - meta.startPage) * this.LINES_PER_PAGE + 15;
+        }
+      }
+    }
+
+    // Tambahkan baris dalam surat saat ini
+    const key = `${surahName}:${ayahNum}`;
+    const data = QURAN_FULL_MAP[key];
+    if (data) {
+       const meta = QURAN_METADATA[surahName];
+       const linesInSurah = ((data.page - meta.startPage) * this.LINES_PER_PAGE) + data.line;
+       return totalLinesBefore + linesInSurah;
+    }
+
+    // Fallback estimasi jika tidak ada di MAP
+    const meta = QURAN_METADATA[surahName];
+    const progress = Math.min(1, ayahNum / meta.totalAyah);
+    const estimatedLinesInSurah = Math.floor(progress * ((meta.endPage - meta.startPage) * 15 + 15));
+    return totalLinesBefore + estimatedLinesInSurah;
   }
 
   public static calculate(fs: string, fa: number, ts: string, ta: number): SDQCalculationResult {
@@ -68,16 +97,14 @@ export class SDQQuranEngine {
       return { valid: true, pages: Math.max(0, totalHal), lines: 0, totalLines: 0, isIqra: true, reason: "" };
     }
 
-    const start = this.getAyahData(fs, fa);
-    const end = this.getAyahData(ts, ta);
+    const startAbs = this.getAyahAbsoluteLine(fs, fa);
+    const endAbs = this.getAyahAbsoluteLine(ts, ta);
 
-    if (!start || !end) {
+    if (startAbs === 0 || endAbs === 0) {
       return { valid: false, pages: 0, lines: 0, totalLines: 0, isIqra: false, reason: "Data tidak ditemukan" };
     }
 
-    const startAbsLine = ((start.page - 1) * this.LINES_PER_PAGE) + start.line;
-    const endAbsLine = ((end.page - 1) * this.LINES_PER_PAGE) + end.line;
-    const totalLines = Math.abs(endAbsLine - startAbsLine) + 1;
+    const totalLines = Math.abs(endAbs - startAbs) + 1;
 
     return {
       valid: true,
