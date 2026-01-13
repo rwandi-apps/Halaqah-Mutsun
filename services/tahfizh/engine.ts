@@ -1,5 +1,3 @@
-
-
 import { QURAN_METADATA } from './quranData';
 import { QURAN_FULL_MAP } from './quranFullData';
 import { QuranAyahData } from './types';
@@ -41,22 +39,24 @@ export class SDQQuranEngine {
     const key = `${surahName}:${ayahNum}`;
     const physicalData = QURAN_FULL_MAP[key];
 
-    // Menggunakan data fisik jika ada (termasuk globalIndex standar 1-6236)
+    // Prioritas 1: Gunakan data fisik dari database (Full Map)
     if (physicalData) return physicalData;
 
-    // Fallback: Estimasi cerdas jika data spesifik belum di-entry
+    // Prioritas 2: Estimasi berdasarkan Metadata Surah jika koordinat ayat spesifik belum tersedia
     const meta = QURAN_METADATA[surahName];
     if (meta) {
       const totalPages = meta.endPage - meta.startPage + 1;
       const progress = ayahNum / meta.totalAyah;
       const estimatedPage = meta.startPage + Math.floor(progress * (totalPages - 1));
-      const estimatedLine = Math.floor((progress * (totalPages - 1) % 1) * this.LINES_PER_PAGE) + 1;
+      // Sisa baris diekstimasikan secara proporsional
+      const lineRemainder = (progress * (totalPages - 1)) % 1;
+      const estimatedLine = Math.floor(lineRemainder * this.LINES_PER_PAGE) + 1;
       
       return {
         juz: 0,
         page: estimatedPage,
         line: Math.min(15, Math.max(1, estimatedLine)),
-        globalIndex: 0 // Akan dihitung via page/line diff jika ini 0
+        globalIndex: 0 
       };
     }
 
@@ -67,15 +67,26 @@ export class SDQQuranEngine {
     const isIqra = fs.toLowerCase().includes("iqra") || ts.toLowerCase().includes("iqra");
 
     if (isIqra) {
+      // Logika Iqra: Input dianggap nomor halaman
       const jStart = parseInt(fs.match(/\d+/)?.[0] || "1");
       const jEnd = parseInt(ts.match(/\d+/)?.[0] || jStart.toString());
+      
       let totalHal = 0;
       if (jStart === jEnd) {
         totalHal = ta - fa + 1;
       } else {
+        // Estimasi standar 30 halaman per jilid iqra
         totalHal = ((jEnd - jStart) * 30) + ta - fa;
       }
-      return { valid: true, pages: Math.max(0, totalHal), lines: 0, totalLines: 0, isIqra: true, reason: "" };
+
+      return {
+        valid: true,
+        pages: Math.max(0, totalHal),
+        lines: 0,
+        totalLines: 0,
+        isIqra: true,
+        reason: ""
+      };
     }
 
     const start = this.getAyahData(fs, fa);
@@ -85,13 +96,12 @@ export class SDQQuranEngine {
       return { valid: false, pages: 0, lines: 0, totalLines: 0, isIqra: false, reason: "Surat/Ayat tidak ditemukan" };
     }
 
-    // LOGIKA GLOBAL INDEX STANDAR:
-    // Jika data Full Map tersedia, kita bisa hitung selisih globalIndex-nya.
-    // Namun untuk baris akurat, kita gunakan perhitungan absolute line.
+    // Hitung posisi absolut dalam baris (Absolute Line Number)
+    // Walaupun kurikulum dibalik, jarak dihitung berdasarkan posisi fisik di Mushaf
     const startAbsLine = ((start.page - 1) * this.LINES_PER_PAGE) + start.line;
     const endAbsLine = ((end.page - 1) * this.LINES_PER_PAGE) + end.line;
     
-    // Perhitungan jarak tetap memperhatikan arah (absolute)
+    // Gunakan nilai absolut agar arah setor (maju/mundur) tetap menghasilkan jumlah positif
     const totalLines = Math.abs(endAbsLine - startAbsLine) + 1;
 
     return {
@@ -109,6 +119,7 @@ export class SDQQuranEngine {
     if (!rangeStr || rangeStr === "-" || rangeStr === "Belum Ada") return { ...empty, valid: true };
 
     try {
+      // Normalisasi tanda hubung
       const parts = rangeStr.split(/\s*[-–]\s*/);
       const parse = (s: string) => {
         const m = s.match(/^(.*?)\s*[:]\s*(\d+)$/);
@@ -124,9 +135,10 @@ export class SDQQuranEngine {
 
       if (parts[1]) {
         if (/^\d+$/.test(parts[1].trim())) {
-          // Fix: Corrected name from 'endAyat' to 'endAyah'
+          // Format: Surat:Ayat - Ayat (Misal Al-Baqarah:1 - 10)
           endAyah = parseInt(parts[1].trim());
         } else {
+          // Format: Surat:Ayat - Surat:Ayat
           const end = parse(parts[1]);
           if (end) {
             endSurah = end.s;
