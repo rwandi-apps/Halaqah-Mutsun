@@ -4,9 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Report, HalaqahMonthlyReport } from '../../../types';
 import { subscribeToReportsByTeacher, deleteReport, getHalaqahMonthlyReport } from '../../../services/firestoreService';
 import { SDQQuranEngine } from '../../../services/tahfizh/engine';
-import { Search, Edit2, Trash2, FileSpreadsheet, CheckCircle2, AlertCircle, Calendar, Filter, BookOpen, Loader2 } from 'lucide-react';
-import { Button } from '../../../components/Button';
-import * as XLSX from 'xlsx';
+import { Search, Edit2, Trash2, Loader2, AlertCircle, CheckCircle2, MoreVertical } from 'lucide-react';
 
 const ACADEMIC_YEARS = ["2023/2024", "2024/2025", "2025/2026"];
 const MONTHS = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
@@ -25,33 +23,42 @@ const formatCompactRangeString = (rangeStr: string | undefined) => {
 const getCalculationDisplay = (rangeStr: string | undefined) => {
   const cleanRange = normalizeRangeInput(rangeStr);
   if (!cleanRange || cleanRange === '-' || cleanRange === '' || cleanRange === 'Belum Ada') return "-";
-  
   const result = SDQQuranEngine.parseAndCalculate(cleanRange);
   if (!result.valid) return "-";
+  if (result.isIqra) return `${result.pages} Hal`;
+  return `${result.pages}H ${result.lines}B`;
+};
 
-  if (result.isIqra) return `${result.pages} Halaman`;
-  return `${result.pages} Hal ${result.lines} Baris`;
+const formatTotalHafalan = (total: any) => {
+  if (!total) return "0 Juz";
+  const parts = [];
+  if (total.juz > 0) parts.push(`${total.juz} Juz`);
+  if (total.pages > 0) parts.push(`${total.pages} Hal`);
+  if (total.lines > 0) parts.push(`${total.lines} Brs`);
+  return parts.length > 0 ? parts.join(' ') : "0 Juz";
+};
+
+const getStatusBadge = (rangeStr: string | undefined) => {
+  const clean = normalizeRangeInput(rangeStr);
+  if (!clean || clean === '-' || clean === '') return <span className="text-gray-400">N/A</span>;
+  const result = SDQQuranEngine.parseAndCalculate(clean);
+  if (!result.valid) return <span className="text-gray-400">-</span>;
+  
+  if (result.pages >= 2) return <span className="flex items-center gap-1 text-emerald-600 font-black"><CheckCircle2 size={12}/> TERCAPAI</span>;
+  return <span className="flex items-center gap-1 text-orange-500 font-black"><AlertCircle size={12}/> BELUM</span>;
 };
 
 const formatKlasikalDisplay = (klasikal: any, type: 'tahfizh' | 'tilawah' = 'tahfizh') => {
   if (!klasikal) return "-";
-  if (typeof klasikal === 'string') return formatCompactRangeString(klasikal);
-  
   const target = type === 'tahfizh' ? klasikal.tahfizh : klasikal.tilawah;
   if (!target || typeof target === 'string') return target || "-";
-
   const { from, to } = target;
   const startV = from.ayah !== undefined ? from.ayah : from.halaman;
   const endV = to.ayah !== undefined ? to.ayah : to.halaman;
-
   if (target.type === 'iqra' || from.jilid !== undefined) {
-    return from.jilid === to.jilid 
-      ? `Iqra ${from.jilid}: ${startV}-${endV}` 
-      : `Iqra ${from.jilid}: ${startV} - Iqra ${to.jilid}: ${endV}`;
+    return from.jilid === to.jilid ? `Iqra ${from.jilid}:${startV}-${endV}` : `Iqra ${from.jilid}:${startV}-Iqra ${to.jilid}:${endV}`;
   }
-  return from.surah === to.surah 
-    ? `${from.surah}: ${startV}-${endV}` 
-    : `${from.surah}: ${startV} - ${to.surah}: ${endV}`;
+  return from.surah === to.surah ? `${from.surah}:${startV}-${endV}` : `${from.surah}:${startV}-${to.surah}:${endV}`;
 };
 
 const GuruViewReportPage: React.FC<{ teacherId?: string }> = ({ teacherId = '1' }) => {
@@ -90,6 +97,16 @@ const GuruViewReportPage: React.FC<{ teacherId?: string }> = ({ teacherId = '1' 
     setFilteredReports(result);
   }, [search, filterYear, filterType, filterMonth, reports]);
 
+  const handleDelete = async (id: string) => {
+    if (window.confirm("Hapus laporan ini?")) {
+      await deleteReport(id);
+    }
+  };
+
+  const handleEdit = (report: Report) => {
+    navigate('/guru/laporan', { state: { editReportId: report.id, reportData: report } });
+  };
+
   return (
     <div className="space-y-6 max-w-full mx-auto pb-12 px-2">
       <div className="flex justify-between items-center">
@@ -104,20 +121,24 @@ const GuruViewReportPage: React.FC<{ teacherId?: string }> = ({ teacherId = '1' 
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse whitespace-nowrap">
             <thead>
-              <tr className="bg-[#155e75] text-white text-[11px] uppercase font-black tracking-wider text-center">
+              <tr className="bg-[#155e75] text-white text-[10px] uppercase font-black tracking-wider text-center">
                 <th className="px-4 py-4 border-r border-white/10 text-left">NAMA SISWA</th>
                 <th className="px-4 py-4 border-r border-white/10">INDIVIDUAL (TAHFIZH)</th>
                 <th className="px-4 py-4 border-r border-white/10">HASIL</th>
+                <th className="px-4 py-4 border-r border-white/10">JUMLAH HAFALAN</th>
                 <th className="px-4 py-4 border-r border-white/10">KLASIKAL</th>
                 <th className="px-4 py-4 border-r border-white/10">INDIVIDUAL (TILAWAH)</th>
-                <th className="px-4 py-4">HASIL</th>
+                <th className="px-4 py-4 border-r border-white/10">HASIL</th>
+                <th className="px-4 py-4 border-r border-white/10">KETERANGAN</th>
+                <th className="px-4 py-4 border-r border-white/10">CATATAN</th>
+                <th className="px-4 py-4">AKSI</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 text-[11px]">
+            <tbody className="divide-y divide-gray-100 text-[10px]">
               {isLoading ? (
-                <tr><td colSpan={6} className="px-6 py-20 text-center"><Loader2 size={32} className="text-primary-500 animate-spin mx-auto" /></td></tr>
+                <tr><td colSpan={10} className="px-6 py-20 text-center"><Loader2 size={32} className="text-primary-500 animate-spin mx-auto" /></td></tr>
               ) : filteredReports.length > 0 ? (
                 filteredReports.map((report) => {
                   const globalKlasikal = klasikalMap[report.month]?.klasikal;
@@ -130,14 +151,23 @@ const GuruViewReportPage: React.FC<{ teacherId?: string }> = ({ teacherId = '1' 
                       <td className="px-4 py-4 font-black text-gray-900 border-r">{report.studentName}</td>
                       <td className="px-4 py-4 text-center border-r font-bold">{indivTahfizh}</td>
                       <td className="px-4 py-4 text-center border-r font-black text-emerald-600 bg-emerald-50/20">{getCalculationDisplay(indivTahfizh)}</td>
+                      <td className="px-4 py-4 text-center border-r font-black text-[#155e75]">{formatTotalHafalan(report.totalHafalan)}</td>
                       <td className="px-4 py-4 text-center border-r italic text-gray-400">{klasikalDisp}</td>
                       <td className="px-4 py-4 text-center border-r font-bold">{indivTilawah}</td>
-                      <td className="px-4 py-4 text-center font-black text-blue-600 bg-blue-50/20">{getCalculationDisplay(indivTilawah)}</td>
+                      <td className="px-4 py-4 text-center border-r font-black text-blue-600 bg-blue-50/20">{getCalculationDisplay(indivTilawah)}</td>
+                      <td className="px-4 py-4 text-center border-r">{getStatusBadge(indivTahfizh)}</td>
+                      <td className="px-4 py-4 border-r italic text-gray-500 max-w-[150px] truncate">{report.notes || "-"}</td>
+                      <td className="px-4 py-4 text-center">
+                        <div className="flex gap-2 justify-center">
+                          <button onClick={() => handleEdit(report)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Edit2 size={14}/></button>
+                          <button onClick={() => handleDelete(report.id)} className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"><Trash2 size={14}/></button>
+                        </div>
+                      </td>
                     </tr>
                   );
                 })
               ) : (
-                <tr><td colSpan={6} className="px-6 py-24 text-center text-gray-400 uppercase italic">Data Tidak Ditemukan</td></tr>
+                <tr><td colSpan={10} className="px-6 py-24 text-center text-gray-400 uppercase italic">Data Tidak Ditemukan</td></tr>
               )}
             </tbody>
           </table>

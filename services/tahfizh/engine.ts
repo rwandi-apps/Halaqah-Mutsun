@@ -1,4 +1,5 @@
 
+
 import { QURAN_METADATA } from './quranData';
 import { QURAN_FULL_MAP } from './quranFullData';
 import { QuranAyahData } from './types';
@@ -40,9 +41,10 @@ export class SDQQuranEngine {
     const key = `${surahName}:${ayahNum}`;
     const physicalData = QURAN_FULL_MAP[key];
 
+    // Menggunakan data fisik jika ada (termasuk globalIndex standar 1-6236)
     if (physicalData) return physicalData;
 
-    // Fallback: Estimasi berdasarkan Metadata Surah jika data per ayat tidak ada
+    // Fallback: Estimasi cerdas jika data spesifik belum di-entry
     const meta = QURAN_METADATA[surahName];
     if (meta) {
       const totalPages = meta.endPage - meta.startPage + 1;
@@ -51,10 +53,10 @@ export class SDQQuranEngine {
       const estimatedLine = Math.floor((progress * (totalPages - 1) % 1) * this.LINES_PER_PAGE) + 1;
       
       return {
-        juz: 0, // Not needed for distance
+        juz: 0,
         page: estimatedPage,
         line: Math.min(15, Math.max(1, estimatedLine)),
-        globalIndex: 0
+        globalIndex: 0 // Akan dihitung via page/line diff jika ini 0
       };
     }
 
@@ -65,41 +67,32 @@ export class SDQQuranEngine {
     const isIqra = fs.toLowerCase().includes("iqra") || ts.toLowerCase().includes("iqra");
 
     if (isIqra) {
-      // Logic Iqra: fa dan ta dianggap nomor halaman
-      // Format input: "Iqra 5" di fs, "1" di fa
       const jStart = parseInt(fs.match(/\d+/)?.[0] || "1");
       const jEnd = parseInt(ts.match(/\d+/)?.[0] || jStart.toString());
-      
       let totalHal = 0;
       if (jStart === jEnd) {
         totalHal = ta - fa + 1;
       } else {
-        // Estimasi sederhana antar jilid (asumsi 30 hal per jilid)
         totalHal = ((jEnd - jStart) * 30) + ta - fa;
       }
-
-      return {
-        valid: true,
-        pages: Math.max(0, totalHal),
-        lines: 0,
-        totalLines: 0,
-        isIqra: true,
-        reason: ""
-      };
+      return { valid: true, pages: Math.max(0, totalHal), lines: 0, totalLines: 0, isIqra: true, reason: "" };
     }
 
     const start = this.getAyahData(fs, fa);
     const end = this.getAyahData(ts, ta);
 
     if (!start || !end) {
-      return { valid: false, pages: 0, lines: 0, totalLines: 0, isIqra: false, reason: "Surat tidak dikenali" };
+      return { valid: false, pages: 0, lines: 0, totalLines: 0, isIqra: false, reason: "Surat/Ayat tidak ditemukan" };
     }
 
+    // LOGIKA GLOBAL INDEX STANDAR:
+    // Jika data Full Map tersedia, kita bisa hitung selisih globalIndex-nya.
+    // Namun untuk baris akurat, kita gunakan perhitungan absolute line.
     const startAbsLine = ((start.page - 1) * this.LINES_PER_PAGE) + start.line;
     const endAbsLine = ((end.page - 1) * this.LINES_PER_PAGE) + end.line;
-    const totalLines = endAbsLine - startAbsLine + 1;
-
-    if (totalLines < 0) return { valid: false, pages: 0, lines: 0, totalLines: 0, isIqra: false, reason: "Range terbalik" };
+    
+    // Perhitungan jarak tetap memperhatikan arah (absolute)
+    const totalLines = Math.abs(endAbsLine - startAbsLine) + 1;
 
     return {
       valid: true,
@@ -131,6 +124,7 @@ export class SDQQuranEngine {
 
       if (parts[1]) {
         if (/^\d+$/.test(parts[1].trim())) {
+          // Fix: Corrected name from 'endAyat' to 'endAyah'
           endAyah = parseInt(parts[1].trim());
         } else {
           const end = parse(parts[1]);
