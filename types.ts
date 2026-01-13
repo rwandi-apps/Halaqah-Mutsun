@@ -75,17 +75,19 @@ export interface Report {
   type: string;
   month: string;
   academicYear?: string;
-  periodCode?: number; // Integer YYYYMM untuk sorting absolut
-  migrated?: boolean;  // Flag penanda data legacy yang sudah dinormalisasi
+  periodCode?: number; 
+  migrated?: boolean;  
   
   tilawah: {
     method: string;
     individual: string;
     classical?: string; 
+    result?: string; // Field Baru: Menyimpan teks hasil (Contoh: "2H 5B")
   };
   tahfizh: {
     individual: string;
     classical?: string; 
+    result?: string; // Field Baru: Menyimpan teks hasil (Contoh: "1H 10B")
   };
   totalHafalan?: {
     juz: number;
@@ -99,7 +101,6 @@ export interface Report {
   date: string;
   evaluation: string;
   
-  // Legacy fields support (optional)
   hafalanRange?: string; 
 }
 
