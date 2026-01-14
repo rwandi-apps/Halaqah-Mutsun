@@ -7,7 +7,7 @@ export interface SDQCalculationResult {
   pages: number;
   lines: number;
   totalLines: number;
-  isIqra: boolean;
+  isIqra': boolean;
   reason: string;
 }
 
@@ -105,20 +105,20 @@ private static getAyahAbsoluteLine(surahRaw: string, ayahNum: number): number {
 }
 
   public static calculate(fs: string, fa: number, ts: string, ta: number): SDQCalculationResult {
-  // ... (logika iqra tetap sama)
+  // ... (logika Iqra' tetap sama)
 
   const startAbs = this.getAyahAbsoluteLine(fs, fa);
   const endAbs = this.getAyahAbsoluteLine(ts, ta);
 
   if (startAbs === 0 || endAbs === 0) {
-    return { valid: false, pages: 0, lines: 0, totalLines: 0, isIqra: false, reason: "Data tidak ditemukan" };
+    return { valid: false, pages: 0, lines: 0, totalLines: 0, isIqra': false, reason: "Data tidak ditemukan" };
   }
 
   // Menghitung selisih. Jika endAbs < startAbs, berarti rentang terbalik
   const totalLines = endAbs - startAbs + 1;
 
   if (totalLines <= 0) {
-     return { valid: false, pages: 0, lines: 0, totalLines: 0, isIqra: false, reason: "Urutan surat terbalik atau tidak sesuai kurikulum" };
+     return { valid: false, pages: 0, lines: 0, totalLines: 0, isIqra': false, reason: "Urutan surat terbalik atau tidak sesuai kurikulum" };
   }
 
   return {
@@ -126,13 +126,13 @@ private static getAyahAbsoluteLine(surahRaw: string, ayahNum: number): number {
     totalLines,
     pages: Math.floor(totalLines / this.LINES_PER_PAGE),
     lines: totalLines % this.LINES_PER_PAGE,
-    isIqra: false,
+    isIqra': false,
     reason: ""
   };
 }
 
   public static parseAndCalculate(rangeStr: string): SDQCalculationResult {
-    const empty = { valid: false, pages: 0, lines: 0, totalLines: 0, isIqra: false, reason: "" };
+    const empty = { valid: false, pages: 0, lines: 0, totalLines: 0, isIqra': false, reason: "" };
     if (!rangeStr || rangeStr === "-" || rangeStr === "Belum Ada") return { ...empty, valid: true };
 
     try {
