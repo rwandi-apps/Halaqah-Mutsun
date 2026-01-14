@@ -5404,7 +5404,7 @@ export const QURAN_FULL_MAP: Record<string, QuranAyahData> = {
 "At-Tahrim:11": { juz: 28, page: 561, line: 13, globalIndex: 5240 },
 "At-Tahrim:12": { juz: 28, page: 561, line: 15, globalIndex: 5241 },
   // Juz 29
-  "Al-Mulk:1": { juz: 29, page: 562, line: 3, globalIndex: 5242 },
+  "Al-Mulk:1": { juz: 29, page: 562, line: 1, globalIndex: 5242 },
 "Al-Mulk:2": { juz: 29, page: 562, line: 4, globalIndex: 5243 },
 "Al-Mulk:3": { juz: 29, page: 562, line: 6, globalIndex: 5244 },
 "Al-Mulk:4": { juz: 29, page: 562, line: 7, globalIndex: 5245 },
