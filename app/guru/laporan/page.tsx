@@ -12,7 +12,7 @@ interface GuruLaporanPageProps {
   teacherId?: string;
 }
 
-const Iqra'_VOLUMES = ["Iqra' 1", "Iqra' 2", "Iqra' 3", "Iqra' 4", "Iqra' 5", "Iqra' 6"];
+const Iqra_VOLUMES = ["Iqra' 1", "Iqra' 2", "Iqra' 3", "Iqra' 4", "Iqra' 5", "Iqra' 6"];
 const MONTH_LIST = ["Juli", "Agustus", "September", "Oktober", "November", "Desember", "Januari", "Februari", "Maret", "April", "Mei", "Juni"];
 const ACADEMIC_YEARS = ["2024/2025", "2025/2026", "2026/2027"];
 
