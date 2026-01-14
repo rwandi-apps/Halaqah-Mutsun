@@ -26,13 +26,22 @@ const formatRangeDisplay = (raw: string | undefined): string => {
 
 const getStoredOrCalculatedResult = (report: Report, category: 'tahfizh' | 'tilawah') => {
   const target = report[category];
+  
   if (target.result && target.result !== '-' && target.result !== '0H 0B') {
-    return target.result.replace(/H/g, 'Hal').replace(/B/g, 'Baris');
+    // Gunakan regex \b (boundary) agar hanya mengganti huruf H/B yang berdiri sendiri
+    // Atau cara paling aman: jika sudah mengandung kata "Hal", langsung kembalikan saja
+    if (target.result.includes('Hal') || target.result.includes('Baris')) {
+      return target.result;
+    }
+    return target.result.replace(/\bH\b/g, 'Hal').replace(/\bB\b/g, 'Baris');
   }
+
   const cleanRange = formatRangeDisplay(target.individual);
   if (cleanRange === '-') return "-";
+  
   const result = SDQQuranEngine.parseAndCalculate(cleanRange);
   if (!result.valid) return "-";
+  
   return result.isIqra ? `${result.pages} Hal` : `${result.pages} Hal ${result.lines} Baris`;
 };
 
