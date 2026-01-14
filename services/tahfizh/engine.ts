@@ -63,49 +63,41 @@ private static getAyahAbsoluteLine(surahRaw: string, ayahNum: number): number {
       const endData = QURAN_FULL_MAP[`${realName}:${meta.totalAyah}`];
 
       if (startData && endData) {
-        // CEK: Apakah ada surat lain di atasnya pada halaman yang sama?
-        // Kita lihat surat sebelumnya dalam kurikulum
-        const prevSName = i > 0 ? SDQ_CURRICULUM_ORDER[i-1] : null;
-        const prevRealName = prevSName ? prevSName.split('_')[0] : null;
-        const prevEndData = prevRealName ? QURAN_FULL_MAP[`${prevRealName}:${QURAN_METADATA[prevRealName]?.totalAyah}`] : null;
-
-        let startLineForCalculation = startData.line;
-        // JIKA surat ini di halaman baru ATAU paling atas, hitung dari baris 1
-        if (!prevEndData || prevEndData.page !== startData.page) {
-          startLineForCalculation = 1;
-        }
-
-        const linesInSurah = ((endData.page - startData.page) * this.LINES_PER_PAGE) + (endData.line - startLineForCalculation + 1);
+        // 1. Hitung baris murni di dalam surat tersebut
+        const linesInSurah = ((endData.page - startData.page) * this.LINES_PER_PAGE) + (endData.line - startData.line + 1);
         totalLinesAccumulated += linesInSurah;
 
-        // Berikan "napas" jika pindah halaman
-        const nextSName = SDQ_CURRICULUM_ORDER[i+1];
+        // 2. Cek jarak ke surat berikutnya dalam kurikulum
+        const nextSName = SDQ_CURRICULUM_ORDER[i + 1];
         if (nextSName) {
-          const nextStartData = QURAN_FULL_MAP[`${nextSName.split('_')[0]}:1`];
-          if (nextStartData && nextStartData.page !== endData.page) {
-            totalLinesAccumulated += (this.LINES_PER_PAGE - endData.line);
+          const nextRealName = nextSName.split('_')[0];
+          const nextStartData = QURAN_FULL_MAP[`${nextRealName}:1`];
+
+          if (nextStartData) {
+            if (nextStartData.page === endData.page) {
+              // Jika surat berikutnya di HALAMAN YANG SAMA, hitung selisih barisnya (termasuk judul/bismillah)
+              const gap = nextStartData.line - endData.line - 1;
+              totalLinesAccumulated += Math.max(0, gap);
+            } else {
+              // Jika surat berikutnya di HALAMAN BERBEDA
+              // Selesaikan sisa baris di halaman saat ini agar genap 15, 
+              // lalu jika loncat halaman jauh (seperti An-Nas ke Al-Mulk), jangan tambahkan selisih ribuan baris,
+              // cukup anggap itu halaman baru.
+              const remainingLinesOnPage = this.LINES_PER_PAGE - endData.line;
+              totalLinesAccumulated += remainingLinesOnPage;
+            }
           }
         }
       }
     }
   }
 
-  // 3. Hitung surat target
+  // 3. Tambahkan baris di surat terakhir (target)
   const currentStartData = QURAN_FULL_MAP[`${surahName}:1`];
   const targetAyahData = QURAN_FULL_MAP[`${surahName}:${ayahNum}`];
 
   if (currentStartData && targetAyahData) {
-    // Logika yang sama: Cek apakah surat ini perlu dihitung dari baris 1 (karena paling atas)
-    const prevInCurriculum = currentIndex > 0 ? SDQ_CURRICULUM_ORDER[currentIndex-1] : null;
-    const prevReal = prevInCurriculum ? prevInCurriculum.split('_')[0] : null;
-    const prevEnd = prevReal ? QURAN_FULL_MAP[`${prevReal}:${QURAN_METADATA[prevReal]?.totalAyah}`] : null;
-
-    let startLine = currentStartData.line;
-    if (!prevEnd || prevEnd.page !== currentStartData.page) {
-      startLine = 1; 
-    }
-
-    const linesInCurrent = ((targetAyahData.page - currentStartData.page) * this.LINES_PER_PAGE) + (targetAyahData.line - startLine + 1);
+    const linesInCurrent = ((targetAyahData.page - currentStartData.page) * this.LINES_PER_PAGE) + (targetAyahData.line - currentStartData.line + 1);
     return totalLinesAccumulated + linesInCurrent;
   }
 
