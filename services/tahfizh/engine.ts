@@ -1,5 +1,4 @@
 
-import { QURAN_METADATA } from './quranData';
 import { QURAN_FULL_MAP } from './quranFullData';
 import { QuranAyahData } from './types';
 
