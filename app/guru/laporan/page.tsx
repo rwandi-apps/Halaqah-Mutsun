@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Student, Report } from '../../../types';
@@ -12,7 +11,7 @@ interface GuruLaporanPageProps {
   teacherId?: string;
 }
 
-const Iqra_VOLUMES = ["Iqra' 1", "Iqra' 2", "Iqra' 3", "Iqra' 4", "Iqra' 5", "Iqra' 6"];
+const IQRA_VOLUMES = ["Iqra' 1", "Iqra' 2", "Iqra' 3", "Iqra' 4", "Iqra' 5", "Iqra' 6"];
 const MONTH_LIST = ["Juli", "Agustus", "September", "Oktober", "November", "Desember", "Januari", "Februari", "Maret", "April", "Mei", "Juni"];
 const ACADEMIC_YEARS = ["2024/2025", "2025/2026", "2026/2027"];
 
@@ -34,7 +33,7 @@ const SourceSelect = ({ value, onChange, method, placeholder = 'Pilih...' }: { v
   <div className="flex-1">
     <select value={value} onChange={(e) => onChange(e.target.value)} className="w-full h-9 sm:h-10 px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none bg-white text-xs sm:text-sm truncate shadow-sm">
       <option value="">{placeholder}</option>
-      {method === 'Al-Quran' ? SURAH_LIST.map((s, i) => <option key={s} value={s}>{i + 1}. {s}</option>) : Iqra_VOLUMES.map((v) => <option key={v} value={v}>{v}</option>)}
+      {method === 'Al-Quran' ? SURAH_LIST.map((s, i) => <option key={s} value={s}>{i + 1}. {s}</option>) : IQRA_VOLUMES.map((v) => <option key={v} value={v}>{v}</option>)}
     </select>
   </div>
 );
@@ -54,15 +53,19 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // State Laporan
   const [reportType, setReportType] = useState('Laporan Bulanan');
   const [studentId, setStudentId] = useState('');
   const [academicYear, setAcademicYear] = useState('2025/2026');
   const [month, setMonth] = useState('Desember');
   
+  // State Input Hafalan
   const [tahfizhIndiv, setTahfizhIndiv] = useState({ fs: '', fv: '' as any, ts: '', tv: '' as any });
   const [tilawahIndiv, setTilawahIndiv] = useState({ method: 'Al-Quran' as 'Al-Quran' | 'Iqra', fs: '', fv: '' as any, ts: '', tv: '' as any });
   const [tahfizhKlas, setTahfizhKlas] = useState({ fs: '', fv: '' as any, ts: '', tv: '' as any });
   const [tilawahKlas, setTilawahKlas] = useState({ method: 'Al-Quran' as 'Al-Quran' | 'Iqra', fs: '', fv: '' as any, ts: '', tv: '' as any });
+  
   const [baselineJuz, setBaselineJuz] = useState<number | string>(0);
   const [baselinePages, setBaselinePages] = useState<number | string>(0);
   const [baselineLines, setBaselineLines] = useState<number | string>(0);
@@ -74,6 +77,17 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
     if (!teacherId) return;
     getStudentsByTeacher(teacherId).then(data => { setStudents(data); setIsLoading(false); });
   }, [teacherId]);
+
+  // --- PERBAIKAN UTAMA DI SINI ---
+  // useEffect ini memastikan 'month' sinkron dengan 'reportType'
+  useEffect(() => {
+    if (reportType === 'Laporan Semester') {
+      setMonth('Ganjil'); // Default ke Ganjil jika pindah ke Semester
+    } else {
+      setMonth('Desember'); // Default ke Desember (atau bulan saat ini) jika pindah ke Bulanan
+    }
+  }, [reportType]);
+  // -------------------------------
 
   const getResultText = (data: any, method: string) => {
     if (!data.fs || !data.ts) return '';
@@ -92,10 +106,19 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
       const tlRes = getResultText(tilawahIndiv, tilawahIndiv.method);
       const fmt = (s: string, v: any) => (s ? `${s}: ${v === '' ? '-' : v}` : '-');
       const makeRange = (data: any) => (!data.fs && !data.ts ? '-' : `${fmt(data.fs, data.fv)} - ${fmt(data.ts, data.tv)}`);
+      
       await saveSDQReport({
-        studentId, studentName: selectedStudent.name, teacherId: teacherId || '', className: selectedStudent.className, 
-        type: reportType, month, academicYear, date: new Date().toISOString().split('T')[0], evaluation: '',
-        attendance: 100, behaviorScore: 10,
+        studentId, 
+        studentName: selectedStudent.name, 
+        teacherId: teacherId || '', 
+        className: selectedStudent.className, 
+        type: reportType, 
+        month, // Nilai ini sekarang dijamin benar oleh useEffect di atas
+        academicYear, 
+        date: new Date().toISOString().split('T')[0], 
+        evaluation: '',
+        attendance: 100, 
+        behaviorScore: 10,
         tilawah: { method: tilawahIndiv.method, individual: makeRange(tilawahIndiv), classical: makeRange(tilawahKlas), result: tlRes || "-" },
         tahfizh: { individual: makeRange(tahfizhIndiv), classical: makeRange(tahfizhKlas), result: tfRes || "-" },
         totalHafalan: { juz: safeNum(baselineJuz), pages: safeNum(baselinePages), lines: safeNum(baselineLines) },
@@ -111,14 +134,21 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
       <h2 className="text-2xl font-bold text-gray-900">Input Laporan Halaqah</h2>
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-4">
         <select value={academicYear} onChange={(e) => setAcademicYear(e.target.value)} className="p-2 border rounded-xl bg-white text-sm">{ACADEMIC_YEARS.map(y => <option key={y} value={y}>{y}</option>)}</select>
-        <select value={reportType} onChange={(e) => setReportType(e.target.value)} className="p-2 border rounded-xl bg-white text-sm"><option value="Laporan Bulanan">Laporan Bulanan</option><option value="Laporan Semester">Laporan Semester</option></select>
+        
+        {/* Dropdown Tipe Laporan */}
+        <select value={reportType} onChange={(e) => setReportType(e.target.value)} className="p-2 border rounded-xl bg-white text-sm">
+            <option value="Laporan Bulanan">Laporan Bulanan</option>
+            <option value="Laporan Semester">Laporan Semester</option>
+        </select>
+        
+        {/* Dropdown Bulan/Semester - Value akan otomatis berubah berkat useEffect */}
         <select value={month} onChange={(e) => setMonth(e.target.value)} className="p-2 border rounded-xl bg-white text-sm">
           {reportType === 'Laporan Semester' ? ["Ganjil", "Genap"].map(s => <option key={s} value={s}>Semester {s}</option>) : MONTH_LIST.map(m => <option key={m} value={m}>{m}</option>)}
         </select>
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        {/* KLASIKAL SECTION (DI ATAS) */}
+        {/* KLASIKAL SECTION */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6 border-t-4 border-t-blue-500">
           <div className="flex items-center gap-2 mb-2 text-blue-600"><Users size={20}/><h3 className="font-bold text-gray-800 text-sm uppercase">Capaian Klasikal (Kelompok)</h3></div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4 border-t border-gray-50">
@@ -135,7 +165,10 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
             </div>
             <div className="space-y-4">
               <h4 className="text-xs font-bold text-blue-700 flex items-center gap-2"><BookOpen size={16} /> Tilawah Klasikal</h4>
-              <div className="flex gap-2"><button onClick={() => setTilawahKlas({...tilawahKlas, method: 'Al-Quran'})} className={`flex-1 py-1 text-[9px] font-bold rounded-lg ${tilawahKlas.method === 'Al-Quran' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'}`}>AL-QUR'AN</button><button onClick={() => setTilawahKlas({...tilawahKlas, method: 'Iqra'})} className={`flex-1 py-1 text-[9px] font-bold rounded-lg ${tilawahKlas.method === 'Iqra' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'}`}>Iqra'</button></div>
+              <div className="flex gap-2">
+                  <button onClick={() => setTilawahKlas({...tilawahKlas, method: 'Al-Quran'})} className={`flex-1 py-1 text-[9px] font-bold rounded-lg ${tilawahKlas.method === 'Al-Quran' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'}`}>AL-QUR'AN</button>
+                  <button onClick={() => setTilawahKlas({...tilawahKlas, method: 'Iqra'})} className={`flex-1 py-1 text-[9px] font-bold rounded-lg ${tilawahKlas.method === 'Iqra' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'}`}>Iqra'</button>
+              </div>
               <InputRow label="DARI" badge={getResultText(tilawahKlas, tilawahKlas.method)}>
                 <SourceSelect value={tilawahKlas.fs} onChange={(v) => setTilawahKlas({...tilawahKlas, fs: v, ts: v})} method={tilawahKlas.method} />
                 <CounterInput label={tilawahKlas.method === 'Al-Quran' ? 'Ayat' : 'Hal'} value={tilawahKlas.fv} onChange={(v) => setTilawahKlas({...tilawahKlas, fv: v, tv: v})} />
@@ -166,7 +199,10 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
             </div>
             <div className="space-y-4">
               <h4 className="text-xs font-bold text-blue-700 flex items-center gap-2"><BookOpen size={16} /> Tilawah Individu</h4>
-              <div className="flex gap-2"><button onClick={() => setTilawahIndiv({...tilawahIndiv, method: 'Al-Quran'})} className={`flex-1 py-1 text-[9px] font-bold rounded-lg ${tilawahIndiv.method === 'Al-Quran' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'}`}>AL-QUR'AN</button><button onClick={() => setTilawahIndiv({...tilawahIndiv, method: 'Iqra'})} className={`flex-1 py-1 text-[9px] font-bold rounded-lg ${tilawahIndiv.method === 'Iqra' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'}`}>Iqra'</button></div>
+              <div className="flex gap-2">
+                  <button onClick={() => setTilawahIndiv({...tilawahIndiv, method: 'Al-Quran'})} className={`flex-1 py-1 text-[9px] font-bold rounded-lg ${tilawahIndiv.method === 'Al-Quran' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'}`}>AL-QUR'AN</button>
+                  <button onClick={() => setTilawahIndiv({...tilawahIndiv, method: 'Iqra'})} className={`flex-1 py-1 text-[9px] font-bold rounded-lg ${tilawahIndiv.method === 'Iqra' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'}`}>Iqra'</button>
+              </div>
               <InputRow label="DARI" badge={getResultText(tilawahIndiv, tilawahIndiv.method)}>
                 <SourceSelect value={tilawahIndiv.fs} onChange={(v) => setTilawahIndiv({...tilawahIndiv, fs: v, ts: v})} method={tilawahIndiv.method} />
                 <CounterInput label={tilawahIndiv.method === 'Al-Quran' ? 'Ayat' : 'Hal'} value={tilawahIndiv.fv} onChange={(v) => setTilawahIndiv({...tilawahIndiv, fv: v, tv: v})} />
