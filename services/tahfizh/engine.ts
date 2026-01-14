@@ -43,48 +43,56 @@ export class SDQQuranEngine {
     const surahName = this.normalizeSurahName(surahRaw);
     if (!surahName) return 0;
 
-    // Handle split Adz-Dzariyat
     let lookupName = surahName;
     if (surahName === "Adz-Dzariyat") {
-      lookupName = ayahNum <= 30 ? "Adz-Dzariyat_1_30" : "Adz-Dzariyat_31_60";
+        lookupName = ayahNum <= 30 ? "Adz-Dzariyat_1_30" : "Adz-Dzariyat_31_60";
     }
 
-    // Hitung posisi di kurikulum
-    let totalLinesBefore = 0;
     const currentIndex = SDQ_CURRICULUM_ORDER.indexOf(lookupName);
-    
     if (currentIndex === -1) return 0;
 
+    let totalLinesAccumulated = 0;
+
+    // 1. Hitung baris penuh bagi semua surat SEBELUMNYA dalam kurikulum
     for (let i = 0; i < currentIndex; i++) {
-      const sName = SDQ_CURRICULUM_ORDER[i];
-      const realName = sName.split('_')[0];
-      const meta = QURAN_METADATA[realName];
-      if (meta) {
-        if (sName.includes("_1_30")) {
-           totalLinesBefore += 11; // Estimasi 11 baris untuk 1-30
-        } else if (sName.includes("_31_60")) {
-           totalLinesBefore += 11; // Estimasi 11 baris untuk 31-60
-        } else {
-           totalLinesBefore += (meta.endPage - meta.startPage) * this.LINES_PER_PAGE + 15;
+        const sName = SDQ_CURRICULUM_ORDER[i];
+        const realName = sName.split('_')[0];
+        
+        // Ambil data baris awal dan akhir surat tersebut dari QURAN_FULL_MAP
+        const meta = QURAN_METADATA[realName];
+        if (meta) {
+            // Kita ambil baris pertama dan terakhir surat tersebut
+            const startKey = `${realName}:1`;
+            const endKey = `${realName}:${meta.totalAyah}`;
+            
+            const startData = QURAN_FULL_MAP[startKey];
+            const endData = QURAN_FULL_MAP[endKey];
+
+            if (startData && endData) {
+                // RUMUS PENTING: (HalamanAkhir - HalamanAwal) * 15 + (BarisAkhir - BarisAwal + 1)
+                const linesInThisSurah = ((endData.page - startData.page) * 15) + (endData.line - startData.line + 1);
+                totalLinesAccumulated += linesInThisSurah;
+            } else {
+                // Fallback jika data MAP tidak lengkap (estimasi kasar)
+                totalLinesAccumulated += (meta.endPage - meta.startPage) * 15 + 5; 
+            }
         }
-      }
     }
 
-    // Tambahkan baris dalam surat saat ini
-    const key = `${surahName}:${ayahNum}`;
-    const data = QURAN_FULL_MAP[key];
-    if (data) {
-       const meta = QURAN_METADATA[surahName];
-       const linesInSurah = ((data.page - meta.startPage) * this.LINES_PER_PAGE) + data.line;
-       return totalLinesBefore + linesInSurah;
+    // 2. Tambah baris dalam surat SEMASA (dari ayat 1 hingga ayat yang diinput)
+    const currentSurahStartKey = `${surahName}:1`;
+    const currentAyahKey = `${surahName}:${ayahNum}`;
+    
+    const startData = QURAN_FULL_MAP[currentSurahStartKey];
+    const ayahData = QURAN_FULL_MAP[currentAyahKey];
+
+    if (startData && ayahData) {
+        const linesInCurrentSurah = ((ayahData.page - startData.page) * 15) + (ayahData.line - startData.line + 1);
+        return totalLinesAccumulated + linesInCurrentSurah;
     }
 
-    // Fallback estimasi jika tidak ada di MAP
-    const meta = QURAN_METADATA[surahName];
-    const progress = Math.min(1, ayahNum / meta.totalAyah);
-    const estimatedLinesInSurah = Math.floor(progress * ((meta.endPage - meta.startPage) * 15 + 15));
-    return totalLinesBefore + estimatedLinesInSurah;
-  }
+    return totalLinesAccumulated;
+}
 
   public static calculate(fs: string, fa: number, ts: string, ta: number): SDQCalculationResult {
     const isIqra = fs.toLowerCase().includes("iqra") || ts.toLowerCase().includes("iqra");
