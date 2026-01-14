@@ -104,21 +104,59 @@ private static getAyahAbsoluteLine(surahRaw: string, ayahNum: number): number {
   return totalLinesAccumulated;
 }
 
-  public static calculate(fs: string, fa: number, ts: string, ta: number): SDQCalculationResult {
-  // ... (logika Iqra tetap sama)
+ public static calculate(fs: string, fa: number, ts: string, ta: number): SDQCalculationResult {
+  // 1. LOGIKA IQRA (DIPERBAIKI)
+  // Menggunakan regex /iqra/i agar mau Iqra atau Iqra' tetap terbaca
+  const isIqra = /iqra/i.test(fs) || /iqra/i.test(ts);
 
+  if (isIqra) {
+    // Fungsi pembantu mengambil angka jilid (misal "Iqra' 2" -> 2)
+    const extractJilid = (str: string) => parseInt(str.replace(/\D/g, "") || "1");
+    const jStart = extractJilid(fs);
+    const jEnd = extractJilid(ts);
+
+    // fa dan ta adalah halaman dalam Iqra
+    let totalHal = (jStart === jEnd) 
+      ? (ta - fa + 1) 
+      : (((jEnd - jStart) * 30) + ta - fa);
+
+    return { 
+      valid: true, 
+      pages: Math.max(0, totalHal), 
+      lines: 0, 
+      totalLines: 0, 
+      isIqra: true, 
+      reason: "" 
+    };
+  }
+
+  // 2. LOGIKA AL-QURAN
   const startAbs = this.getAyahAbsoluteLine(fs, fa);
   const endAbs = this.getAyahAbsoluteLine(ts, ta);
 
   if (startAbs === 0 || endAbs === 0) {
-    return { valid: false, pages: 0, lines: 0, totalLines: 0, isIqra: false, reason: "Data tidak ditemukan" };
+    return { 
+      valid: false, 
+      pages: 0, 
+      lines: 0, 
+      totalLines: 0, 
+      isIqra: false, 
+      reason: "Data tidak ditemukan" 
+    };
   }
 
-  // Menghitung selisih. Jika endAbs < startAbs, berarti rentang terbalik
+  // Menghitung selisih garis berdasarkan urutan kurikulum
   const totalLines = endAbs - startAbs + 1;
 
   if (totalLines <= 0) {
-     return { valid: false, pages: 0, lines: 0, totalLines: 0, isIqra: false, reason: "Urutan surat terbalik atau tidak sesuai kurikulum" };
+    return { 
+      valid: false, 
+      pages: 0, 
+      lines: 0, 
+      totalLines: 0, 
+      isIqra: false, 
+      reason: "Urutan surat terbalik atau tidak sesuai kurikulum" 
+    };
   }
 
   return {
