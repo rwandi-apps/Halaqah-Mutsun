@@ -34,7 +34,7 @@ const SourceSelect = ({ value, onChange, method, placeholder = 'Pilih...' }: { v
   <div className="flex-1">
     <select value={value} onChange={(e) => onChange(e.target.value)} className="w-full h-9 sm:h-10 px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none bg-white text-xs sm:text-sm truncate shadow-sm">
       <option value="">{placeholder}</option>
-      {method === 'Al-Quran' ? SURAH_LIST.map((s, i) => <option key={s} value={s}>{i + 1}. {s}</option>) : Iqra'_VOLUMES.map((v) => <option key={v} value={v}>{v}</option>)}
+      {method === 'Al-Quran' ? SURAH_LIST.map((s, i) => <option key={s} value={s}>{i + 1}. {s}</option>) : Iqra_VOLUMES.map((v) => <option key={v} value={v}>{v}</option>)}
     </select>
   </div>
 );
