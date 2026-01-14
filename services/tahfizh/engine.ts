@@ -40,58 +40,67 @@ export class SDQQuranEngine {
   }
 
   private static getAyahAbsoluteLine(surahRaw: string, ayahNum: number): number {
-    const surahName = this.normalizeSurahName(surahRaw);
-    if (!surahName) return 0;
+  const surahName = this.normalizeSurahName(surahRaw);
+  if (!surahName) return 0;
 
-    let lookupName = surahName;
-    if (surahName === "Adz-Dzariyat") {
-        lookupName = ayahNum <= 30 ? "Adz-Dzariyat_1_30" : "Adz-Dzariyat_31_60";
-    }
+  let lookupName = surahName;
+  if (surahName === "Adz-Dzariyat") {
+    lookupName = ayahNum <= 30 ? "Adz-Dzariyat_1_30" : "Adz-Dzariyat_31_60";
+  }
 
-    const currentIndex = SDQ_CURRICULUM_ORDER.indexOf(lookupName);
-    if (currentIndex === -1) return 0;
+  const currentIndex = SDQ_CURRICULUM_ORDER.indexOf(lookupName);
+  if (currentIndex === -1) return 0;
 
-    let totalLinesAccumulated = 0;
+  let totalLinesAccumulated = 0;
 
-    // 1. Hitung baris penuh bagi semua surat SEBELUMNYA dalam kurikulum
-    for (let i = 0; i < currentIndex; i++) {
-        const sName = SDQ_CURRICULUM_ORDER[i];
-        const realName = sName.split('_')[0];
+  // 1. Hitung baris penuh bagi semua surat SEBELUMNYA dalam kurikulum
+  for (let i = 0; i < currentIndex; i++) {
+    const sName = SDQ_CURRICULUM_ORDER[i];
+    const realName = sName.split('_')[0];
+    const meta = QURAN_METADATA[realName];
+
+    if (meta) {
+      const startKey = `${realName}:1`;
+      const endKey = `${realName}:${meta.totalAyah}`;
+      const startData = QURAN_FULL_MAP[startKey];
+      const endData = QURAN_FULL_MAP[endKey];
+
+      if (startData && endData) {
+        // Jika surat selesai di halaman yang sama, kita hitung jarak barisnya
+        // Jika surat pindah halaman, kita hitung selisih halamannya
+        const lines = ((endData.page - startData.page) * this.LINES_PER_PAGE) + (endData.line - startData.line + 1);
         
-        // Ambil data baris awal dan akhir surat tersebut dari QURAN_FULL_MAP
-        const meta = QURAN_METADATA[realName];
-        if (meta) {
-            // Kita ambil baris pertama dan terakhir surat tersebut
-            const startKey = `${realName}:1`;
-            const endKey = `${realName}:${meta.totalAyah}`;
-            
-            const startData = QURAN_FULL_MAP[startKey];
-            const endData = QURAN_FULL_MAP[endKey];
-
-            if (startData && endData) {
-                // RUMUS PENTING: (HalamanAkhir - HalamanAwal) * 15 + (BarisAkhir - BarisAwal + 1)
-                const linesInThisSurah = ((endData.page - startData.page) * 15) + (endData.line - startData.line + 1);
-                totalLinesAccumulated += linesInThisSurah;
+        // Cek apakah surat berikutnya ada di halaman yang sama? 
+        // Jika surat berikutnya ada di halaman baru, pastikan kita menggenapkan sisa baris di halaman ini.
+        const nextSName = SDQ_CURRICULUM_ORDER[i+1];
+        if (nextSName) {
+            const nextRealName = nextSName.split('_')[0];
+            const nextStartData = QURAN_FULL_MAP[`${nextRealName}:1`];
+            // Jika surat berikutnya pindah halaman, tambahkan sisa baris agar genap 15
+            if (nextStartData && nextStartData.page > endData.page) {
+                const linesUsedInLastPage = endData.line;
+                const gapToNextPage = (this.LINES_PER_PAGE - linesUsedInLastPage);
+                totalLinesAccumulated += lines + gapToNextPage;
             } else {
-                // Fallback jika data MAP tidak lengkap (estimasi kasar)
-                totalLinesAccumulated += (meta.endPage - meta.startPage) * 15 + 5; 
+                totalLinesAccumulated += lines;
             }
+        } else {
+            totalLinesAccumulated += lines;
         }
+      }
     }
+  }
 
-    // 2. Tambah baris dalam surat SEMASA (dari ayat 1 hingga ayat yang diinput)
-    const currentSurahStartKey = `${surahName}:1`;
-    const currentAyahKey = `${surahName}:${ayahNum}`;
-    
-    const startData = QURAN_FULL_MAP[currentSurahStartKey];
-    const ayahData = QURAN_FULL_MAP[currentAyahKey];
+  // 2. Tambah posisi di surat saat ini
+  const startDataCurrent = QURAN_FULL_MAP[`${surahName}:1`];
+  const targetAyahData = QURAN_FULL_MAP[`${surahName}:${ayahNum}`];
 
-    if (startData && ayahData) {
-        const linesInCurrentSurah = ((ayahData.page - startData.page) * 15) + (ayahData.line - startData.line + 1);
-        return totalLinesAccumulated + linesInCurrentSurah;
-    }
+  if (startDataCurrent && targetAyahData) {
+    // Rumus ini akan menghasilkan 15 jika ayat 1 di baris 1 dan ayat akhir di baris 15
+    return totalLinesAccumulated + ((targetAyahData.page - startDataCurrent.page) * this.LINES_PER_PAGE) + targetAyahData.line;
+  }
 
-    return totalLinesAccumulated;
+  return totalLinesAccumulated;
 }
 
   public static calculate(fs: string, fa: number, ts: string, ta: number): SDQCalculationResult {
