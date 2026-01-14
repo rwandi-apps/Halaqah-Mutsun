@@ -39,7 +39,7 @@ export class SDQQuranEngine {
     return keys.find(k => k.toLowerCase().replace(/[^a-z0-9]/g, "") === fuzzyClean) || "";
   }
 
- private static getAyahAbsoluteLine(surahRaw: string, ayahNum: number): number {
+private static getAyahAbsoluteLine(surahRaw: string, ayahNum: number): number {
   const surahName = this.normalizeSurahName(surahRaw);
   if (!surahName) return 0;
 
@@ -53,7 +53,6 @@ export class SDQQuranEngine {
 
   let totalLinesAccumulated = 0;
 
-  // 1. Loop semua surat SEBELUMNYA dalam urutan Kurikulum SDQ
   for (let i = 0; i < currentIndex; i++) {
     const sName = SDQ_CURRICULUM_ORDER[i];
     const realName = sName.split('_')[0];
@@ -64,27 +63,41 @@ export class SDQQuranEngine {
       const endData = QURAN_FULL_MAP[`${realName}:${meta.totalAyah}`];
 
       if (startData && endData) {
-        // Hitung berapa baris yang dihabiskan surat ini di mushaf
+        // 1. Hitung baris murni di dalam surat tersebut
         const linesInSurah = ((endData.page - startData.page) * this.LINES_PER_PAGE) + (endData.line - startData.line + 1);
-        
-        // TAMBAHAN: Setiap ganti surat, kita anggap ada jeda 2 baris (untuk Judul & Bismillah)
-        // kecuali jika surat tersebut adalah surat pertama di halaman tersebut
-        const headerSpace = (startData.line > 1) ? 2 : 0; 
-        
-        totalLinesAccumulated += linesInSurah + headerSpace;
-      } else {
-        // Fallback jika data tidak lengkap: rata-rata 15 baris per halaman metadata
-        totalLinesAccumulated += (meta.endPage - meta.startPage + 1) * this.LINES_PER_PAGE;
+        totalLinesAccumulated += linesInSurah;
+
+        // 2. Cek jarak ke surat berikutnya dalam kurikulum
+        const nextSName = SDQ_CURRICULUM_ORDER[i + 1];
+        if (nextSName) {
+          const nextRealName = nextSName.split('_')[0];
+          const nextStartData = QURAN_FULL_MAP[`${nextRealName}:1`];
+
+          if (nextStartData) {
+            if (nextStartData.page === endData.page) {
+              // Jika surat berikutnya di HALAMAN YANG SAMA, hitung selisih barisnya (termasuk judul/bismillah)
+              const gap = nextStartData.line - endData.line - 1;
+              totalLinesAccumulated += Math.max(0, gap);
+            } else {
+              // Jika surat berikutnya di HALAMAN BERBEDA
+              // Selesaikan sisa baris di halaman saat ini agar genap 15, 
+              // lalu jika loncat halaman jauh (seperti An-Nas ke Al-Mulk), jangan tambahkan selisih ribuan baris,
+              // cukup anggap itu halaman baru.
+              const remainingLinesOnPage = this.LINES_PER_PAGE - endData.line;
+              totalLinesAccumulated += remainingLinesOnPage;
+            }
+          }
+        }
       }
     }
   }
 
-  // 2. Tambahkan posisi baris di surat yang sedang dibuka
+  // 3. Tambahkan baris di surat terakhir (target)
   const currentStartData = QURAN_FULL_MAP[`${surahName}:1`];
-  const currentAyahData = QURAN_FULL_MAP[`${surahName}:${ayahNum}`];
+  const targetAyahData = QURAN_FULL_MAP[`${surahName}:${ayahNum}`];
 
-  if (currentStartData && currentAyahData) {
-    const linesInCurrent = ((currentAyahData.page - currentStartData.page) * this.LINES_PER_PAGE) + (currentAyahData.line - currentStartData.line + 1);
+  if (currentStartData && targetAyahData) {
+    const linesInCurrent = ((targetAyahData.page - currentStartData.page) * this.LINES_PER_PAGE) + (targetAyahData.line - currentStartData.line + 1);
     return totalLinesAccumulated + linesInCurrent;
   }
 
