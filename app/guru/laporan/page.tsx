@@ -12,7 +12,7 @@ interface GuruLaporanPageProps {
   teacherId?: string;
 }
 
-const IQRA_VOLUMES = ["Iqra' 1", "Iqra' 2", "Iqra' 3", "Iqra' 4", "Iqra' 5", "Iqra' 6"];
+const IQRA_VOLUMES = ["Iqra 1", "Iqra 2", "Iqra 3", "Iqra 4", "Iqra 5", "Iqra 6"];
 const MONTH_LIST = ["Juli", "Agustus", "September", "Oktober", "November", "Desember", "Januari", "Februari", "Maret", "April", "Mei", "Juni"];
 const ACADEMIC_YEARS = ["2024/2025", "2025/2026", "2026/2027"];
 
@@ -30,7 +30,7 @@ const CounterInput = ({ label, value, onChange, min = 0 }: { label?: string, val
   );
 };
 
-const SourceSelect = ({ value, onChange, method, placeholder = 'Pilih...' }: { value: string, onChange: (v: string) => void, method: 'Al-Quran' | 'Iqra', placeholder?: string }) => (
+const SourceSelect = ({ value, onChange, method, placeholder = 'Pilih...' }: { value: string, onChange: (v: string) => void, method: 'Al-Quran' | 'Iqra, placeholder?: string }) => (
   <div className="flex-1">
     <select value={value} onChange={(e) => onChange(e.target.value)} className="w-full h-9 sm:h-10 px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none bg-white text-xs sm:text-sm truncate shadow-sm">
       <option value="">{placeholder}</option>
@@ -60,9 +60,9 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
   const [month, setMonth] = useState('Desember');
   
   const [tahfizhIndiv, setTahfizhIndiv] = useState({ fs: '', fv: '' as any, ts: '', tv: '' as any });
-  const [tilawahIndiv, setTilawahIndiv] = useState({ method: 'Al-Quran' as 'Al-Quran' | 'Iqra', fs: '', fv: '' as any, ts: '', tv: '' as any });
+  const [tilawahIndiv, setTilawahIndiv] = useState({ method: 'Al-Quran' as 'Al-Quran' | 'Iqra, fs: '', fv: '' as any, ts: '', tv: '' as any });
   const [tahfizhKlas, setTahfizhKlas] = useState({ fs: '', fv: '' as any, ts: '', tv: '' as any });
-  const [tilawahKlas, setTilawahKlas] = useState({ method: 'Al-Quran' as 'Al-Quran' | 'Iqra', fs: '', fv: '' as any, ts: '', tv: '' as any });
+  const [tilawahKlas, setTilawahKlas] = useState({ method: 'Al-Quran' as 'Al-Quran' | 'Iqra, fs: '', fv: '' as any, ts: '', tv: '' as any });
   const [baselineJuz, setBaselineJuz] = useState<number | string>(0);
   const [baselinePages, setBaselinePages] = useState<number | string>(0);
   const [baselineLines, setBaselineLines] = useState<number | string>(0);
@@ -79,7 +79,7 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
     if (!data.fs || !data.ts) return '';
     const res = SDQQuranEngine.calculate(data.fs, safeNum(data.fv), data.ts, safeNum(data.tv));
     if (!res.valid) return '';
-    return method === 'Iqra' ? `${res.pages} Hal` : `${res.pages} Hal ${res.lines} Baris`;
+    return method === 'Iqra ? `${res.pages} Hal` : `${res.pages} Hal ${res.lines} Baris`;
   };
 
   const handleSave = async () => {
@@ -135,7 +135,7 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
             </div>
             <div className="space-y-4">
               <h4 className="text-xs font-bold text-blue-700 flex items-center gap-2"><BookOpen size={16} /> Tilawah Klasikal</h4>
-              <div className="flex gap-2"><button onClick={() => setTilawahKlas({...tilawahKlas, method: 'Al-Quran'})} className={`flex-1 py-1 text-[9px] font-bold rounded-lg ${tilawahKlas.method === 'Al-Quran' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'}`}>AL-QUR'AN</button><button onClick={() => setTilawahKlas({...tilawahKlas, method: 'Iqra'})} className={`flex-1 py-1 text-[9px] font-bold rounded-lg ${tilawahKlas.method === 'Iqra' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'}`}>IQRA'</button></div>
+              <div className="flex gap-2"><button onClick={() => setTilawahKlas({...tilawahKlas, method: 'Al-Quran'})} className={`flex-1 py-1 text-[9px] font-bold rounded-lg ${tilawahKlas.method === 'Al-Quran' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'}`}>AL-QUR'AN</button><button onClick={() => setTilawahKlas({...tilawahKlas, method: 'Iqra})} className={`flex-1 py-1 text-[9px] font-bold rounded-lg ${tilawahKlas.method === 'Iqra ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'}`}>Iqra</button></div>
               <InputRow label="DARI" badge={getResultText(tilawahKlas, tilawahKlas.method)}>
                 <SourceSelect value={tilawahKlas.fs} onChange={(v) => setTilawahKlas({...tilawahKlas, fs: v, ts: v})} method={tilawahKlas.method} />
                 <CounterInput label={tilawahKlas.method === 'Al-Quran' ? 'Ayat' : 'Hal'} value={tilawahKlas.fv} onChange={(v) => setTilawahKlas({...tilawahKlas, fv: v, tv: v})} />
@@ -166,7 +166,7 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
             </div>
             <div className="space-y-4">
               <h4 className="text-xs font-bold text-blue-700 flex items-center gap-2"><BookOpen size={16} /> Tilawah Individu</h4>
-              <div className="flex gap-2"><button onClick={() => setTilawahIndiv({...tilawahIndiv, method: 'Al-Quran'})} className={`flex-1 py-1 text-[9px] font-bold rounded-lg ${tilawahIndiv.method === 'Al-Quran' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'}`}>AL-QUR'AN</button><button onClick={() => setTilawahIndiv({...tilawahIndiv, method: 'Iqra'})} className={`flex-1 py-1 text-[9px] font-bold rounded-lg ${tilawahIndiv.method === 'Iqra' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'}`}>IQRA'</button></div>
+              <div className="flex gap-2"><button onClick={() => setTilawahIndiv({...tilawahIndiv, method: 'Al-Quran'})} className={`flex-1 py-1 text-[9px] font-bold rounded-lg ${tilawahIndiv.method === 'Al-Quran' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'}`}>AL-QUR'AN</button><button onClick={() => setTilawahIndiv({...tilawahIndiv, method: 'Iqra})} className={`flex-1 py-1 text-[9px] font-bold rounded-lg ${tilawahIndiv.method === 'Iqra ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'}`}>Iqra</button></div>
               <InputRow label="DARI" badge={getResultText(tilawahIndiv, tilawahIndiv.method)}>
                 <SourceSelect value={tilawahIndiv.fs} onChange={(v) => setTilawahIndiv({...tilawahIndiv, fs: v, ts: v})} method={tilawahIndiv.method} />
                 <CounterInput label={tilawahIndiv.method === 'Al-Quran' ? 'Ayat' : 'Hal'} value={tilawahIndiv.fv} onChange={(v) => setTilawahIndiv({...tilawahIndiv, fv: v, tv: v})} />
