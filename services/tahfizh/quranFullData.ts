@@ -5266,7 +5266,7 @@ export const QURAN_FULL_MAP: Record<string, QuranAyahData> = {
 "Al-Hadid:28": { juz: 27, page: 541, line: 13, globalIndex: 5103 },
 "Al-Hadid:29": { juz: 27, page: 541, line: 15, globalIndex: 5104 },
   // Juz 28
-  "Al-Mujadilah:1": { juz: 28, page: 542, line: 4, globalIndex: 5105 },
+  "Al-Mujadilah:1": { juz: 28, page: 542, line: 1, globalIndex: 5105 },
 "Al-Mujadilah:2": { juz: 28, page: 542, line: 6, globalIndex: 5106 },
 "Al-Mujadilah:3": { juz: 28, page: 542, line: 9, globalIndex: 5107 },
 "Al-Mujadilah:4": { juz: 28, page: 542, line: 11, globalIndex: 5108 },
