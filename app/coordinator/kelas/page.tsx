@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getClassHalaqahSummary, ClassSummary, getAllTeachers, reassignHalaqahTeacher } from '../../../services/firestoreService';

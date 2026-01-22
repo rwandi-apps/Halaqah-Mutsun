@@ -19,44 +19,60 @@ interface StudentWithProgress extends Student {
 }
 
 /**
- * 3D Pixar-style Circular Progress Component
- * Optimized for mobile with consistent sizing.
+ * 3D Pixar-style Circular Progress Component V2
+ * Enhanced with SVG Gradients and Glossy finish.
  */
 const PixarCircularGauge = ({ percentage }: { percentage: number }) => {
-  const getActiveColor = (p: number) => {
-    if (p >= 90) return '#22c55e'; // Green
-    if (p >= 75) return '#a3e635'; // Yellow-green
-    if (p >= 50) return '#facc15'; // Yellow
-    if (p >= 25) return '#f97316'; // Orange
-    return '#f87171'; // Soft red
-  };
-
-  const activeColor = getActiveColor(percentage);
-  const radius = 22;
+  const radius = 26;
   const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (Math.min(percentage, 100) / 100) * circumference;
+  const safePercentage = Math.min(Math.max(percentage, 0), 100);
+  const offset = circumference - (safePercentage / 100) * circumference;
+
+  // Determine gradient ID based on percentage
+  const gradientId = percentage >= 100 ? "grad-success" : percentage >= 80 ? "grad-primary" : percentage >= 50 ? "grad-warn" : "grad-danger";
 
   return (
-    <div className="relative w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center shrink-0">
-      {/* 3D Plastic Base */}
-      <div className="absolute inset-0 rounded-full bg-white shadow-[0_4px_10px_rgba(0,0,0,0.1),inset_0_-2px_4px_rgba(0,0,0,0.1)] border-2 border-white"></div>
+    <div className="relative w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center shrink-0 drop-shadow-md">
+      {/* 3D Plastic Base with Inner Shadow */}
+      <div className="absolute inset-0 rounded-full bg-white shadow-[inset_0_2px_6px_rgba(0,0,0,0.15)] border-4 border-gray-50"></div>
       
       {/* Progress Ring */}
-      <svg className="w-14 h-14 sm:w-16 sm:h-16 transform -rotate-90 relative z-10 filter drop-shadow-[0_2px_3px_rgba(0,0,0,0.05)]">
+      <svg className="w-16 h-16 sm:w-20 sm:h-20 transform -rotate-90 relative z-10">
+        <defs>
+          <linearGradient id="grad-success" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#34d399" />
+            <stop offset="100%" stopColor="#059669" />
+          </linearGradient>
+          <linearGradient id="grad-primary" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#60a5fa" />
+            <stop offset="100%" stopColor="#2563eb" />
+          </linearGradient>
+          <linearGradient id="grad-warn" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#fbbf24" />
+            <stop offset="100%" stopColor="#d97706" />
+          </linearGradient>
+          <linearGradient id="grad-danger" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#f87171" />
+            <stop offset="100%" stopColor="#dc2626" />
+          </linearGradient>
+        </defs>
+
+        {/* Track */}
         <circle
           cx="50%"
           cy="50%"
           r={radius}
-          stroke="#f1f5f9"
-          strokeWidth="6"
+          stroke="#f3f4f6"
+          strokeWidth="7"
           fill="transparent"
         />
+        {/* Progress Value */}
         <circle
           cx="50%"
           cy="50%"
           r={radius}
-          stroke={activeColor}
-          strokeWidth="6"
+          stroke={`url(#${gradientId})`}
+          strokeWidth="7"
           fill="transparent"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
@@ -65,10 +81,10 @@ const PixarCircularGauge = ({ percentage }: { percentage: number }) => {
         />
       </svg>
       
-      {/* Inner Percentage (Plastic Surface) */}
-      <div className="absolute inset-[6px] sm:inset-[8px] rounded-full bg-white flex items-center justify-center z-20 shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] border border-gray-50">
-        <span className="text-[11px] sm:text-[13px] font-black tracking-tighter" style={{ color: activeColor }}>
-          {percentage}<span className="text-[7px] sm:text-[8px] ml-0.5">%</span>
+      {/* Glossy Center Text */}
+      <div className="absolute inset-[10px] rounded-full bg-gradient-to-b from-white to-gray-50 flex flex-col items-center justify-center z-20 shadow-[0_2px_4px_rgba(0,0,0,0.1)] border border-white">
+        <span className="text-[14px] sm:text-[16px] font-black text-gray-800 leading-none">
+          {safePercentage}<span className="text-[8px] sm:text-[9px] text-gray-400">%</span>
         </span>
       </div>
     </div>
@@ -77,28 +93,22 @@ const PixarCircularGauge = ({ percentage }: { percentage: number }) => {
 
 /**
  * 3D Pixar-style Linear Progress Bar Component
- * Featuring a thicker, more touch-friendly track for mobile.
  */
-const PixarLinearBar = ({ percentage }: { percentage: number }) => {
-  const getActiveColor = (p: number) => {
-    if (p >= 90) return '#22c55e';
-    if (p >= 75) return '#a3e635';
-    if (p >= 50) return '#facc15';
-    if (p >= 25) return '#f97316';
-    return '#f87171';
-  };
-
-  const activeColor = getActiveColor(percentage);
-
+const PixarLinearBar = ({ percentage, colorClass }: { percentage: number, colorClass: string }) => {
+  // Convert generic color class to specific hex/gradient approximation for inline style if needed, 
+  // currently using the class provided by service but wrapping in 3D container.
+  
+  // Extract pure color base from class name (e.g., bg-emerald-500 -> emerald-500) roughly
+  // For better control, we rely on the container styling.
+  
   return (
-    <div className="w-full h-4 sm:h-5 bg-white rounded-full p-[3px] shadow-[inset_0_2px_5px_rgba(0,0,0,0.08)] border border-gray-100 relative overflow-hidden">
+    <div className="w-full h-4 sm:h-5 bg-gray-100 rounded-full p-[3px] shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)] border border-white/50 relative overflow-hidden">
       <div 
-        className="h-full rounded-full transition-all duration-1000 relative shadow-[0_2px_6px_rgba(0,0,0,0.1)]"
-        style={{ width: `${Math.min(percentage, 100)}%`, backgroundColor: activeColor }}
+        className={`h-full rounded-full transition-all duration-1000 relative shadow-sm ${colorClass}`}
+        style={{ width: `${Math.min(percentage, 100)}%` }}
       >
         {/* Glossy Highlights */}
-        <div className="absolute top-[10%] left-[2%] right-[2%] h-[35%] bg-gradient-to-b from-white/40 to-transparent rounded-full blur-[0.5px]"></div>
-        <div className="absolute bottom-0 left-0 right-0 h-[20%] bg-black/10 rounded-b-full"></div>
+        <div className="absolute top-0 left-0 right-0 h-[40%] bg-white/30 rounded-t-full"></div>
       </div>
     </div>
   );
@@ -130,14 +140,14 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
       const effectiveData = {
         ...student,
         totalHafalan: latestReport?.totalHafalan || { juz: 0, pages: 0, lines: 0 },
-        currentProgress: latestReport?.tahfizh?.individual?.split(' - ')[1] || "-"
+        currentProgress: latestReport?.tahfizh?.individual?.split(' - ')[1] || student.currentProgress || "-"
       };
 
       return {
         ...student,
         progressStats: calculateSDQProgress(effectiveData)
       };
-    }).sort((a, b) => a.name.localeCompare(b.name));
+    }).sort((a, b) => b.progressStats.percentage - a.progressStats.percentage); // Sort by highest progress
   }, [rawStudents, rawReports]);
 
   const metrics = useMemo(() => {
@@ -218,37 +228,39 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
                     <PixarCircularGauge percentage={student.progressStats.percentage} />
                     
                     <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider ${student.progressStats.badgeBg} ${student.progressStats.badgeText}`}>
+                          {student.progressStats.statusText}
+                        </span>
+                        {student.progressStats.percentage >= 100 && <Trophy size={12} className="text-yellow-500 animate-bounce" />}
+                      </div>
                       <p className="font-black text-gray-900 group-hover:text-primary-600 transition-colors uppercase tracking-tight text-base sm:text-lg truncate">
                         {student.name}
                       </p>
-                      <div className="flex flex-wrap items-center gap-2 mt-0.5">
-                        <p className="text-[9px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                          Target: {student.progressStats.target} {student.progressStats.unit}
-                        </p>
-                        <span className="inline-flex sm:hidden items-center px-1.5 py-0.5 rounded-md bg-gray-100 text-[8px] font-black text-gray-500 uppercase">
-                          {student.progressStats.statusText}
-                        </span>
-                      </div>
+                      <p className="text-[10px] sm:text-[11px] font-bold text-gray-400 mt-0.5 truncate">
+                        Posisi: <span className="text-gray-700">{student.progressStats.label}</span>
+                      </p>
                     </div>
                   </div>
 
                   <div className="hidden sm:block text-right">
-                    <span className="text-[10px] font-black px-3 py-1.5 rounded-xl uppercase tracking-widest bg-gray-50 text-gray-600 border border-gray-100">
-                      {student.progressStats.statusText}
-                    </span>
-                    <p className="text-[10px] font-bold text-gray-400 mt-2 uppercase tracking-widest">
-                      Capai: <span className="text-gray-900">{student.progressStats.current}</span> {student.progressStats.unit}
+                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Target Semester</p>
+                    <p className="text-sm font-black text-gray-800">
+                      {student.progressStats.classLevel === 1 ? "Iqra 6 Hal 31" : `${student.progressStats.target} ${student.progressStats.unit}`}
                     </p>
                   </div>
                 </div>
 
                 {/* horizontal linear Pixar Style */}
-                <PixarLinearBar percentage={student.progressStats.percentage} />
+                <PixarLinearBar 
+                  percentage={student.progressStats.percentage} 
+                  colorClass={student.progressStats.colorClass} 
+                />
                 
                 {/* Mobile-only Current Achievement Text */}
                 <div className="flex justify-between items-center sm:hidden mt-3">
                   <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">
-                    Capaian: <span className="text-gray-900">{student.progressStats.current}</span> {student.progressStats.unit}
+                    {student.progressStats.label}
                   </p>
                   <div className="flex items-center gap-1 text-primary-500">
                     <span className="text-[9px] font-black uppercase tracking-widest">Detail</span>

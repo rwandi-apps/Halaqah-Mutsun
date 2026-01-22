@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './app/layout';
@@ -56,7 +55,8 @@ function App() {
                   user?.role === 'KOORDINATOR' 
                     ? <Navigate to="/coordinator/dashboard" replace /> 
                     : <Navigate to="/guru/dashboard" replace />
-                } />
+                  } 
+                />
                 
                 <Route path="/coordinator/dashboard" element={<CoordinatorDashboard />} />
                 <Route path="/coordinator/guru" element={<CoordinatorGuruPage />} />

@@ -1,6 +1,5 @@
-
 import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Student, SemesterReport } from '../../../types';
 import { getStudentsByTeacher, saveSemesterReport, getSemesterReport } from '../../../services/firestoreService';
 import { improveReportRedaction, improveTeacherNotes } from '../../../services/geminiService';
@@ -14,6 +13,7 @@ interface GuruGradesProps {
 
 const GuruGradesPage: React.FC<GuruGradesProps> = ({ teacherId }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -116,13 +116,6 @@ const GuruGradesPage: React.FC<GuruGradesProps> = ({ teacherId }) => {
   const classLevel = selectedStudent ? extractClassLevel(selectedStudent.className) : 0;
   const isDescriptionFormat = classLevel >= 1 && classLevel <= 3;
 
-  const getPredikatLetter = (letter: string) => {
-    if (letter === 'A') return 'Mumtaz';
-    if (letter === 'B') return 'Jayyid Jiddan';
-    if (letter === 'C') return 'Jayyid';
-    return '-';
-  };
-
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-20">
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
@@ -156,7 +149,7 @@ const GuruGradesPage: React.FC<GuruGradesProps> = ({ teacherId }) => {
           </div>
           <div>
             <label className="block text-xs font-bold text-gray-400 uppercase mb-1 ml-1">Semester</label>
-            <select value={report.semester} onChange={e => setReport({...report, semester: e.target.value as any})} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm">
+            <select value={report.semester} onChange={e => setReport({...report, semester: e.target.value as any})} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-white">
               <option value="Ganjil">Ganjil</option>
               <option value="Genap">Genap</option>
             </select>
@@ -180,201 +173,152 @@ const GuruGradesPage: React.FC<GuruGradesProps> = ({ teacherId }) => {
             <div className="space-y-6">
               {/* Narasi Tahfizh */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="bg-gray-50 px-6 py-3 border-b border-gray-100 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <FileText size={18} className="text-primary-600" />
-                    <h3 className="font-bold text-gray-800 text-sm uppercase">A. Perkembangan Tahfizh</h3>
-                  </div>
-                  <button 
-                    onClick={() => handleRefineLanguage('narrativeTahfizh')}
-                    disabled={isRefining['narrativeTahfizh'] || !report.narrativeTahfizh}
-                    className="flex items-center gap-1.5 px-3 py-1 bg-primary-50 hover:bg-primary-100 text-primary-600 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all disabled:opacity-50"
-                  >
-                    {isRefining['narrativeTahfizh'] ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-                    Sempurnakan Bahasa (AI)
-                  </button>
+                <div className="bg-gray-50 px-6 py-3 border-b border-gray-100 flex justify-between items-center">
+                  <h3 className="font-bold text-gray-800 text-sm uppercase flex items-center gap-2">
+                    <BookOpen size={16} className="text-gray-400" /> A. Tahfizh
+                  </h3>
+                  <Button variant="outline" size="sm" onClick={() => handleRefineLanguage('narrativeTahfizh')} isLoading={isRefining['narrativeTahfizh']} className="text-[10px] uppercase font-black tracking-widest bg-white h-7">
+                    <Sparkles size={12} className="mr-1 text-primary-500" /> AI Refine
+                  </Button>
                 </div>
-                <div className="p-6">
-                   <textarea 
-                     value={report.narrativeTahfizh}
-                     onChange={e => setReport({...report, narrativeTahfizh: e.target.value})}
-                     className="w-full p-4 border border-gray-200 rounded-xl text-sm h-48 focus:ring-2 focus:ring-primary-500 outline-none leading-relaxed transition-all"
-                     placeholder="Tuliskan perkembangan hafalan siswa... (Contoh: Tahfiz ananda masih kurang lancar dan sering lupa ayat)"
-                   />
-                </div>
+                <textarea 
+                  value={report.narrativeTahfizh} 
+                  onChange={e => setReport({...report, narrativeTahfizh: e.target.value})} 
+                  className="w-full p-6 h-48 outline-none text-sm leading-relaxed text-gray-700 resize-none" 
+                  placeholder="Deskripsikan perkembangan hafalan siswa..." 
+                />
               </div>
 
               {/* Narasi Tilawah */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="bg-gray-50 px-6 py-3 border-b border-gray-100 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <BookOpen size={18} className="text-primary-600" />
-                    <h3 className="font-bold text-gray-800 text-sm uppercase">B. Perkembangan Tilawah</h3>
-                  </div>
-                  <button 
-                    onClick={() => handleRefineLanguage('narrativeTilawah')}
-                    disabled={isRefining['narrativeTilawah'] || !report.narrativeTilawah}
-                    className="flex items-center gap-1.5 px-3 py-1 bg-primary-50 hover:bg-primary-100 text-primary-600 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all disabled:opacity-50"
-                  >
-                    {isRefining['narrativeTilawah'] ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-                    Sempurnakan Bahasa (AI)
-                  </button>
+                <div className="bg-gray-50 px-6 py-3 border-b border-gray-100 flex justify-between items-center">
+                  <h3 className="font-bold text-gray-800 text-sm uppercase flex items-center gap-2">
+                    <BookOpen size={16} className="text-gray-400" /> B. Tilawah
+                  </h3>
+                  <Button variant="outline" size="sm" onClick={() => handleRefineLanguage('narrativeTilawah')} isLoading={isRefining['narrativeTilawah']} className="text-[10px] uppercase font-black tracking-widest bg-white h-7">
+                    <Sparkles size={12} className="mr-1 text-primary-500" /> AI Refine
+                  </Button>
                 </div>
-                <div className="p-6">
-                   <textarea 
-                     value={report.narrativeTilawah}
-                     onChange={e => setReport({...report, narrativeTilawah: e.target.value})}
-                     className="w-full p-4 border border-gray-200 rounded-xl text-sm h-48 focus:ring-2 focus:ring-primary-500 outline-none leading-relaxed transition-all"
-                     placeholder="Tuliskan perkembangan tilawah siswa..."
-                   />
-                </div>
+                <textarea 
+                  value={report.narrativeTilawah} 
+                  onChange={e => setReport({...report, narrativeTilawah: e.target.value})} 
+                  className="w-full p-6 h-48 outline-none text-sm leading-relaxed text-gray-700 resize-none" 
+                  placeholder="Deskripsikan perkembangan tilawah siswa..." 
+                />
               </div>
             </div>
           ) : (
-            <>
-              {/* Aspek Penilaian */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="bg-gray-50 px-6 py-3 border-b border-gray-100 flex items-center gap-2">
-                  <ClipboardCheck size={18} className="text-primary-600" />
-                  <h3 className="font-bold text-gray-800 text-sm">ASPEK PENILAIAN (A/B/C)</h3>
-                </div>
-                <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {[
-                    { id: 'adab', label: 'Adab di Halaqah' },
-                    { id: 'murojaah', label: 'Muroja\'ah' },
-                    { id: 'tajwid', label: 'Tajwid' },
-                    { id: 'makharij', label: 'Makharijul Huruf' },
-                  ].map(item => (
-                    <div key={item.id}>
-                      <label className="block text-xs font-bold text-gray-500 mb-1">{item.label}</label>
-                      <div className="flex items-center gap-3">
-                        <select 
-                          value={(report.assessments as any)[item.id]} 
-                          onChange={e => setReport({...report, assessments: {...report.assessments, [item.id]: e.target.value}})}
-                          className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm"
-                        >
-                          <option value="A">A</option>
-                          <option value="B">B</option>
-                          <option value="C">C</option>
-                        </select>
-                        <span className="text-[10px] font-bold text-gray-400 italic shrink-0 w-20">{getPredikatLetter((report.assessments as any)[item.id])}</span>
-                      </div>
-                    </div>
-                  ))}
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 mb-1">Target Hafalan</label>
-                    <input type="text" value={report.targetHafalan} onChange={e => setReport({...report, targetHafalan: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 mb-1">Pencapaian Target (%)</label>
-                    <input type="number" value={report.assessments.pencapaianTarget} onChange={e => setReport({...report, assessments: {...report.assessments, pencapaianTarget: parseInt(e.target.value) || 0}})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Ujian */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="bg-gray-50 px-6 py-3 border-b border-gray-100 flex items-center gap-2">
-                  <BookOpen size={18} className="text-primary-600" />
-                  <h3 className="font-bold text-gray-800 text-sm">UJIAN-UJIAN (ANGKA 0-100)</h3>
-                </div>
-                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 mb-1">Ujian Tengah Semester (UTS)</label>
-                    <input type="number" value={report.exams.uts} onChange={e => setReport({...report, exams: {...report.exams, uts: parseInt(e.target.value) || 0}})} className="w-32 px-3 py-2 border border-gray-200 rounded-lg text-sm font-bold" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 mb-1">Ujian Akhir Semester (UAS)</label>
-                    <input type="number" value={report.exams.uas} onChange={e => setReport({...report, exams: {...report.exams, uas: parseInt(e.target.value) || 0}})} className="w-32 px-3 py-2 border border-gray-200 rounded-lg text-sm font-bold" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Status Hafalan */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="bg-gray-50 px-6 py-3 border-b border-gray-100 flex items-center gap-2">
-                  <User size={18} className="text-primary-600" />
-                  <h3 className="font-bold text-gray-800 text-sm">STATUS HAFALAN SISWA</h3>
-                </div>
-                <div className="p-6 space-y-4">
-                  {['dimiliki', 'mutqin', 'semesterIni'].map((k, idx) => (
-                    <div key={k} className="flex flex-col md:flex-row gap-4 md:items-center">
-                       <p className="w-44 text-xs font-bold text-gray-600 uppercase">
-                          {idx === 0 ? "Total Hafalan Dimiliki" : idx === 1 ? "Hafalan Mutqin" : "Hafalan Semester Ini"}
-                       </p>
-                       <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2">
-                          <input 
-                            value={(report.statusHafalan as any)[k].jumlah} 
-                            onChange={e => setReport({...report, statusHafalan: {...report.statusHafalan, [k]: {...(report.statusHafalan as any)[k], jumlah: e.target.value}}})} 
-                            className="p-2 border rounded-lg text-xs" 
-                            placeholder="Jumlah (Contoh: 1 Juz 3 Hal)" 
-                          />
-                          <input 
-                            value={(report.statusHafalan as any)[k].rincian} 
-                            onChange={e => setReport({...report, statusHafalan: {...report.statusHafalan, [k]: {...(report.statusHafalan as any)[k], rincian: e.target.value}}})} 
-                            className="p-2 border rounded-lg text-xs" 
-                            placeholder="Rincian (Contoh: 30 dan 29)" 
-                          />
-                          <input 
-                            value={(report.statusHafalan as any)[k].status} 
-                            onChange={e => setReport({...report, statusHafalan: {...report.statusHafalan, [k]: {...(report.statusHafalan as any)[k], status: e.target.value}}})} 
-                            className="p-2 border rounded-lg text-xs" 
-                            placeholder="Status (Contoh: Baik)" 
-                          />
+            <div className="space-y-6">
+               {/* Format Tabel (Kelas 4-6) */}
+               <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                  <h3 className="font-bold text-gray-800 mb-4 border-b pb-2">Penilaian Aspek Al-Quran</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                     {[
+                       { label: 'Adab di Halaqah', key: 'adab' },
+                       { label: 'Muroja\'ah', key: 'murojaah' },
+                       { label: 'Tajwid', key: 'tajwid' },
+                       { label: 'Makharijul Huruf', key: 'makharij' },
+                     ].map((item) => (
+                       <div key={item.key}>
+                          <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{item.label}</label>
+                          <select 
+                            value={(report.assessments as any)[item.key]}
+                            onChange={e => setReport({...report, assessments: { ...report.assessments, [item.key]: e.target.value }})}
+                            className="w-full p-2 border rounded-lg text-sm"
+                          >
+                             <option value="A">A (Mumtaz)</option>
+                             <option value="B">B (Jayyid Jiddan)</option>
+                             <option value="C">C (Jayyid)</option>
+                             <option value="D">D (Maqbul)</option>
+                          </select>
                        </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Catatan Guru (Khusus 4-6) */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="bg-gray-50 px-6 py-3 border-b border-gray-100 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <MessageSquare size={18} className="text-primary-600" />
-                    <h3 className="font-bold text-gray-800 text-sm">CATATAN WALI KELAS</h3>
+                     ))}
+                     <div>
+                       <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Pencapaian Target (%)</label>
+                       <input 
+                         type="number" 
+                         value={report.assessments.pencapaianTarget} 
+                         onChange={e => setReport({...report, assessments: { ...report.assessments, pencapaianTarget: parseInt(e.target.value) || 0 }})} 
+                         className="w-full p-2 border rounded-lg text-sm"
+                       />
+                     </div>
                   </div>
-                  <button 
-                    onClick={() => handleRefineLanguage('notes')}
-                    disabled={isRefining['notes'] || !report.notes}
-                    className="flex items-center gap-1.5 px-3 py-1 bg-primary-50 hover:bg-primary-100 text-primary-600 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all disabled:opacity-50"
-                  >
-                    {isRefining['notes'] ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-                    Sempurnakan Catatan (AI)
-                  </button>
-                </div>
-                <div className="p-6">
-                   <textarea 
-                     value={report.notes}
-                     onChange={e => setReport({...report, notes: e.target.value})}
-                     className="w-full p-4 border border-gray-200 rounded-xl text-sm h-32 focus:ring-2 focus:ring-primary-500 outline-none leading-relaxed transition-all"
-                     placeholder="Tuliskan catatan pembinaan untuk siswa... (Contoh: Ananda cukup baik tapi masih sering tidak fokus)"
-                   />
-                </div>
-              </div>
-            </>
-          )}
+               </div>
 
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Tanggal (Masehi)</label>
-                <input type="text" placeholder="Contoh: 22 Desember 2025" value={report.dateStr} onChange={e => setReport({...report, dateStr: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Tanggal (Hijriah)</label>
-                <input type="text" placeholder="Contoh: 01 Jumadil Akhir 1447 H" value={report.dateHijri} onChange={e => setReport({...report, dateHijri: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              </div>
+               <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                  <h3 className="font-bold text-gray-800 mb-4 border-b pb-2">Nilai Ujian</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                     <div>
+                       <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nilai UTS</label>
+                       <input type="number" value={report.exams.uts} onChange={e => setReport({...report, exams: { ...report.exams, uts: parseInt(e.target.value) || 0 }})} className="w-full p-2 border rounded-lg text-sm" />
+                     </div>
+                     <div>
+                       <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nilai UAS</label>
+                       <input type="number" value={report.exams.uas} onChange={e => setReport({...report, exams: { ...report.exams, uas: parseInt(e.target.value) || 0 }})} className="w-full p-2 border rounded-lg text-sm" />
+                     </div>
+                  </div>
+               </div>
+
+               <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                  <h3 className="font-bold text-gray-800 mb-4 border-b pb-2">Status Hafalan</h3>
+                  <div className="space-y-4">
+                     {/* Loop untuk status hafalan fields */}
+                     {[
+                       { key: 'dimiliki', label: 'Total Hafalan Dimiliki' },
+                       { key: 'mutqin', label: 'Hafalan Mutqin' },
+                       { key: 'semesterIni', label: 'Hafalan Semester Ini' },
+                     ].map((group) => (
+                       <div key={group.key} className="p-3 bg-gray-50 rounded-lg border border-gray-100">
+                          <p className="text-xs font-black uppercase text-gray-400 mb-2">{group.label}</p>
+                          <div className="grid grid-cols-3 gap-2">
+                             <input placeholder="Jumlah (mis: 1 Juz)" value={(report.statusHafalan as any)[group.key].jumlah} onChange={e => setReport({...report, statusHafalan: { ...report.statusHafalan, [group.key]: { ...(report.statusHafalan as any)[group.key], jumlah: e.target.value } }})} className="p-2 border rounded text-xs" />
+                             <input placeholder="Rincian (mis: Juz 30)" value={(report.statusHafalan as any)[group.key].rincian} onChange={e => setReport({...report, statusHafalan: { ...report.statusHafalan, [group.key]: { ...(report.statusHafalan as any)[group.key], rincian: e.target.value } }})} className="p-2 border rounded text-xs" />
+                             <input placeholder="Status (mis: Baik)" value={(report.statusHafalan as any)[group.key].status} onChange={e => setReport({...report, statusHafalan: { ...report.statusHafalan, [group.key]: { ...(report.statusHafalan as any)[group.key], status: e.target.value } }})} className="p-2 border rounded text-xs" />
+                          </div>
+                       </div>
+                     ))}
+                  </div>
+               </div>
             </div>
+          )}
+          
+          {/* Bagian Catatan Walikelas (Common) */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-gray-50 px-6 py-3 border-b border-gray-100 flex justify-between items-center">
+              <h3 className="font-bold text-gray-800 text-sm uppercase flex items-center gap-2">
+                <MessageSquare size={16} className="text-gray-400" /> Catatan Wali Kelas
+              </h3>
+              <Button variant="outline" size="sm" onClick={() => handleRefineLanguage('notes')} isLoading={isRefining['notes']} className="text-[10px] uppercase font-black tracking-widest bg-white h-7">
+                <Sparkles size={12} className="mr-1 text-primary-500" /> AI Refine
+              </Button>
+            </div>
+            <textarea 
+              value={report.notes} 
+              onChange={e => setReport({...report, notes: e.target.value})} 
+              className="w-full p-6 h-32 outline-none text-sm leading-relaxed text-gray-700 resize-none" 
+              placeholder="Berikan catatan motivasi untuk siswa..." 
+            />
           </div>
 
-          <Button onClick={handleSave} isLoading={isSaving} className="w-full py-4 rounded-2xl shadow-xl shadow-primary-500/20 font-bold">
-            <Save size={20} /> Simpan Seluruh Data Rapor
+          <div className="grid grid-cols-2 gap-4">
+             <div>
+               <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Tanggal Rapor (Masehi)</label>
+               <input type="text" placeholder="Bogor, 20 Desember 2025" value={report.dateStr} onChange={e => setReport({...report, dateStr: e.target.value})} className="w-full p-3 border rounded-xl text-sm" />
+             </div>
+             <div>
+               <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Tanggal Rapor (Hijriah)</label>
+               <input type="text" placeholder="20 Jumadil Akhir 1447 H" value={report.dateHijri} onChange={e => setReport({...report, dateHijri: e.target.value})} className="w-full p-3 border rounded-xl text-sm" />
+             </div>
+          </div>
+
+          <Button onClick={handleSave} isLoading={isSaving} className="w-full py-4 rounded-xl shadow-lg font-bold uppercase tracking-widest text-xs">
+            <Save size={18} className="mr-2" /> Simpan Rapor Semester
           </Button>
+
         </div>
       )}
     </div>
   );
-}
+};
 
 export default GuruGradesPage;

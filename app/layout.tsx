@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Menu, X, Mail, Bell, ChevronDown } from 'lucide-react';
@@ -70,7 +69,7 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout, children }) => {
 
           <div className="flex items-center gap-4 lg:gap-6">
              <div className={`hidden sm:block px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-white ${isCoordinator ? 'bg-primary-600' : 'bg-guru-700'}`}>
-               {isCoordinator ? 'Koordinator' : 'Guru Halaqah'}
+               {isCoordinator ? 'Koordinator' : 'Guru'}
              </div>
              
              <button className="relative text-gray-400 hover:text-gray-600 transition-colors">

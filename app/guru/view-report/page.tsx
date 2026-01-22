@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Report } from '../../../types';
@@ -24,28 +23,23 @@ const formatRangeDisplay = (raw: string | undefined): string => {
   return clean;
 };
 
+// Updated: Accepts category to determine calculation mode
 const getStoredOrCalculatedResult = (report: Report, category: 'tahfizh' | 'tilawah') => {
   const target = report[category];
-  
   if (target.result && target.result !== '-' && target.result !== '0H 0B') {
-    // Gunakan regex \b (boundary) agar hanya mengganti huruf H/B yang berdiri sendiri
-    // Atau cara paling aman: jika sudah mengandung kata "Hal", langsung kembalikan saja
-    if (target.result.includes('Hal') || target.result.includes('Baris')) {
-      return target.result;
-    }
-    return target.result.replace(/\bH\b/g, 'Hal').replace(/\bB\b/g, 'Baris');
+    return target.result.replace(/H/g, 'Hal').replace(/B/g, 'Baris');
   }
-
   const cleanRange = formatRangeDisplay(target.individual);
   if (cleanRange === '-') return "-";
   
-  const result = SDQQuranEngine.parseAndCalculate(cleanRange);
+  // Use correct mode based on category
+  const result = SDQQuranEngine.parseAndCalculate(cleanRange, category);
   if (!result.valid) return "-";
-  
   return result.isIqra ? `${result.pages} Hal` : `${result.pages} Hal ${result.lines} Baris`;
 };
 
 const getStatusBadge = (report: Report) => {
+  // Use 'tahfizh' mode implicitly as this badge usually tracks Sabaq
   const resultStr = getStoredOrCalculatedResult(report, 'tahfizh');
   if (resultStr === '-') return <span className="text-gray-300">-</span>;
   const pageMatch = resultStr.match(/(\d+)\s*Hal/);
