@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Report } from '../../../types';
@@ -26,9 +27,17 @@ const formatRangeDisplay = (raw: string | undefined): string => {
 // Updated: Accepts category to determine calculation mode
 const getStoredOrCalculatedResult = (report: Report, category: 'tahfizh' | 'tilawah') => {
   const target = report[category];
+  
+  // Jika sudah ada hasil yang tersimpan (Result field)
   if (target.result && target.result !== '-' && target.result !== '0H 0B') {
-    return target.result.replace(/H/g, 'Hal').replace(/B/g, 'Baris');
+    // Fix: Cek apakah formatnya sudah panjang ("Hal"/"Baris") agar tidak terganda (Halal/Barisaris)
+    if (target.result.includes('Hal') || target.result.includes('Baris')) {
+        return target.result;
+    }
+    // Jika format pendek ("2H 5B"), lakukan expand dengan regex yang aman
+    return target.result.replace(/(\d+)\s*H/gi, '$1 Hal').replace(/(\d+)\s*B/gi, '$1 Baris');
   }
+
   const cleanRange = formatRangeDisplay(target.individual);
   if (cleanRange === '-') return "-";
   
