@@ -7,7 +7,7 @@ import {
   subscribeToReportsByTeacher 
 } from '../../../services/firestoreService';
 import { generateStudentEvaluation } from '../../../services/geminiService';
-import { calculateSDQProgress, SDQProgressResult } from '../../../services/sdqTargets';
+import { calculateSDQProgress, SDQProgressResult, extractClassLevel } from '../../../services/sdqTargets';
 import { Student, Report } from '../../../types';
 
 interface GuruDashboardProps {
@@ -98,9 +98,6 @@ const PixarLinearBar = ({ percentage, colorClass }: { percentage: number, colorC
   // Convert generic color class to specific hex/gradient approximation for inline style if needed, 
   // currently using the class provided by service but wrapping in 3D container.
   
-  // Extract pure color base from class name (e.g., bg-emerald-500 -> emerald-500) roughly
-  // For better control, we rely on the container styling.
-  
   return (
     <div className="w-full h-4 sm:h-5 bg-gray-100 rounded-full p-[3px] shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)] border border-white/50 relative overflow-hidden">
       <div 
@@ -137,10 +134,29 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
       studentReports.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
       const latestReport = studentReports[0];
 
+      // Deteksi Level Kelas
+      const level = extractClassLevel(student.className);
+      
+      // Tentukan sumber data progress string (string "Iqra' 1: 5...")
+      let progressString = student.currentProgress || "-";
+      
+      if (latestReport) {
+        if (level === 1) {
+          // Untuk Kelas 1, prioritas ambil dari Tilawah (karena Iqra biasanya diinput di tilawah)
+          // Jika tilawah kosong, cek tahfizh, lalu fallback ke student master
+          progressString = latestReport.tilawah?.individual || latestReport.tahfizh?.individual || progressString;
+        } else {
+          // Untuk Kelas > 1, prioritas Tahfizh (Juz/Surah)
+          progressString = latestReport.tahfizh?.individual || progressString;
+        }
+      }
+
       const effectiveData = {
         ...student,
-        totalHafalan: latestReport?.totalHafalan || { juz: 0, pages: 0, lines: 0 },
-        currentProgress: latestReport?.tahfizh?.individual?.split(' - ')[1] || student.currentProgress || "-"
+        // Pastikan totalHafalan diambil dari laporan terbaru jika ada
+        totalHafalan: latestReport?.totalHafalan || student.totalHafalan || { juz: 0, pages: 0, lines: 0 },
+        // Kirim string yang sudah dipilih ke kalkulator
+        currentProgress: progressString
       };
 
       return {

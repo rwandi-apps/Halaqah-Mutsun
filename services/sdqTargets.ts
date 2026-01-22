@@ -18,12 +18,12 @@ const PAGES_PER_JUZ = 20;
 const LINES_PER_PAGE = 15;
 const LINES_PER_JUZ = PAGES_PER_JUZ * LINES_PER_PAGE; 
 
-// Konfigurasi Target Halaman per Jilid Iqra (Asumsi rata-rata)
-const PAGES_PER_IQRA = 30; 
+// Konfigurasi Target Halaman per Jilid Iqra (Revisi: 31 Halaman)
+const PAGES_PER_IQRA = 31; 
 
-// Target Kelas 1: Iqra 6 Halaman 31
-// Perhitungan: (5 jilid full * 30) + 31 halaman = 150 + 31 = 181 poin
-const TARGET_SCORE_KELAS_1 = 181;
+// Target Kelas 1: Iqra 6 Halaman 31 (Full Tuntas)
+// Perhitungan: 6 jilid * 31 halaman = 186 poin
+const TARGET_SCORE_KELAS_1 = 186;
 
 const SDQ_TARGETS: Record<number, number> = {
   1: TARGET_SCORE_KELAS_1, 
@@ -55,29 +55,43 @@ export const extractClassLevel = (input: any): number => {
 
 /**
  * Menghitung skor absolut untuk Iqra.
- * Format Input: "Iqra 3", "Iqra 3 Halaman 15", "Jilid 4 : 10"
+ * Format Input: "Iqra' 1: 1 - Iqra' 3: 15" -> Ambil "Iqra' 3: 15"
+ * Rumus: ((Jilid - 1) * 31) + Halaman
  */
 const getIqraScore = (progressStr: string): number => {
   if (!progressStr || progressStr === 'Belum Ada' || progressStr === '-') return 0;
-  const lower = progressStr.toLowerCase();
   
-  // Jika sudah Al-Quran (bukan iqra/jilid), anggap sudah lulus target Iqra (Max Score)
-  if (!lower.includes('iqra') && !lower.includes('jilid')) {
-    return TARGET_SCORE_KELAS_1; 
+  // Normalisasi string
+  const lower = progressStr.toLowerCase();
+
+  // Jika formatnya Range ("Dari - Sampai"), ambil bagian kanan (Sampai)
+  const parts = lower.split('-');
+  const lastPart = parts[parts.length - 1].trim(); 
+
+  // Regex untuk menangkap Jilid dan Halaman
+  // Mendukung format: "Iqra 3 : 15", "Iqra' 3 hal 15", "Jilid 3 halaman 15"
+  const regex = /(?:iqra|jilid)\W*(\d+)\W*[:\s,halamanhal]*\W*(\d+)/i;
+  const match = lastPart.match(regex);
+
+  if (match && match[1] && match[2]) {
+    const volume = parseInt(match[1], 10);
+    const page = parseInt(match[2], 10);
+
+    // Validasi basic
+    if (volume < 1) return 0;
+
+    // Rumus Matematika: ((Jilid Saat Ini - 1) * 31) + Halaman Saat Ini
+    return ((volume - 1) * PAGES_PER_IQRA) + page;
   }
 
-  // Ambil Jilid
-  const volMatch = lower.match(/(?:iqra|jilid)\s*'?\s*(\d+)/i);
-  const volume = volMatch ? parseInt(volMatch[1]) : 0;
-  if (volume === 0) return 0;
+  // Fallback: Jika format tidak standar, coba cari angka terakhir sebagai halaman (asumsi jilid 1 jika gagal deteksi)
+  // Ini jarang terjadi jika input valid
+  if (!lower.includes('iqra') && !lower.includes('jilid')) {
+     // Jika user input "Al-Quran" atau surah, anggap lulus Iqra (Max Score)
+     if (lower.includes('quran') || lower.includes('al-fatihah')) return TARGET_SCORE_KELAS_1;
+  }
 
-  // Ambil Halaman (Opsional, default 1)
-  // Pola: "hal", "halaman", ":", atau spasi angka di akhir
-  const pageMatch = lower.match(/(?:hal|halaman|:)\s*(\d+)/i) || lower.match(/\s(\d+)$/);
-  const page = pageMatch ? parseInt(pageMatch[1]) : 1;
-
-  // Rumus: (Jilid sebelumnya * 30) + Halaman saat ini
-  return ((volume - 1) * PAGES_PER_IQRA) + page;
+  return 0;
 };
 
 const convertToDecimalJuz = (total: { juz?: number, pages?: number, lines?: number } | undefined): number => {
@@ -111,12 +125,13 @@ export const calculateSDQProgress = (student: Student): SDQProgressResult => {
   let current = 0;
   let unit = "Juz";
 
-  // Logic Khusus Kelas 1 (Iqra Score)
+  // Logic Khusus Kelas 1 (Iqra Score via Tilawah String)
   if (level === 1) {
     unit = "Poin Iqra";
+    // student.currentProgress di sini diharapkan sudah berisi string Tilawah (Iqra)
     current = getIqraScore(student.currentProgress || "");
   } else {
-    // Logic Kelas 2-6 (Juz Quran)
+    // Logic Kelas 2-6 (Juz Quran via Total Hafalan)
     unit = "Juz";
     current = convertToDecimalJuz(student.totalHafalan);
   }
@@ -125,6 +140,9 @@ export const calculateSDQProgress = (student: Student): SDQProgressResult => {
   if (target > 0) {
     percentage = Math.round((current / target) * 100);
   }
+
+  // Cap percentage max 100% untuk visualisasi, tapi biarkan calculation murni di atas
+  const visualPercentage = Math.min(percentage, 100);
 
   // Tentukan Status & Warna
   let colorClass = "";
@@ -157,11 +175,17 @@ export const calculateSDQProgress = (student: Student): SDQProgressResult => {
   // Label Display
   let label = "";
   if (level === 1) {
-    // Kembalikan ke format Jilid & Hal untuk display user friendly (approx)
-    const displayVol = Math.floor(current / 30) + 1;
-    const displayPage = current % 30 || 30; // handle exact division
-    if (percentage >= 100) label = "Tuntas Iqra 6";
-    else label = `Iqra ${displayVol} Hal ${displayPage}`;
+    // Reverse Engineering dari Score ke Jilid & Hal untuk display
+    if (current >= TARGET_SCORE_KELAS_1) {
+      label = "Tuntas Iqra 6";
+    } else {
+      const displayVol = Math.floor(current / PAGES_PER_IQRA) + 1;
+      const displayPage = current % PAGES_PER_IQRA; 
+      // Handle edge case modulo 0 (halaman terakhir jilid sebelumnya)
+      // Tapi rumus kita ((Vol-1)*31) + Page, jadi jika Page 31, Vol tetap.
+      // Jika Page 0, berarti belum mulai atau data error.
+      label = `Iqra ${displayVol} Hal ${displayPage === 0 ? 1 : displayPage}`;
+    }
   } else {
     label = `${current} dari ${target} Juz`;
   }
