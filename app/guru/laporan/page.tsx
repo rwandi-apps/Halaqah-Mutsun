@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Student, Report } from '../../../types';
@@ -5,7 +6,7 @@ import { getStudentsByTeacher, saveSDQReport } from '../../../services/firestore
 import { SURAH_LIST } from '../../../services/mockBackend';
 import { SDQQuranEngine } from '../../../services/tahfizh/engine';
 import { Button } from '../../../components/Button';
-import { BookOpen, Book, Plus, Minus, UserCheck, Loader2, Users } from 'lucide-react';
+import { BookOpen, Book, Plus, Minus, UserCheck, Loader2, Users, Star, Heart } from 'lucide-react';
 
 interface GuruLaporanPageProps {
   teacherId?: string;
@@ -63,6 +64,11 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
   const [tilawahIndiv, setTilawahIndiv] = useState({ method: 'Al-Quran' as 'Al-Quran' | 'Iqra', fs: '', fv: '' as any, ts: '', tv: '' as any });
   const [tahfizhKlas, setTahfizhKlas] = useState({ fs: '', fv: '' as any, ts: '', tv: '' as any });
   const [tilawahKlas, setTilawahKlas] = useState({ method: 'Al-Quran' as 'Al-Quran' | 'Iqra', fs: '', fv: '' as any, ts: '', tv: '' as any });
+  
+  // New State for Attendance & Adab
+  const [attendance, setAttendance] = useState<number>(100);
+  const [behaviorScore, setBehaviorScore] = useState<number>(10);
+
   const [baselineJuz, setBaselineJuz] = useState<number | string>(0);
   const [baselinePages, setBaselinePages] = useState<number | string>(0);
   const [baselineLines, setBaselineLines] = useState<number | string>(0);
@@ -97,9 +103,17 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
       const makeRange = (data: any) => (!data.fs && !data.ts ? '-' : `${fmt(data.fs, data.fv)} - ${fmt(data.ts, data.tv)}`);
       
       await saveSDQReport({
-        studentId, studentName: selectedStudent.name, teacherId: teacherId || '', className: selectedStudent.className, 
-        type: reportType, month, academicYear, date: new Date().toISOString().split('T')[0], evaluation: '',
-        attendance: 100, behaviorScore: 10,
+        studentId, 
+        studentName: selectedStudent.name, 
+        teacherId: teacherId || '', 
+        className: selectedStudent.className, 
+        type: reportType, 
+        month, 
+        academicYear, 
+        date: new Date().toISOString().split('T')[0], 
+        evaluation: '',
+        attendance: attendance, // Use state value
+        behaviorScore: behaviorScore, // Use state value
         tilawah: { method: tilawahIndiv.method, individual: makeRange(tilawahIndiv), classical: makeRange(tilawahKlas), result: tlRes || "-" },
         tahfizh: { individual: makeRange(tahfizhIndiv), classical: makeRange(tahfizhKlas), result: tfRes || "-" },
         totalHafalan: { juz: safeNum(baselineJuz), pages: safeNum(baselinePages), lines: safeNum(baselineLines) },
@@ -111,6 +125,8 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
       setStudentId('');
       setTahfizhIndiv({ fs: '', fv: '', ts: '', tv: '' });
       setTilawahIndiv({ method: 'Al-Quran', fs: '', fv: '', ts: '', tv: '' });
+      setAttendance(100);
+      setBehaviorScore(10);
       setNotes('');
       setBaselineJuz(0);
       setBaselinePages(0);
@@ -165,7 +181,46 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
         {/* INDIVIDU SECTION */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6 border-t-4 border-t-emerald-500">
           <div className="flex items-center gap-2 mb-2 text-emerald-600"><UserCheck size={20}/><h3 className="font-bold text-gray-800 text-sm uppercase">Capaian Individu Siswa</h3></div>
+          
           <select value={studentId} onChange={(e) => setStudentId(e.target.value)} className="w-full p-2.5 border border-gray-200 rounded-xl outline-none bg-white text-sm"><option value="">-- Pilih Siswa --</option>{students.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select>
+          
+          {/* New Attendance & Adab Inputs (Qualitative) */}
+          <div className="grid grid-cols-2 gap-4 pt-2">
+            <div>
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1 block mb-1">Kehadiran (Bulan Ini)</label>
+              <div className="relative">
+                <select
+                  value={attendance}
+                  onChange={(e) => setAttendance(parseInt(e.target.value))}
+                  className="w-full h-10 px-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm font-medium"
+                >
+                  <option value={100}>Sangat Rajin (Selalu Hadir)</option>
+                  <option value={90}>Baik (Ada Izin/Sakit)</option>
+                  <option value={80}>Cukup (Beberapa Kali Absen)</option>
+                  <option value={60}>Perlu Perhatian (Sering Absen)</option>
+                </select>
+                <Heart size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-rose-400 pointer-events-none" fill="currentColor" />
+              </div>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1 block mb-1">Adab di Halaqah</label>
+              <div className="relative">
+                <select
+                  value={behaviorScore}
+                  onChange={(e) => setBehaviorScore(parseInt(e.target.value))}
+                  className="w-full h-10 px-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm font-medium"
+                >
+                  <option value={10}>Mumtaz (Sangat Baik & Teladan)</option>
+                  <option value={9}>Jayyid Jiddan (Baik Sekali)</option>
+                  <option value={8}>Jayyid (Baik)</option>
+                  <option value={7}>Maqbul (Cukup)</option>
+                  <option value={6}>Perlu Bimbingan (Kurang)</option>
+                </select>
+                <Star size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-yellow-400 pointer-events-none" fill="currentColor" />
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4 border-t border-gray-50">
             <div className="space-y-4">
               <h4 className="text-xs font-bold text-emerald-700 flex items-center gap-2"><Book size={16} /> Tahfizh Individu</h4>
