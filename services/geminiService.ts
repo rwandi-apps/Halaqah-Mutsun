@@ -7,7 +7,7 @@ import { Student } from "../types";
  * AI bertindak sebagai editor bahasa agar lebih santun, profesional, dan membina.
  */
 export const improveTeacherNotes = async (originalText: string): Promise<string> => {
-  if (!process.env.API_KEY) {
+  if (!import.meta.env.VITE_GEMINI_API_KEY) {
     throw new Error("API_KEY tidak ditemukan.");
   }
 
@@ -16,7 +16,7 @@ export const improveTeacherNotes = async (originalText: string): Promise<string>
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
 
     const systemInstruction = `
       Anda adalah AI Assistant yang bertugas sebagai EDITOR BAHASA untuk Catatan Rapor Siswa Kelas 4–6 SDQ.
@@ -57,7 +57,7 @@ export const improveTeacherNotes = async (originalText: string): Promise<string>
  * AI bertindak sebagai editor bahasa, bukan penilai.
  */
 export const improveReportRedaction = async (originalText: string): Promise<string> => {
-  if (!process.env.API_KEY) {
+  if (!import.meta.env.VITE_GEMINI_API_KEY) {
     throw new Error("API_KEY tidak ditemukan.");
   }
 
@@ -66,7 +66,7 @@ export const improveReportRedaction = async (originalText: string): Promise<stri
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
 
     const systemInstruction = `
       Anda adalah AI Assistant untuk guru SD Al-Qur'an (SDQ) yang bertugas MEMPERBAIKI REDAKSI KALIMAT RAPOR DESKRIPSI.
@@ -106,12 +106,12 @@ export const improveReportRedaction = async (originalText: string): Promise<stri
  * Service untuk generate evaluasi kolektif Halaqah menggunakan Gemini AI (Client-Side).
  */
 export const generateEvaluasiAI = async (reportType: string, period: string, contextData: string) => {
-  if (!process.env.API_KEY) {
+  if (!import.meta.env.VITE_GEMINI_API_KEY) {
     throw new Error("API_KEY tidak ditemukan.");
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
 
     const systemInstruction = `
       Anda adalah pakar Supervisor Pendidikan Al-Qur'an (Koordinator Tahfizh).
@@ -160,12 +160,12 @@ export const generateEvaluasiAI = async (reportType: string, period: string, con
  * Service untuk generate evaluasi naratif personal santri menggunakan Gemini AI.
  */
 export const generateStudentEvaluation = async (student: Student): Promise<string> => {
-  if (!process.env.API_KEY) {
+  if (!import.meta.env.VITE_GEMINI_API_KEY) {
     throw new Error("API_KEY tidak ditemukan.");
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
 
     const systemInstruction = `
       Anda adalah Asisten Pedagogis untuk Guru Al-Qur'an (Ustadz/Ustadzah). Tugas Anda adalah membuat Laporan Perkembangan Bulanan personal untuk orang tua siswa.
@@ -200,7 +200,7 @@ export const generateStudentEvaluation = async (student: Student): Promise<strin
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-3-flash-preview',
       contents: userPrompt,
       config: { 
         systemInstruction: systemInstruction,
