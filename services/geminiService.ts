@@ -7,7 +7,7 @@ import { Student } from "../types";
  * AI bertindak sebagai editor bahasa agar lebih santun, profesional, dan membina.
  */
 export const improveTeacherNotes = async (originalText: string): Promise<string> => {
-  if (!import.meta.env.VITE_GEMINI_API_KEY) {
+  if (!process.env.API_KEY) {
     throw new Error("API_KEY tidak ditemukan.");
   }
 
@@ -16,7 +16,7 @@ export const improveTeacherNotes = async (originalText: string): Promise<string>
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     const systemInstruction = `
       Anda adalah AI Assistant yang bertugas sebagai EDITOR BAHASA untuk Catatan Rapor Siswa Kelas 4–6 SDQ.
@@ -57,7 +57,7 @@ export const improveTeacherNotes = async (originalText: string): Promise<string>
  * AI bertindak sebagai editor bahasa, bukan penilai.
  */
 export const improveReportRedaction = async (originalText: string): Promise<string> => {
-  if (!import.meta.env.VITE_GEMINI_API_KEY) {
+  if (!process.env.API_KEY) {
     throw new Error("API_KEY tidak ditemukan.");
   }
 
@@ -66,7 +66,7 @@ export const improveReportRedaction = async (originalText: string): Promise<stri
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     const systemInstruction = `
       Anda adalah AI Assistant untuk guru SD Al-Qur'an (SDQ) yang bertugas MEMPERBAIKI REDAKSI KALIMAT RAPOR DESKRIPSI.
@@ -106,12 +106,12 @@ export const improveReportRedaction = async (originalText: string): Promise<stri
  * Service untuk generate evaluasi kolektif Halaqah menggunakan Gemini AI (Client-Side).
  */
 export const generateEvaluasiAI = async (reportType: string, period: string, contextData: string) => {
-  if (!import.meta.env.VITE_GEMINI_API_KEY) {
+  if (!process.env.API_KEY) {
     throw new Error("API_KEY tidak ditemukan.");
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     const systemInstruction = `
       Anda adalah pakar Supervisor Pendidikan Al-Qur'an (Koordinator Tahfizh).
@@ -160,32 +160,47 @@ export const generateEvaluasiAI = async (reportType: string, period: string, con
  * Service untuk generate evaluasi naratif personal santri menggunakan Gemini AI.
  */
 export const generateStudentEvaluation = async (student: Student): Promise<string> => {
-  if (!import.meta.env.VITE_GEMINI_API_KEY) {
+  if (!process.env.API_KEY) {
     throw new Error("API_KEY tidak ditemukan.");
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     const systemInstruction = `
-      Anda adalah seorang Guru Al-Qur'an (Musyrif Halaqah) yang bijaksana.
-      Tugas Anda adalah memberikan evaluasi naratif yang mendalam, memotivasi, dan Islami untuk seorang santri berdasarkan capaiannya.
+      Anda adalah Asisten Pedagogis untuk Guru Al-Qur'an (Ustadz/Ustadzah). Tugas Anda adalah membuat Laporan Perkembangan Bulanan personal untuk orang tua siswa.
+
+      PRINSIP PENULISAN:
+      1. TERMINOLOGI: Gunakan kata "Siswa" dan sapaan hangat "Ayah/Bunda Ananda ${student.name}".
+      2. GAYA BAHASA: Santun, Islami, menyejukkan hati, dan bersifat kerjasama.
+      3. ANTI-BEBAN: JANGAN menyebutkan sisa target halaman atau angka kekurangan (Contoh: Hindari "kurang 4 halaman lagi"). Fokuslah pada proses dan kualitas.
+      4. LOGIKA TARGET (Internal AI): 
+         - Kelas 1 (Target Baru): Selesai Iqra 6.
+         - Kelas 2 (Target Baru): Juz 30.
+         - Kelas 3-6 (Target Lama): Minimal 1 Juz per tahun (0.5 Juz/10 hal per semester).
+         - Target Bulanan: Minimal progres 2 halaman (tahfizh).
+
+      STRUKTUR LAPORAN WAJIB (Output dalam bentuk paragraf naratif yang indah):
+      1. APRESIASI: Puji Adab, Kehadiran, atau karakter positif siswa.
+      2. KELEBIHAN: Jelaskan kekuatan siswa dalam membaca/menghafal Al-Qur'an.
+      3. HAL YANG DITINGKATKAN: Masukkan kendala dari catatan guru dengan bahasa yang halus (ajakan memperbaiki bersama).
+      4. SINERGI DI RUMAH: Tips praktis untuk orang tua berdasarkan kendala spesifik siswa di sekolah (misal: jam tidur, latihan huruf tertentu, atau murojaah rutin).
     `;
 
     const userPrompt = `
-      BUAT EVALUASI NARATIF UNTUK SANTRI BERIKUT:
+      BUAT EVALUASI NARATIF UNTUK SISWA BERIKUT:
       Nama: ${student.name}
       Kelas: ${student.className}
-      Target: ${student.memorizationTarget}
+      Target Hafalan: ${student.memorizationTarget}
       Capaian Saat Ini: ${student.currentProgress}
-      Kehadiran: ${student.attendance}% (Skala 0-100)
-      Skor Adab: ${student.behaviorScore}/10 (10=Sangat Baik, 8=Baik, 6=Perlu Pembinaan)
+      Kehadiran: ${student.attendance || 100}% (Evaluasi kedisiplinan)
+      Skor Adab: ${student.behaviorScore || 10}/10 (Evaluasi karakter/adab)
       
-      Evaluasi harus mencakup apresiasi atas usahanya, evaluasi kedisiplinan & adab, serta saran perbaikan yang membangun.
+      Buatlah surat evaluasi yang menyentuh hati orang tua namun tetap objektif mengenai perkembangannya.
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3-pro-preview',
       contents: userPrompt,
       config: { 
         systemInstruction: systemInstruction,
