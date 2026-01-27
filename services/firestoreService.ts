@@ -277,7 +277,37 @@ export const saveSDQReport = async (reportData: Omit<Report, 'id' | 'createdAt'>
     updatedAt: serverTimestamp()
   });
 
-  // 4. Trigger Recalculate
+  // 4. Sinkronisasi ke Master Siswa (Attendance, Behavior, Progress)
+  try {
+    const studentRef = doc(db, 'siswa', reportData.studentId);
+    const updates: any = {};
+    
+    // Update Kehadiran & Adab
+    if (reportData.attendance !== undefined) updates.attendance = reportData.attendance;
+    if (reportData.behaviorScore !== undefined) updates.behaviorScore = reportData.behaviorScore;
+    
+    // Update Current Progress (Sabaq)
+    // Prioritas: Tahfizh > Tilawah > Jangan update jika kosong
+    const progressRaw = reportData.tahfizh?.individual;
+    const tilawahRaw = reportData.tilawah?.individual;
+
+    if (progressRaw && progressRaw !== '-' && progressRaw.trim().length > 3) {
+      updates.currentProgress = progressRaw;
+    } else if (tilawahRaw && tilawahRaw !== '-' && tilawahRaw.trim().length > 3) {
+      updates.currentProgress = tilawahRaw;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      await updateDoc(studentRef, {
+        ...updates,
+        updatedAt: serverTimestamp()
+      });
+    }
+  } catch (error) {
+    console.error("Gagal sinkronisasi data siswa dari laporan:", error);
+  }
+
+  // 5. Trigger Recalculate (Total Hafalan)
   await recalculateTotalHafalan(reportData.studentId);
 };
 
@@ -331,9 +361,39 @@ export const updateReport = async (reportId: string, data: Partial<Report>): Pro
   if (!db) throw new Error("Firestore not initialized");
   const reportRef = doc(db, 'laporan', reportId);
   const snap = await getDoc(reportRef);
+  
   if (snap.exists()) {
-    const studentId = snap.data().studentId;
+    const reportData = snap.data();
+    const studentId = reportData.studentId;
+    
+    // Update Report
     await updateDoc(reportRef, { ...data, updatedAt: serverTimestamp() });
+    
+    // Sinkronisasi ke Master Siswa jika ada perubahan data penting
+    try {
+      const studentRef = doc(db, 'siswa', studentId);
+      const updates: any = {};
+      
+      if (data.attendance !== undefined) updates.attendance = data.attendance;
+      if (data.behaviorScore !== undefined) updates.behaviorScore = data.behaviorScore;
+      
+      // Update Progress jika diedit
+      const newProgress = data.tahfizh?.individual;
+      const newTilawah = data.tilawah?.individual;
+      
+      if (newProgress && newProgress !== '-' && newProgress.trim().length > 3) {
+        updates.currentProgress = newProgress;
+      } else if (newTilawah && newTilawah !== '-' && newTilawah.trim().length > 3) {
+        updates.currentProgress = newTilawah;
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await updateDoc(studentRef, { ...updates, updatedAt: serverTimestamp() });
+      }
+    } catch (e) {
+      console.error("Gagal sinkronisasi update siswa:", e);
+    }
+
     await recalculateTotalHafalan(studentId);
   }
 };
@@ -482,16 +542,17 @@ export const getAllStudents = async (): Promise<Student[]> => {
 export const addStudent = async (student: Omit<Student, 'id' | 'attendance' | 'behaviorScore'>): Promise<Student> => {
   if (!db) throw new Error("Firestore not initialized");
   const level = extractClassLevel(student.className);
+  // Default Attendance & Behavior set to 0 (Not yet rated)
   const docRef = await addDoc(collection(db, 'siswa'), { 
     ...student, 
     classLevel: level, 
-    attendance: 100, 
-    behaviorScore: 10, 
+    attendance: 0, 
+    behaviorScore: 0, 
     totalHafalan: { juz: 0, pages: 0, lines: 0 },
     currentProgress: 'Belum Ada',
     createdAt: serverTimestamp() 
   });
-  return { id: docRef.id, ...student, classLevel: level, attendance: 100, behaviorScore: 10, createdAt: new Date().toISOString() } as Student;
+  return { id: docRef.id, ...student, classLevel: level, attendance: 0, behaviorScore: 0, createdAt: new Date().toISOString() } as Student;
 };
 
 export const updateStudent = async (id: string, data: Partial<Student>): Promise<void> => {
