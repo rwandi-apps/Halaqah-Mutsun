@@ -195,6 +195,10 @@ export const generateStudentEvaluation = async (student: Student): Promise<strin
         - Gunakan pembulatan sederhana: 0.1 Juz = 2 halaman.
 
       [BAGIAN 3: LOGIKA PROGRES ADAPTIF (INSTRUKSI INTERNAL)]
+      - KHUSUS KELAS 1:
+        1. Semester 1: Target adalah menyelesaikan Iqra 6 (sampai halaman 31). Fokus narasi pada pengenalan huruf, kelancaran tajwid dasar, dan ketuntasan jilid.
+        2. Semester 2: Target adalah Tahsin (perbaikan dan melancarkan bacaan). Fokus narasi pada persiapan lisan agar lebih siap dan kokoh sebelum masuk ke program hafalan (ziyadah).
+        3. JANGAN menuntut target hafalan juz/halaman. Gunakan kata "Kelancaran bacaan" atau "Kesiapan Tahsin".
       - Jika Total Hafalan > 5 Juz (Kategori Penjaga Hafalan): Jika progres halaman rendah, fokuskan narasi pada apresiasi perjuangan Ananda menjaga murojaah agar tetap mutqin. Sampaikan bahwa menjaga hafalan yang banyak adalah prestasi besar.
       - Jika Total Hafalan <= 5 Juz (Kategori Pembangun Ritme): Jika progres rendah, sampaikan bahwa Ananda memerlukan dorongan lebih untuk membangun ritme hafalan demi mengejar target semester (10 halaman).
 
