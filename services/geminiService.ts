@@ -193,7 +193,13 @@ export const generateStudentEvaluation = async (student: Student): Promise<strin
          - Jika Kehadiran < 80%: Gunakan redaksi bahwa "intensitas kehadiran Ananda di bulan ini perlu ditingkatkan kembali agar ritme interaksi dengan Al-Qur'an tetap terjaga dan konsisten."
          - Hubungkan ketidakhadiran tersebut sebagai faktor yang memengaruhi kemudahan Ananda dalam menambah hafalan baru.
 
-      5. STRUKTUR NARASI (Output dalam bentuk paragraf naratif):
+      5. FORMAT PENYEBUTAN TOTAL HAFALAN:
+         - JANGAN hanya menyebutkan total dalam satuan "Halaman" (misal: "80 halaman").
+         - KONVERSI total halaman tersebut ke dalam satuan Juz dan Halaman (1 Juz = 20 Halaman).
+         - Contoh: Jika data total adalah 80 halaman, tuliskan "4 Juz". Jika 85 halaman, tuliskan "4 Juz 5 Halaman".
+         - Gunakan kalimat yang hangat, seperti: "Hingga saat ini, total hafalan yang telah dijaga oleh Ananda adalah sebanyak [X] Juz [Y] Halaman."
+
+      6. STRUKTUR NARASI (Output dalam bentuk paragraf naratif):
          - Paragraf 1: Kabar Adab & Kehadiran (Sesuaikan dengan skor terbaru).
          - Paragraf 2: Capaian Progres (Iqra/Juz saat ini).
          - Paragraf 3: Evaluasi & Motivasi (Gunakan logika "Perlu dorongan lebih" jika progres melambat).
