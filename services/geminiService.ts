@@ -7,7 +7,7 @@ import { Student } from "../types";
  * AI bertindak sebagai editor bahasa agar lebih santun, profesional, dan membina.
  */
 export const improveTeacherNotes = async (originalText: string): Promise<string> => {
-  if (!import.meta.env.VITE_GEMINI_API_KEY) {
+  if (!process.env.API_KEY) {
     throw new Error("API_KEY tidak ditemukan.");
   }
 
@@ -16,7 +16,7 @@ export const improveTeacherNotes = async (originalText: string): Promise<string>
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     const systemInstruction = `
       Anda adalah AI Assistant yang bertugas sebagai EDITOR BAHASA untuk Catatan Rapor Siswa Kelas 4–6 SDQ.
@@ -57,7 +57,7 @@ export const improveTeacherNotes = async (originalText: string): Promise<string>
  * AI bertindak sebagai editor bahasa, bukan penilai.
  */
 export const improveReportRedaction = async (originalText: string): Promise<string> => {
-  if (!import.meta.env.VITE_GEMINI_API_KEY) {
+  if (!process.env.API_KEY) {
     throw new Error("API_KEY tidak ditemukan.");
   }
 
@@ -66,7 +66,7 @@ export const improveReportRedaction = async (originalText: string): Promise<stri
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     const systemInstruction = `
       Anda adalah AI Assistant untuk guru SD Al-Qur'an (SDQ) yang bertugas MEMPERBAIKI REDAKSI KALIMAT RAPOR DESKRIPSI.
@@ -106,12 +106,12 @@ export const improveReportRedaction = async (originalText: string): Promise<stri
  * Service untuk generate evaluasi kolektif Halaqah menggunakan Gemini AI (Client-Side).
  */
 export const generateEvaluasiAI = async (reportType: string, period: string, contextData: string) => {
-  if (!import.meta.env.VITE_GEMINI_API_KEY) {
+  if (!process.env.API_KEY) {
     throw new Error("API_KEY tidak ditemukan.");
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     const systemInstruction = `
       Anda adalah pakar Supervisor Pendidikan Al-Qur'an (Koordinator Tahfizh).
@@ -160,56 +160,41 @@ export const generateEvaluasiAI = async (reportType: string, period: string, con
  * Service untuk generate evaluasi naratif personal santri menggunakan Gemini AI.
  */
 export const generateStudentEvaluation = async (student: Student): Promise<string> => {
-  if (!import.meta.env.VITE_GEMINI_API_KEY) {
+  if (!process.env.API_KEY) {
     throw new Error("API_KEY tidak ditemukan.");
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     // Hitung total halaman dari object totalHafalan untuk konteks AI
     const totalPages = (student.totalHafalan?.juz || 0) * 20 + (student.totalHafalan?.pages || 0);
+    const totalJuz = (totalPages / 20).toFixed(1); // Konversi ke Juz desimal untuk logika
 
     const systemInstruction = `
-      Anda adalah Pakar Evaluasi Pedagogis SD Al-Qur'an (SDQ). Tugas Anda adalah menganalisis DATA INPUT TERBARU yang diberikan guru dan mengubahnya menjadi laporan naratif bulanan untuk orang tua.
+      Anda adalah Pakar Evaluasi Al-Qur'an (SDQ). Tugas Anda adalah menyusun laporan naratif bulanan yang JUJUR, SANTUN, dan ADAPTIF.
 
-      LOGIKA EVALUASI (WAJIB DIPATUHI):
+      [BAGIAN 1: ADAB & KEHADIRAN]
+      - Skor Adab <= 6: DILARANG MEMUJI. Gunakan narasi: "Ananda memerlukan perhatian khusus dan bimbingan lebih intensif terkait adab serta fokus di dalam halaqah."
+      - Kehadiran < 80%: JANGAN sebut angka %. Gunakan redaksi: "Intensitas kehadiran Ananda di bulan ini perlu ditingkatkan kembali agar ritme interaksi dengan Al-Qur'an tetap terjaga dan konsisten."
 
-      1. PRIORITAS DATA TERBARU:
-         - Evaluasi Anda WAJIB didasarkan pada angka dan catatan terbaru yang diberikan. JANGAN menggunakan asumsi umum bahwa siswa selalu berprestasi jika datanya menunjukkan sebaliknya.
+      [BAGIAN 2: FORMAT HAFALAN]
+      - Sebutkan posisi hafalan terbaru (Surah dan Ayat) atau Jilid Iqra.
+      - Sebutkan total hafalan dalam satuan "Juz" (jika sudah Al-Qur'an).
 
-      2. ANALISIS ADAB (SANGAT KETAT):
-         - Jika Skor Adab <= 6 atau berisi status "Butuh Perhatian": Dilarang keras menggunakan kata "Sempurna", "Luar Biasa", "Istimewa", atau "Sangat Baik".
-         - NARASI WAJIB jika skor rendah: Sampaikan secara jujur namun santun bahwa "Bulan ini Ananda memerlukan perhatian khusus dan bimbingan lebih intensif terkait adab serta fokus di dalam halaqah."
-         - Ajak orang tua untuk bersinergi membimbing perilaku Ananda di rumah agar kembali stabil.
+      [BAGIAN 3: LOGIKA PROGRES ADAPTIF]
+      - Jika Total Hafalan > 5 Juz (Siswa Senior): 
+        Jika progres bulan ini rendah (atau stagnan), JANGAN gunakan nada menekan. Gunakan narasi: "Mengingat amanah hafalan Ananda yang sudah cukup banyak, fokus bulan ini tampaknya lebih diprioritaskan pada penguatan (murojaah) agar hafalan tetap mutqin. Namun, kami tetap memotivasi Ananda untuk mulai mencicil setoran baru secara perlahan."
+        
+      - Jika Total Hafalan <= 5 Juz (Siswa Junior):
+        Jika progres bulan ini rendah, gunakan narasi: "Ananda perlu dorongan lebih agar ritme hafalan di awal semester ini terbangun dengan kuat demi mencapai target semesteran (10 halaman)."
 
-      3. ANALISIS PROGRES (Target Bulanan 2 Hal & Semester 10 Hal):
-         - Karena ini Laporan Januari (Awal Semester Genap):
-           - Jika capaian < 2 halaman (atau progres lambat): Gunakan kalimat: "Ananda perlu dorongan lebih agar ritme hafalan di awal semester ini terbangun dengan kuat demi mencapai target semester (10 halaman)."
-           - Tetap berikan semangat, namun tunjukkan bahwa progres saat ini masih di bawah target bulanan.
-
-      4. LOGIKA KEHADIRAN:
-         - JANGAN menyebutkan angka persentase kehadiran (misal: "60%" atau "75%").
-         - Jika Kehadiran < 80%: Gunakan redaksi bahwa "intensitas kehadiran Ananda di bulan ini perlu ditingkatkan kembali agar ritme interaksi dengan Al-Qur'an tetap terjaga dan konsisten."
-         - Hubungkan ketidakhadiran tersebut sebagai faktor yang memengaruhi kemudahan Ananda dalam menambah hafalan baru.
-
-      5. FORMAT PENYEBUTAN TOTAL HAFALAN:
-         - JANGAN hanya menyebutkan total dalam satuan "Halaman" (misal: "80 halaman").
-         - KONVERSI total halaman tersebut ke dalam satuan Juz dan Halaman (1 Juz = 20 Halaman).
-         - Contoh: Jika data total adalah 80 halaman, tuliskan "4 Juz". Jika 85 halaman, tuliskan "4 Juz 5 Halaman".
-         - Gunakan kalimat yang hangat, seperti: "Hingga saat ini, total hafalan yang telah dijaga oleh Ananda adalah sebanyak [X] Juz [Y] Halaman."
-
-      6. STRUKTUR NARASI (Output dalam bentuk paragraf naratif):
-         - Paragraf 1: Kabar Adab & Kehadiran (Sesuaikan dengan skor terbaru).
-         - Paragraf 2: Capaian Progres (Iqra/Juz saat ini).
-         - Paragraf 3: Evaluasi & Motivasi (Gunakan logika "Perlu dorongan lebih" jika progres melambat).
-         - Paragraf 4: Sinergi Rumah (Tips praktis berdasarkan kendala di Catatan Guru).
-
-      ATURAN BAHASA:
-      - Sapaan: Ayah/Bunda Ananda ${student.name}.
-      - Gunakan "Siswa" (bukan Santri).
-      - JANGAN menyebut angka kekurangan (Contoh: JANGAN tulis "kurang 8 hal lagi").
-      - Gaya Bahasa: Santun, Islami, namun sangat Objektif mengikuti angka input guru.
+      [BAGIAN 4: PENUTUP]
+      - Gunakan sapaan hangat kepada Ayah/Bunda dan tutup dengan doa yang baik.
+      
+      ATURAN TAMBAHAN:
+      - Gunakan kata "Siswa" atau "Ananda".
+      - Gaya Bahasa: Santun, Islami, namun Objektif sesuai data.
     `;
 
     const userPrompt = `
@@ -219,14 +204,13 @@ export const generateStudentEvaluation = async (student: Student): Promise<strin
       - Nama: ${student.name}
       - Kelas: ${student.className}
       - Posisi Hafalan Saat Ini: ${student.currentProgress}
-      - Total Akumulasi Hafalan: ${totalPages} halaman
+      - Total Akumulasi Hafalan: ${totalJuz} Juz
       - Skor Adab: ${student.behaviorScore || 10}/10
       - Kehadiran: ${student.attendance || 100}%
       
       TUGAS KHUSUS:
-      1. Hubungkan "Capaian" dengan target bulanan (2 hal).
-      2. Hubungkan "Total Capaian" dengan target semester (10 hal). Jika kurang, gunakan kalimat "Perlu dorongan lebih".
-      3. Pastikan narasi Adab sinkron dengan skor ${student.behaviorScore || 10}.
+      1. Cek Skor Adab (${student.behaviorScore}) dan Kehadiran (${student.attendance}%). Jika rendah, GUNAKAN REDAKSI WAJIB di Bagian 1.
+      2. Cek Total Hafalan (${totalJuz} Juz). Tentukan apakah masuk kategori Senior (>5 Juz) atau Junior (<=5 Juz) dan terapkan logika Bagian 3.
     `;
 
     const response = await ai.models.generateContent({
