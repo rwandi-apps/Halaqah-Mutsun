@@ -34,7 +34,7 @@ export const improveTeacherNotes = async (originalText: string): Promise<string>
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash-latest',
+      model: 'gemini-3-flash-preview',
       contents: `Sempurnakan redaksi catatan guru berikut: "${originalText}"`,
       config: { 
         systemInstruction: systemInstruction,
@@ -84,7 +84,7 @@ export const improveReportRedaction = async (originalText: string): Promise<stri
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash-latest',
+      model: 'gemini-3-flash-preview',
       contents: `Sempurnakan redaksi kalimat rapor berikut tanpa mengubah maknanya: "${originalText}"`,
       config: { 
         systemInstruction: systemInstruction,
@@ -128,7 +128,7 @@ export const generateEvaluasiAI = async (reportType: string, period: string, con
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash-latest',
+      model: 'gemini-3-flash-preview',
       contents: userPrompt,
       config: { 
         systemInstruction: systemInstruction,
@@ -230,7 +230,7 @@ export const generateStudentEvaluation = async (student: Student): Promise<strin
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash-latest',
+      model: 'gemini-3-flash-preview',
       contents: userPrompt,
       config: { 
         systemInstruction: systemInstruction,
