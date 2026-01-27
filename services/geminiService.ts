@@ -7,7 +7,7 @@ import { Student } from "../types";
  * AI bertindak sebagai editor bahasa agar lebih santun, profesional, dan membina.
  */
 export const improveTeacherNotes = async (originalText: string): Promise<string> => {
-  if (!import.meta.env.VITE_GEMINI_API_KEY) {
+  if (!process.env.API_KEY) {
     throw new Error("API_KEY tidak ditemukan.");
   }
 
@@ -16,7 +16,7 @@ export const improveTeacherNotes = async (originalText: string): Promise<string>
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     const systemInstruction = `
       Anda adalah AI Assistant yang bertugas sebagai EDITOR BAHASA untuk Catatan Rapor Siswa Kelas 4–6 SDQ.
@@ -57,7 +57,7 @@ export const improveTeacherNotes = async (originalText: string): Promise<string>
  * AI bertindak sebagai editor bahasa, bukan penilai.
  */
 export const improveReportRedaction = async (originalText: string): Promise<string> => {
-  if (!import.meta.env.VITE_GEMINI_API_KEY) {
+  if (!process.env.API_KEY) {
     throw new Error("API_KEY tidak ditemukan.");
   }
 
@@ -66,7 +66,7 @@ export const improveReportRedaction = async (originalText: string): Promise<stri
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     const systemInstruction = `
       Anda adalah AI Assistant untuk guru SD Al-Qur'an (SDQ) yang bertugas MEMPERBAIKI REDAKSI KALIMAT RAPOR DESKRIPSI.
@@ -106,12 +106,12 @@ export const improveReportRedaction = async (originalText: string): Promise<stri
  * Service untuk generate evaluasi kolektif Halaqah menggunakan Gemini AI (Client-Side).
  */
 export const generateEvaluasiAI = async (reportType: string, period: string, contextData: string) => {
-  if (!import.meta.env.VITE_GEMINI_API_KEY) {
+  if (!process.env.API_KEY) {
     throw new Error("API_KEY tidak ditemukan.");
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     const systemInstruction = `
       Anda adalah pakar Supervisor Pendidikan Al-Qur'an (Koordinator Tahfizh).
@@ -160,35 +160,48 @@ export const generateEvaluasiAI = async (reportType: string, period: string, con
  * Service untuk generate evaluasi naratif personal santri menggunakan Gemini AI.
  */
 export const generateStudentEvaluation = async (student: Student): Promise<string> => {
-  if (!import.meta.env.VITE_GEMINI_API_KEY) {
+  if (!process.env.API_KEY) {
     throw new Error("API_KEY tidak ditemukan.");
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     // Hitung total halaman dari object totalHafalan untuk konteks AI
     const totalPages = (student.totalHafalan?.juz || 0) * 20 + (student.totalHafalan?.pages || 0);
 
     const systemInstruction = `
-      Anda adalah Asisten Pedagogis untuk Guru Al-Qur'an (Ustadz/Ustadzah). Tugas Anda adalah membuat Laporan Perkembangan Bulanan personal untuk orang tua siswa.
+      Anda adalah Pakar Evaluasi Pedagogis SD Al-Qur'an (SDQ). Tugas Anda adalah menganalisis DATA INPUT TERBARU yang diberikan guru dan mengubahnya menjadi laporan naratif bulanan untuk orang tua.
 
-      PRINSIP PENULISAN:
-      1. TERMINOLOGI: Gunakan kata "Siswa" dan sapaan hangat "Ayah/Bunda Ananda ${student.name}".
-      2. GAYA BAHASA: Santun, Islami, menyejukkan hati, dan bersifat kerjasama (partnership).
-      3. ANTI-BEBAN (CRITICAL): JANGAN PERNAH menyebutkan angka kekurangan target atau sisa halaman (Contoh: DILARANG tulis "kurang 4 halaman lagi" atau "tertinggal 2 juz"). Fokuslah pada *progress yang sudah diraih* dan *kualitas bacaan*. Gunakan kalimat seperti "Perlu istiqomah", "Mari kita dukung", bukan "Anak anda kurang".
-      4. LOGIKA TARGET (Internal Knowledge untuk Context, jangan disebut eksplisit angkanya jika kurang): 
-         - Kelas 1: Fokus penyelesaian Iqra.
-         - Kelas 2: Fokus Juz 30.
-         - Kelas 3-6: Target ~10 halaman/semester.
-         - Target Bulanan: Idealnya bertambah 2 halaman.
+      LOGIKA EVALUASI (WAJIB DIPATUHI):
 
-      STRUKTUR LAPORAN WAJIB (Output dalam bentuk paragraf naratif yang indah, jangan pakai bullet point kaku):
-      1. PEMBUKAAN & APRESIASI: Sapaan hangat, lalu puji aspek Adab (${student.behaviorScore}/10) atau Kehadiran (${student.attendance}%). Jika nilai bagus, puji keteladanan. Jika kurang, puji potensinya.
-      2. KELEBIHAN (PROGRESS): Jelaskan total capaian hafalan saat ini (${student.currentProgress} / Total ${totalPages} Hal) dengan nada positif.
-      3. HAL YANG DITINGKATKAN: Berikan masukan halus. Jika capaian rendah (<2 hal/bulan), gunakan bahasa "Perlu dorongan semangat" atau "Perlu waktu khusus". Jangan menghakimi.
-      4. SINERGI DI RUMAH: Berikan 1-2 tips praktis konkret untuk orang tua berdasarkan kendala (misal: menyimak hafalan 5 menit sebelum tidur, memutar audio murottal, atau sekadar mendoakan).
-      5. PENUTUP: Doa tulus untuk Ananda.
+      1. PRIORITAS DATA TERBARU:
+         - Evaluasi Anda WAJIB didasarkan pada angka dan catatan terbaru yang diberikan. JANGAN menggunakan asumsi umum bahwa siswa selalu berprestasi jika datanya menunjukkan sebaliknya.
+
+      2. ANALISIS ADAB (SANGAT KETAT):
+         - Jika Skor Adab <= 6 atau berisi status "Butuh Perhatian": Dilarang keras menggunakan kata "Sempurna", "Luar Biasa", "Istimewa", atau "Sangat Baik".
+         - NARASI WAJIB jika skor rendah: Sampaikan secara jujur namun santun bahwa "Bulan ini Ananda memerlukan perhatian khusus dan bimbingan lebih intensif terkait adab serta fokus di dalam halaqah."
+         - Ajak orang tua untuk bersinergi membimbing perilaku Ananda di rumah agar kembali stabil.
+
+      3. ANALISIS PROGRES (Target Bulanan 2 Hal & Semester 10 Hal):
+         - Karena ini Laporan Januari (Awal Semester Genap):
+           - Jika capaian < 2 halaman (atau progres lambat): Gunakan kalimat: "Ananda perlu dorongan lebih agar ritme hafalan di awal semester ini terbangun dengan kuat demi mencapai target semester (10 halaman)."
+           - Tetap berikan semangat, namun tunjukkan bahwa progres saat ini masih di bawah target bulanan.
+
+      4. LOGIKA KEHADIRAN:
+         - Jika < 80%: Kaitkan secara halus bahwa ketidakhadiran memengaruhi kelancaran hafalan Ananda.
+
+      5. STRUKTUR NARASI (Output dalam bentuk paragraf naratif):
+         - Paragraf 1: Kabar Adab & Kehadiran (Sesuaikan dengan skor terbaru).
+         - Paragraf 2: Capaian Progres (Iqra/Juz saat ini).
+         - Paragraf 3: Evaluasi & Motivasi (Gunakan logika "Perlu dorongan lebih" jika progres melambat).
+         - Paragraf 4: Sinergi Rumah (Tips praktis berdasarkan kendala di Catatan Guru).
+
+      ATURAN BAHASA:
+      - Sapaan: Ayah/Bunda Ananda ${student.name}.
+      - Gunakan "Siswa" (bukan Santri).
+      - JANGAN menyebut angka kekurangan (Contoh: JANGAN tulis "kurang 8 hal lagi").
+      - Gaya Bahasa: Santun, Islami, namun sangat Objektif mengikuti angka input guru.
     `;
 
     const userPrompt = `
@@ -203,9 +216,9 @@ export const generateStudentEvaluation = async (student: Student): Promise<strin
       - Kehadiran: ${student.attendance || 100}%
       
       TUGAS KHUSUS:
-      1. Hubungkan "Capaian" dengan target bulanan/semester secara implisit (tanpa menyebut angka defisit).
-      2. Jika Total Capaian (${totalPages} hal) dirasa kurang untuk kelasnya, gunakan kalimat motivasi "Perlu dorongan lebih".
-      3. Pastikan narasi Adab sinkron dengan skor (10=Sangat Baik/Teladan, 8-9=Baik, <8=Perlu Bimbingan).
+      1. Hubungkan "Capaian" dengan target bulanan (2 hal).
+      2. Hubungkan "Total Capaian" dengan target semester (10 hal). Jika kurang, gunakan kalimat "Perlu dorongan lebih".
+      3. Pastikan narasi Adab sinkron dengan skor ${student.behaviorScore || 10}.
     `;
 
     const response = await ai.models.generateContent({
