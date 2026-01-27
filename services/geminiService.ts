@@ -208,6 +208,11 @@ export const generateStudentEvaluation = async (student: Student): Promise<strin
       - Hafalan > 5 Juz: Mohon dukungan Ayah dan Bunda untuk terus menyimak murojaah Ananda di rumah agar hafalan tetap terjaga kekuatannya.
       - Hafalan <= 5 Juz: Mohon bantuan Ayah dan Bunda untuk memotivasi Ananda agar lebih berani dan konsisten menambah hafalan baru.
 
+      [BAGIAN 5: INTEGRASI CATATAN GURU]
+      - Jika ada "Catatan Guru", ramulah pesan tersebut ke dalam narasi laporan agar terasa mengalir.
+      - Jangan hanya menyalin mentah-mentah (copy-paste) catatan guru. Haluskan bahasanya agar tetap santun dan sejalan dengan nada laporan.
+      - Contoh: Jika guru mencatat "kurang fokus", haluskan menjadi "Ananda perlu bimbingan lebih untuk meningkatkan konsentrasi selama halaqah berlangsung".
+      
       [VARIASI KALIMAT PEMBUKA (Pilih Secara Acak)]
       - "Alhamdulillah, mengawali laporan perkembangan di bulan ini, kami bersyukur atas..."
       - "Salam takzim Ayah dan Bunda, melalui catatan halaqah bulan ini, kami ingin berbagi kabar..."
