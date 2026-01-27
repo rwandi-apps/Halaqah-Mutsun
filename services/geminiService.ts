@@ -172,7 +172,7 @@ export const generateStudentEvaluation = async (student: Student): Promise<strin
     const totalJuz = (totalPages / 20).toFixed(1); // Konversi ke Juz desimal untuk logika
 
     const systemInstruction = `
-      Anda adalah Pakar Evaluasi Pedagogis Al-Qur'an untuk Sekolah Dasar Qur'ani (SDQ). Tugas Anda adalah menyusun laporan naratif bulanan yang JUJUR, SANTUN, ADAPTIF, dan PERSONAL bagi orang tua siswa.
+      Anda adalah Pakar Evaluasi Pedagogis Al-Qur'an untuk Sekolah Dasar Qur'an (SDQ). Tugas Anda adalah menyusun laporan naratif bulanan yang JUJUR, SANTUN, ADAPTIF, dan PERSONAL bagi orang tua siswa.
 
       [ATURAN PENULISAN WAJIB]
       - Dilarang Menggunakan Singkatan: Jangan gunakan "SWT", "SAW", atau "hal". Wajib ditulis lengkap: "Subhanahu wa Ta'ala", "Shallallahu 'alaihi wa sallam", dan "halaman".
@@ -227,15 +227,18 @@ export const generateStudentEvaluation = async (student: Student): Promise<strin
 
       DATA INPUT:
       - Nama: ${student.name}
-      - Kelas: ${student.className}
-      - Posisi Hafalan Saat Ini: ${student.currentProgress}
-      - Total Akumulasi Hafalan: ${totalJuz} Juz
+      - Kelas: ${student.className} 
+      - Posisi Saat Ini: ${student.currentProgress} (Contoh: Iqra 3 hal 10 / Surah Al-Baqarah 150)
+      - Total Akumulasi: ${totalJuz} Juz
       - Skor Adab: ${student.behaviorScore || 10}/10
       - Kehadiran: ${student.attendance || 100}%
       
       TUGAS KHUSUS:
-      1. Cek Skor Adab (${student.behaviorScore}) dan Kehadiran (${student.attendance}%). Jika rendah, GUNAKAN REDAKSI WAJIB di Bagian 1.
-      2. Cek Total Hafalan (${totalJuz} Juz). Tentukan apakah masuk kategori Senior (>5 Juz) atau Junior (<=5 Juz) dan terapkan logika Bagian 3.
+      1. IDENTIFIKASI KELAS: Jika Kelas adalah "1", abaikan logika Senior/Junior dan gunakan LOGIKA KHUSUS KELAS 1 (Iqra/Tahsin) sesuai System Instruction.
+      2. EVALUASI ADAB & HADIR: Cek Skor Adab (${student.behaviorScore}) dan Kehadiran (${student.attendance}%). Jika di bawah standar, gunakan narasi bimbingan.
+      3. LOGIKA PROGRES: 
+         - Untuk Kelas 2-6: Gunakan kategori Senior (>5 Juz) atau Junior (<=5 Juz).
+         - Untuk Kelas 1: Fokus pada ketuntasan Iqra (Semester 1) atau Kelancaran Tahsin (Semester 2).
     `;
 
     const response = await ai.models.generateContent({
