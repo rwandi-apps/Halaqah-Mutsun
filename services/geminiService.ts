@@ -189,7 +189,9 @@ export const generateStudentEvaluation = async (student: Student): Promise<strin
            - Tetap berikan semangat, namun tunjukkan bahwa progres saat ini masih di bawah target bulanan.
 
       4. LOGIKA KEHADIRAN:
-         - Jika < 80%: Kaitkan secara halus bahwa ketidakhadiran memengaruhi kelancaran hafalan Ananda.
+         - JANGAN menyebutkan angka persentase kehadiran (misal: "60%" atau "75%").
+         - Jika Kehadiran < 80%: Gunakan redaksi bahwa "intensitas kehadiran Ananda di bulan ini perlu ditingkatkan kembali agar ritme interaksi dengan Al-Qur'an tetap terjaga dan konsisten."
+         - Hubungkan ketidakhadiran tersebut sebagai faktor yang memengaruhi kemudahan Ananda dalam menambah hafalan baru.
 
       5. STRUKTUR NARASI (Output dalam bentuk paragraf naratif):
          - Paragraf 1: Kabar Adab & Kehadiran (Sesuaikan dengan skor terbaru).
