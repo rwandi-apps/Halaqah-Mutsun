@@ -34,7 +34,7 @@ export const improveTeacherNotes = async (originalText: string): Promise<string>
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-1.5-flash',
       contents: `Sempurnakan redaksi catatan guru berikut: "${originalText}"`,
       config: { 
         systemInstruction: systemInstruction,
@@ -84,7 +84,7 @@ export const improveReportRedaction = async (originalText: string): Promise<stri
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-1.5-flash',
       contents: `Sempurnakan redaksi kalimat rapor berikut tanpa mengubah maknanya: "${originalText}"`,
       config: { 
         systemInstruction: systemInstruction,
@@ -128,7 +128,7 @@ export const generateEvaluasiAI = async (reportType: string, period: string, con
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-1.5-flash',
       contents: userPrompt,
       config: { 
         systemInstruction: systemInstruction,
@@ -172,29 +172,33 @@ export const generateStudentEvaluation = async (student: Student): Promise<strin
     const totalJuz = (totalPages / 20).toFixed(1); // Konversi ke Juz desimal untuk logika
 
     const systemInstruction = `
-      Anda adalah Pakar Evaluasi Al-Qur'an (SDQ). Tugas Anda adalah menyusun laporan naratif bulanan yang JUJUR, SANTUN, dan ADAPTIF.
+      Anda adalah Pakar Evaluasi Pedagogis Al-Qur'an. Tugas Anda menyusun laporan naratif bulanan yang JUJUR, SANTUN, dan ADAPTIF.
 
-      [BAGIAN 1: ADAB & KEHADIRAN]
-      - Skor Adab <= 6: DILARANG MEMUJI. Gunakan narasi: "Ananda memerlukan perhatian khusus dan bimbingan lebih intensif terkait adab serta fokus di dalam halaqah."
-      - Kehadiran < 80%: JANGAN sebut angka %. Gunakan redaksi: "Intensitas kehadiran Ananda di bulan ini perlu ditingkatkan kembali agar ritme interaksi dengan Al-Qur'an tetap terjaga dan konsisten."
+[BAGIAN 1: ADAB & KEHADIRAN]
+- Skor Adab <= 6: DILARANG MEMUJI. Gunakan narasi: "Ananda memerlukan perhatian khusus dan bimbingan lebih intensif terkait adab serta fokus di dalam halaqah."
+- Kehadiran < 80%: JANGAN sebut angka %. Gunakan redaksi: "Intensitas kehadiran Ananda di bulan ini perlu ditingkatkan kembali agar ritme interaksi dengan Al-Qur'an tetap terjaga dan konsisten."
 
-      [BAGIAN 2: FORMAT HAFALAN]
-      - Sebutkan posisi hafalan terbaru (Surah dan Ayat) atau Jilid Iqra.
-      - Sebutkan total hafalan dalam satuan "Juz" (jika sudah Al-Qur'an).
+[BAGIAN 2: FORMAT CAPAIAN]
+- Sebutkan posisi terakhir (Surah/Ayat atau Jilid Iqra).
+- Untuk siswa Al-Qur'an, sebutkan total hafalan dalam satuan "Juz".
 
-      [BAGIAN 3: LOGIKA PROGRES ADAPTIF]
-      - Jika Total Hafalan > 5 Juz (Siswa Senior): 
-        Jika progres bulan ini rendah (atau stagnan), JANGAN gunakan nada menekan. Gunakan narasi: "Mengingat amanah hafalan Ananda yang sudah cukup banyak, fokus bulan ini tampaknya lebih diprioritaskan pada penguatan (murojaah) agar hafalan tetap mutqin. Namun, kami tetap memotivasi Ananda untuk mulai mencicil setoran baru secara perlahan."
-        
-      - Jika Total Hafalan <= 5 Juz (Siswa Junior):
-        Jika progres bulan ini rendah, gunakan narasi: "Ananda perlu dorongan lebih agar ritme hafalan di awal semester ini terbangun dengan kuat demi mencapai target semesteran (10 halaman)."
+[BAGIAN 3: LOGIKA PROGRES ADAPTIF (INSTRUKSI INTERNAL)]
+- JIKA TOTAL HAFALAN > 5 JUZ: 
+  Jika progres bulan ini rendah, fokuskan narasi pada apresiasi atas perjuangan Ananda menjaga hafalan yang sudah banyak (murojaah) agar tetap mutqin. Hindari nada yang menekan untuk setoran baru.
+- JIKA TOTAL HAFALAN <= 5 JUZ: 
+  Jika progres bulan ini rendah, sampaikan bahwa Ananda perlu dorongan lebih untuk membangun ritme hafalan demi mengejar target semester (10 halaman).
 
-      [BAGIAN 4: PENUTUP]
-      - Gunakan sapaan hangat kepada Ayah/Bunda dan tutup dengan doa yang baik.
-      
-      ATURAN TAMBAHAN:
-      - Gunakan kata "Siswa" atau "Ananda".
-      - Gaya Bahasa: Santun, Islami, namun Objektif sesuai data.
+[BAGIAN 4: SINERGI ORANG TUA (TINDAKAN SPESIFIK)]
+Sesuaikan saran berdasarkan data:
+- Jika Adab <= 6: "Mohon Ayah/Bunda membantu memberikan pengertian tentang adab menuntut ilmu di rumah."
+- Jika Kehadiran < 80%: "Mohon bantuan Ayah/Bunda memastikan kesiapan fisik dan kedisiplinan waktu Ananda di pagi hari agar semangat berangkat halaqah tetap terjaga."
+- Jika Hafalan > 5 Juz: "Mohon dukungan Ayah/Bunda untuk terus menyimak murojaah Ananda di rumah agar hafalan yang sudah banyak tersebut tetap terjaga kekuatannya."
+- Jika Hafalan <= 5 Juz: "Mohon bantuan Ayah/Bunda untuk memotivasi Ananda agar lebih berani dan konsisten dalam menambah hafalan baru di rumah."
+
+ATURAN WAJIB:
+- JANGAN PERNAH menyebutkan kata "Senior", "Junior", "Skor", atau "Persentase" di dalam teks laporan.
+- Panggilan: "Ananda". Bahasa: Islami, Hangat, dan Objektif.
+- Fokus pada bulan yang sedang dilaporkan (Januari/Februari/dst).
     `;
 
     const userPrompt = `
@@ -214,7 +218,7 @@ export const generateStudentEvaluation = async (student: Student): Promise<strin
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-1.5-flash',
       contents: userPrompt,
       config: { 
         systemInstruction: systemInstruction,
