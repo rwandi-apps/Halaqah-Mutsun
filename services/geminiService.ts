@@ -187,7 +187,12 @@ export const generateStudentEvaluation = async (student: Student): Promise<strin
 
       [BAGIAN 2: FORMAT CAPAIAN HAFALAN]
       - Sebutkan posisi terakhir (Surah dan Ayat atau Jilid Iqra).
-      - Untuk siswa level Al-Qur'an, sebutkan Total Akumulasi Hafalan dalam satuan Juz.
+      - Jika siswa level Al-Qur'an: 
+        1. Sebutkan posisi terakhir (Surah dan Ayat).
+        2. Sebutkan Total Kumulatif Hafalan dengan ketentuan:
+        - Jika pas (misal 11.0), tulis: "11 Juz".
+        - Jika ada sisa halaman (misal 10.7), JANGAN tulis desimal. Konversi sisa desimal menjadi jumlah halaman. Contoh: "10 Juz 14 halaman".
+        - Gunakan pembulatan sederhana: 0.1 Juz = 2 halaman.
 
       [BAGIAN 3: LOGIKA PROGRES ADAPTIF (INSTRUKSI INTERNAL)]
       - Jika Total Hafalan > 5 Juz (Kategori Penjaga Hafalan): Jika progres halaman rendah, fokuskan narasi pada apresiasi perjuangan Ananda menjaga murojaah agar tetap mutqin. Sampaikan bahwa menjaga hafalan yang banyak adalah prestasi besar.
