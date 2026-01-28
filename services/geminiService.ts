@@ -195,10 +195,34 @@ export const generateStudentEvaluation = async (student: Student): Promise<strin
         - Gunakan pembulatan sederhana: 0.1 Juz = 2 halaman.
 
       [BAGIAN 3: LOGIKA PROGRES ADAPTIF (INSTRUKSI INTERNAL)]
-      - KHUSUS KELAS 1:
-        1. Semester 1: Target adalah menyelesaikan Iqra 6 (sampai halaman 31). Fokus narasi pada pengenalan huruf, kelancaran tajwid dasar, dan ketuntasan jilid.
-        2. Semester 2: Target adalah Tahsin (perbaikan dan melancarkan bacaan). Fokus narasi pada persiapan lisan agar lebih siap dan kokoh sebelum masuk ke program hafalan (ziyadah).
-        3. JANGAN menuntut target hafalan juz/halaman. Gunakan kata "Kelancaran bacaan" atau "Kesiapan Tahsin".
+      [PRINSIP DASAR KELAS 1 - WAJIB DIPATUHI]
+- Kelas 1 BUKAN program Tahfizh.
+- Kelas 1 termasuk kategori "Tilawah Individual".
+- Fokus utama adalah:
+  1. Pengenalan dan kelancaran bacaan Al-Qur'an (Iqra).
+  2. Perbaikan makharijul huruf dan tajwid dasar (Tahsin).
+  3. Pembiasaan adab belajar Al-Qur'an.
+- DILARANG:
+  - Menyebut target hafalan juz atau halaman.
+  - Menggunakan istilah "ziyadah", "hafalan baru", atau "mengejar target hafalan".
+  - Membandingkan capaian Kelas 1 dengan kelas di atasnya.
+- Narasi harus menegaskan bahwa fase ini adalah fase pondasi sebelum memasuki program Tahfizh.
+[LOGIKA KHUSUS KELAS 1 – TARGET TILAWAH BELUM TERCAPAI]
+Jika Ananda Kelas 1 belum mencapai target Tilawah (Iqra/Tahsin) pada bulan berjalan:
+- Sampaikan kondisi tersebut secara IMPLISIT dan EDUKATIF, tanpa menyebut kata "target tidak tercapai".
+- Gunakan redaksi seperti:
+  - "Ananda masih memerlukan waktu dan penguatan dalam melancarkan bacaan..."
+  - "Pada tahap ini, Ananda sedang dalam proses membangun kelancaran dan kepercayaan diri dalam membaca Al-Qur'an..."
+- Tegaskan bahwa kondisi ini MASIH WAJAR pada fase awal pembelajaran Tilawah Individual.
+- Arahkan fokus orang tua pada proses, bukan kecepatan capaian.
+
+[ARAHAN TINDAK LANJUT UNTUK ORANG TUA KELAS 1]
+Jika progres Tilawah Kelas 1 masih lambat:
+- Berikan arahan spesifik dan realistis, misalnya:
+  - Membaca Iqra bersama selama 10–15 menit setiap hari.
+  - Mendengarkan bacaan Ananda tanpa menyela, lalu memperbaiki secara perlahan.
+  - Menguatkan motivasi Ananda tanpa membandingkan dengan teman.
+- DILARANG memberi saran yang bernuansa akademik berat atau target hafalan.
       - Jika Total Hafalan > 5 Juz (Kategori Penjaga Hafalan): Jika progres halaman rendah, fokuskan narasi pada apresiasi perjuangan Ananda menjaga murojaah agar tetap mutqin. Sampaikan bahwa menjaga hafalan yang banyak adalah prestasi besar.
       - Jika Total Hafalan <= 5 Juz (Kategori Pembangun Ritme): Jika progres rendah, sampaikan bahwa Ananda memerlukan dorongan lebih untuk membangun ritme hafalan demi mengejar target semester (10 halaman).
 
