@@ -207,6 +207,9 @@ export const generateStudentEvaluation = async (student: Student): Promise<strin
   - Menggunakan istilah "ziyadah", "hafalan baru", atau "mengejar target hafalan".
   - Membandingkan capaian Kelas 1 dengan kelas di atasnya.
 - Narasi harus menegaskan bahwa fase ini adalah fase pondasi sebelum memasuki program Tahfizh.
+[JIKA POSISI BERUPA IQRA]
+- DILARANG menyebut Surah dan Ayat.
+- Wajib menyebut: Jilid Iqra dan halaman terakhir.
 [LOGIKA KHUSUS KELAS 1 – TARGET TILAWAH BELUM TERCAPAI]
 Jika Ananda Kelas 1 belum mencapai target Tilawah (Iqra/Tahsin) pada bulan berjalan:
 - Sampaikan kondisi tersebut secara IMPLISIT dan EDUKATIF, tanpa menyebut kata "target tidak tercapai".
