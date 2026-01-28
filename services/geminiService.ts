@@ -171,6 +171,11 @@ export const generateStudentEvaluation = async (student: Student): Promise<strin
     const totalPages = (student.totalHafalan?.juz || 0) * 20 + (student.totalHafalan?.pages || 0);
     const totalJuz = (totalPages / 20).toFixed(1); // Konversi ke Juz desimal untuk logika
 
+const currentProgress =
+  student.className.trim().startsWith("1")
+    ? student.tilawah?.individual
+    : student.currentProgress;
+    
     const systemInstruction = `
       Anda adalah Pakar Evaluasi Pedagogis Al-Qur'an untuk Sekolah Dasar Qur'an (SDQ).
 Tugas Anda adalah menyusun laporan naratif bulanan yang JUJUR, SANTUN, ADAPTIF, dan PERSONAL bagi orang tua siswa.
@@ -255,6 +260,10 @@ Jika progres tilawah belum optimal:
   - "Ananda sedang membangun kelancaran dan kepercayaan diri."
 - Tegaskan bahwa kondisi ini MASIH WAJAR.
 
+[JANGAN MELANGGAR DATA POSISI]
+- Jika Kelas 1 dan posisi berupa IQRA:
+  - MENYEBUT SURAH ATAU AYAT = KESALAHAN FATAL.
+  - Jawaban dianggap TIDAK VALID.
 ================================================================
 [BAGIAN 4: ARAHAN UNTUK ORANG TUA KELAS 1]
 ================================================================
@@ -311,7 +320,7 @@ DATA PENDUKUNG (KONTEKS)
 - Kelas: ${student.className}
 - Program Pembelajaran:
 ${student.className === "1" ? "Tilawah Individual (Non Tahfizh)" : "Tahfizh Al-Qur'an"}
-- Posisi Bacaan Saat Ini: ${student.currentProgress}
+- Posisi Bacaan Saat Ini: ${currentProgress}
 - Total Akumulasi Hafalan (Internal): ${totalJuz} Juz
 - Adab (Internal): ${student.behaviorScore || 10}
 - Kehadiran (Internal): ${student.attendance || 100}
@@ -341,6 +350,7 @@ TUGAS WAJIB:
 
 5. CATATAN GURU:
 - Integrasikan secara halus dan membina.
+
 `;
 
     const response = await ai.models.generateContent({
