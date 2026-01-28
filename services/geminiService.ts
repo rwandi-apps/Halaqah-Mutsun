@@ -248,21 +248,23 @@ export const generateStudentEvaluation = async (student: Student): Promise<strin
       3. INTEGRASI CATATAN: Masukkan detail dari guru (seperti masalah Mad Liin atau Tanwin) ke dalam narasi.
     `;
 
-    const response = await ai.models.generateContent({
+   const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
-      contents: [{ role: "user", parts: [{ text: userPrompt }] }], // Format SDK terbaru
+      contents: [{ role: "user", parts: [{ text: userPrompt }] }], 
       config: { 
         systemInstruction: systemInstruction,
         temperature: 0.7,
       }
     });
 
-    // PERBAIKAN: Cara ambil text di SDK @google/genai terbaru
-    const resultText = response.value?.content?.parts?.[0]?.text;
-    if (!resultText) throw new Error("AI tidak memberikan respon.");
-    return resultText;
-  } catch (error: any) {
-    console.error("Gemini Client Error:", error);
-    throw new Error(error.message || "Gagal membuat evaluasi siswa.");
-  }
-};
+    // Gunakan helper method .text() daripada akses manual property .value
+    // Ini lebih aman karena .text() akan menggabungkan semua parts jika responnya panjang
+    const resultText = response.text(); 
+
+    if (!resultText) {
+       // Log untuk debug jika benar-benar kosong
+       console.log("Raw Response:", JSON.stringify(response)); 
+       throw new Error("AI tidak memberikan respon.");
+    }
+    
+    return resultText.trim();
