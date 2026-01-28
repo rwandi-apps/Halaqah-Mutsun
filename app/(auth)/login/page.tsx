@@ -59,8 +59,8 @@ export default function LoginPage({ onLogin }: LoginProps) {
 
         {/* Title */}
         <div className="text-center mb-10">
-          <h2 className="text-white text-2xl font-bold tracking-tight">Laporan Semester</h2>
-          <p className="text-blue-100/60 text-sm mt-1">Masuk untuk mengelola halaqah</p>
+          <h2 className="text-white text-2xl font-bold tracking-tight">Halaqah SDQ</h2>
+          <p className="text-blue-100/60 text-sm mt-1">Sistem Informasi Tahfizh & Mutaba'ah</p>
         </div>
 
         {/* Error Notification */}
@@ -120,7 +120,7 @@ export default function LoginPage({ onLogin }: LoginProps) {
         </form>
 
         <p className="mt-12 text-white/20 text-[10px] tracking-widest uppercase font-medium">
-          Halaqah SDQ Manager &copy; 2024
+          Halaqah SDQ Manager &copy; 2025
         </p>
       </div>
     </div>
