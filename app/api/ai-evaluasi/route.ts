@@ -43,12 +43,12 @@ export async function POST(req: Request) {
       ANALISIS DATA BERIKUT:
       Tipe Laporan: ${reportType}
       Periode: ${period}
-      Data Santri:
+      Data siswa:
       ${contextData}
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash-preview',
       contents: userPrompt,
       config: { 
         systemInstruction: systemInstruction,

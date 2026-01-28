@@ -34,7 +34,7 @@ export const improveTeacherNotes = async (originalText: string): Promise<string>
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash-preview',
       contents: `Sempurnakan redaksi catatan guru berikut: "${originalText}"`,
       config: { 
         systemInstruction: systemInstruction,
@@ -84,7 +84,7 @@ export const improveReportRedaction = async (originalText: string): Promise<stri
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash-preview',
       contents: `Sempurnakan redaksi kalimat rapor berikut tanpa mengubah maknanya: "${originalText}"`,
       config: { 
         systemInstruction: systemInstruction,
@@ -123,12 +123,12 @@ export const generateEvaluasiAI = async (reportType: string, period: string, con
       ANALISIS DATA BERIKUT:
       Tipe Laporan: ${reportType}
       Periode: ${period}
-      Data Santri (Nama, Capaian, Catatan Guru, Kehadiran, Skor Adab):
+      Data siswa (Nama, Capaian, Catatan Guru, Kehadiran, Skor Adab):
       ${contextData}
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash-preview',
       contents: userPrompt,
       config: { 
         systemInstruction: systemInstruction,
@@ -157,7 +157,7 @@ export const generateEvaluasiAI = async (reportType: string, period: string, con
 };
 
 /**
- * Service untuk generate evaluasi naratif personal santri menggunakan Gemini AI.
+ * Service untuk generate evaluasi naratif personal siswa menggunakan Gemini AI.
  */
 export const generateStudentEvaluation = async (student: Student): Promise<string> => {
   if (!import.meta.env.VITE_GEMINI_API_KEY) {
@@ -326,7 +326,7 @@ TUGAS WAJIB:
 `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash-preview',
       contents: userPrompt,
       config: { 
         systemInstruction: systemInstruction,
@@ -339,6 +339,6 @@ TUGAS WAJIB:
     return resultText;
   } catch (error: any) {
     console.error("Gemini Client Error:", error);
-    throw new Error(error.message || "Gagal membuat evaluasi santri.");
+    throw new Error(error.message || "Gagal membuat evaluasi siswa.");
   }
 };
