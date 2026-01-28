@@ -255,24 +255,37 @@ Jika progres Tilawah Kelas 1 masih lambat:
     `;
 
     const userPrompt = `
-      BUAT EVALUASI NARATIF PERSONAL:
+BUAT EVALUASI NARATIF PERSONAL:
 
-      DATA INPUT:
-      - Nama: ${student.name}
-      - Kelas: ${student.className} 
-      - Posisi Saat Ini: ${student.currentProgress} (Contoh: Iqra 3 hal 10 / Surah Al-Baqarah 150)
-      - Total Akumulasi: ${totalJuz} Juz
-      - Skor Adab: ${student.behaviorScore || 10}/10
-      - Kehadiran: ${student.attendance || 100}%
-      - Catatan Khusus Guru: ${student.teacherNote || "Tidak ada catatan khusus"}
-      TUGAS KHUSUS:
-      1. IDENTIFIKASI KELAS: Jika Kelas adalah "1", abaikan logika Senior/Junior dan gunakan LOGIKA KHUSUS KELAS 1 (Iqra/Tahsin) sesuai System Instruction.
-      2. EVALUASI ADAB & HADIR: Cek Skor Adab (${student.behaviorScore}) dan Kehadiran (${student.attendance}%). Jika di bawah standar, gunakan narasi bimbingan.
-      3. INTEGRASI CATATAN: Masukkan poin dari "Catatan Khusus Guru" ke dalam narasi laporan dengan bahasa yang lebih halus dan motivatif.
-      4. LOGIKA PROGRES: 
-         - Untuk Kelas 2-6: Gunakan kategori Senior (>5 Juz) atau Junior (<=5 Juz).
-         - Untuk Kelas 1: Fokus pada ketuntasan Iqra (Semester 1) atau Kelancaran Tahsin (Semester 2).
-    `;
+DATA INPUT:
+- Nama: ${student.name}
+- Kelas: ${student.className}
+- Program Pembelajaran:
+  ${student.className === "1" ? "Tilawah Individual (Non Tahfizh)" : "Tahfizh Al-Qur'an"}
+- Posisi Saat Ini: ${student.currentProgress}
+- Total Akumulasi Hafalan (DATA INTERNAL – jangan ditampilkan untuk Kelas 1): ${totalJuz} Juz
+- Data Adab (Internal): ${student.behaviorScore || 10}/10
+- Data Kehadiran (Internal): ${student.attendance || 100}%
+- Catatan Khusus Guru: ${student.teacherNote || "Tidak ada catatan khusus"}
+
+TUGAS KHUSUS:
+1. IDENTIFIKASI KELAS:
+   - Jika Kelas adalah "1", WAJIB gunakan LOGIKA KHUSUS KELAS 1 (Tilawah Individual: Iqra/Tahsin).
+   - Abaikan seluruh logika Tahfizh, Senior/Junior, dan target hafalan.
+
+2. EVALUASI ADAB & KEHADIRAN:
+   - Gunakan data internal adab dan kehadiran sebagai dasar narasi.
+   - DILARANG menyebut angka, skor, atau persentase di dalam laporan.
+
+3. INTEGRASI CATATAN:
+   - Masukkan poin dari "Catatan Khusus Guru" ke dalam narasi laporan dengan bahasa yang lebih halus, santun, dan membina.
+
+4. LOGIKA PROGRES:
+   - Untuk Kelas 2–6: Gunakan logika Tahfizh sesuai System Instruction.
+   - Untuk Kelas 1:
+     - Fokus pada kelancaran Iqra (Semester 1) atau kesiapan Tahsin (Semester 2).
+     - Jika progres belum optimal, gunakan narasi edukatif dan solutif tanpa menyebut kegagalan.
+`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
