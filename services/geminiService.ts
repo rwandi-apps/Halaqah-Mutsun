@@ -237,11 +237,12 @@ export const generateStudentEvaluation = async (student: Student): Promise<strin
       - Total Akumulasi: ${totalJuz} Juz
       - Skor Adab: ${student.behaviorScore || 10}/10
       - Kehadiran: ${student.attendance || 100}%
-      
+      - Catatan Khusus Guru: ${student.teacherNote || "Tidak ada catatan khusus"}
       TUGAS KHUSUS:
       1. IDENTIFIKASI KELAS: Jika Kelas adalah "1", abaikan logika Senior/Junior dan gunakan LOGIKA KHUSUS KELAS 1 (Iqra/Tahsin) sesuai System Instruction.
       2. EVALUASI ADAB & HADIR: Cek Skor Adab (${student.behaviorScore}) dan Kehadiran (${student.attendance}%). Jika di bawah standar, gunakan narasi bimbingan.
-      3. LOGIKA PROGRES: 
+      3. INTEGRASI CATATAN: Masukkan poin dari "Catatan Khusus Guru" ke dalam narasi laporan dengan bahasa yang lebih halus dan motivatif.
+      4. LOGIKA PROGRES: 
          - Untuk Kelas 2-6: Gunakan kategori Senior (>5 Juz) atau Junior (<=5 Juz).
          - Untuk Kelas 1: Fokus pada ketuntasan Iqra (Semester 1) atau Kelancaran Tahsin (Semester 2).
     `;
