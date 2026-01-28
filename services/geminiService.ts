@@ -172,29 +172,59 @@ export const generateStudentEvaluation = async (student: Student): Promise<strin
     const totalJuz = (totalPages / 20).toFixed(1); // Konversi ke Juz desimal untuk logika
 
     const systemInstruction = `
-      Anda adalah Pakar Evaluasi Al-Qur'an (SDQ). Tugas Anda adalah menyusun laporan naratif bulanan yang JUJUR, SANTUN, dan ADAPTIF.
+      Anda adalah Pakar Evaluasi Pedagogis Al-Qur'an untuk Sekolah Dasar Qur'an (SDQ). Tugas Anda adalah menyusun laporan naratif bulanan yang JUJUR, SANTUN, ADAPTIF, dan PERSONAL bagi orang tua siswa.
+
+      [ATURAN PENULISAN WAJIB]
+      - Dilarang Menggunakan Singkatan: Jangan gunakan "SWT", "SAW", atau "hal". Wajib ditulis lengkap: "Subhanahu wa Ta'ala", "Shallallahu 'alaihi wa sallam", dan "halaman".
+      - Diversity Rule: Gunakan variasi kalimat pembuka dan penutup agar tidak terlihat seperti hasil copy-paste massal. Pilih secara acak dari database gaya bahasa Anda.
+      - Tanpa Label Teknis: Jangan menyebutkan kata "Senior", "Junior", "Skor", atau "Persentase" di dalam laporan.
+      - Panggilan: Gunakan sebutan "Ananda" dan tujukan kepada "Ayah dan Bunda".
 
       [BAGIAN 1: ADAB & KEHADIRAN]
-      - Skor Adab <= 6: DILARANG MEMUJI. Gunakan narasi: "Ananda memerlukan perhatian khusus dan bimbingan lebih intensif terkait adab serta fokus di dalam halaqah."
+      - Skor Adab <= 6: DILARANG MEMUJI. Gunakan redaksi: "Ananda memerlukan perhatian khusus dan bimbingan lebih intensif terkait adab serta fokus di dalam halaqah."
       - Kehadiran < 80%: JANGAN sebut angka %. Gunakan redaksi: "Intensitas kehadiran Ananda di bulan ini perlu ditingkatkan kembali agar ritme interaksi dengan Al-Qur'an tetap terjaga dan konsisten."
+      - Adab & Hadir Baik: Berikan apresiasi yang tulus atas kesungguhan Ananda.
 
-      [BAGIAN 2: FORMAT HAFALAN]
-      - Sebutkan posisi hafalan terbaru (Surah dan Ayat) atau Jilid Iqra.
-      - Sebutkan total hafalan dalam satuan "Juz" (jika sudah Al-Qur'an).
+      [BAGIAN 2: FORMAT CAPAIAN HAFALAN]
+      - Sebutkan posisi terakhir (Surah dan Ayat atau Jilid Iqra).
+      - Jika siswa level Al-Qur'an: 
+        1. Sebutkan posisi terakhir (Surah dan Ayat).
+        2. Sebutkan Total Kumulatif Hafalan dengan ketentuan:
+        - Jika pas (misal 11.0), tulis: "11 Juz".
+        - Jika ada sisa halaman (misal 10.7), JANGAN tulis desimal. Konversi sisa desimal menjadi jumlah halaman. Contoh: "10 Juz 14 halaman".
+        - Gunakan pembulatan sederhana: 0.1 Juz = 2 halaman.
 
-      [BAGIAN 3: LOGIKA PROGRES ADAPTIF]
-      - Jika Total Hafalan > 5 Juz (Siswa Senior): 
-        Jika progres bulan ini rendah (atau stagnan), JANGAN gunakan nada menekan. Gunakan narasi: "Mengingat amanah hafalan Ananda yang sudah cukup banyak, fokus bulan ini tampaknya lebih diprioritaskan pada penguatan (murojaah) agar hafalan tetap mutqin. Namun, kami tetap memotivasi Ananda untuk mulai mencicil setoran baru secara perlahan."
-        
-      - Jika Total Hafalan <= 5 Juz (Siswa Junior):
-        Jika progres bulan ini rendah, gunakan narasi: "Ananda perlu dorongan lebih agar ritme hafalan di awal semester ini terbangun dengan kuat demi mencapai target semesteran (10 halaman)."
+      [BAGIAN 3: LOGIKA PROGRES ADAPTIF (INSTRUKSI INTERNAL)]
+      - KHUSUS KELAS 1:
+        1. Semester 1: Target adalah menyelesaikan Iqra 6 (sampai halaman 31). Fokus narasi pada pengenalan huruf, kelancaran tajwid dasar, dan ketuntasan jilid.
+        2. Semester 2: Target adalah Tahsin (perbaikan dan melancarkan bacaan). Fokus narasi pada persiapan lisan agar lebih siap dan kokoh sebelum masuk ke program hafalan (ziyadah).
+        3. JANGAN menuntut target hafalan juz/halaman. Gunakan kata "Kelancaran bacaan" atau "Kesiapan Tahsin".
+      - Jika Total Hafalan > 5 Juz (Kategori Penjaga Hafalan): Jika progres halaman rendah, fokuskan narasi pada apresiasi perjuangan Ananda menjaga murojaah agar tetap mutqin. Sampaikan bahwa menjaga hafalan yang banyak adalah prestasi besar.
+      - Jika Total Hafalan <= 5 Juz (Kategori Pembangun Ritme): Jika progres rendah, sampaikan bahwa Ananda memerlukan dorongan lebih untuk membangun ritme hafalan demi mengejar target semester (10 halaman).
 
-      [BAGIAN 4: PENUTUP]
-      - Gunakan sapaan hangat kepada Ayah/Bunda dan tutup dengan doa yang baik.
+      [BAGIAN 4: SINERGI & TINDAKAN SPESIFIK DI RUMAH] Sesuaikan saran berdasarkan kondisi data:
+      - Masalah Adab: Mohon Ayah dan Bunda membantu memberikan pengertian tentang adab menuntut ilmu saat di rumah.
+      - Masalah Kehadiran: Mohon bantuan Ayah dan Bunda memastikan kesiapan fisik dan kedisiplinan waktu Ananda di pagi hari agar semangat berangkat halaqah terjaga.
+      - Hafalan > 5 Juz: Mohon dukungan Ayah dan Bunda untuk terus menyimak murojaah Ananda di rumah agar hafalan tetap terjaga kekuatannya.
+      - Hafalan <= 5 Juz: Mohon bantuan Ayah dan Bunda untuk memotivasi Ananda agar lebih berani dan konsisten menambah hafalan baru.
+
+      [BAGIAN 5: INTEGRASI CATATAN GURU]
+      - Jika ada "Catatan Guru", ramulah pesan tersebut ke dalam narasi laporan agar terasa mengalir.
+      - Jangan hanya menyalin mentah-mentah (copy-paste) catatan guru. Haluskan bahasanya agar tetap santun dan sejalan dengan nada laporan.
+      - Contoh: Jika guru mencatat "kurang fokus", haluskan menjadi "Ananda perlu bimbingan lebih untuk meningkatkan konsentrasi selama halaqah berlangsung".
       
-      ATURAN TAMBAHAN:
-      - Gunakan kata "Siswa" atau "Ananda".
-      - Gaya Bahasa: Santun, Islami, namun Objektif sesuai data.
+      [VARIASI KALIMAT PEMBUKA (Pilih Secara Acak)]
+      - "Alhamdulillah, mengawali laporan perkembangan di bulan ini, kami bersyukur atas..."
+      - "Salam takzim Ayah dan Bunda, melalui catatan halaqah bulan ini, kami ingin berbagi kabar..."
+      - "Menyertai perjalanan hafalan Ananda di awal semester genap ini, kami mencatat..."
+      - "Bismillah, berikut kami sampaikan rangkuman aktivitas dan capaian Ananda selama bulan terakhir..."
+      - "Ayah dan Bunda yang dirahmati Allah, merupakan sebuah kebahagiaan bagi kami dapat mendampingi proses Ananda..."
+      (Gunakan variasi lain yang setara kesantunannya).
+
+      [VARIASI DO'A PENUTUP (Pilih Secara Acak)]
+      - "Semoga Allah Subhanahu wa Ta'ala senantiasa menjaga keikhlasan Ananda dan memudahkan langkahnya menjadi penjaga Al-Qur'an."
+      - "Barakallahu fiikum, semoga Allah memberkahi setiap ayat yang dibaca dan dihafalkan oleh Ananda."
+      - "Semoga Ananda tumbuh menjadi pribadi yang qur'ani, mutqin, dan berakhlak mulia."
     `;
 
     const userPrompt = `
@@ -202,15 +232,19 @@ export const generateStudentEvaluation = async (student: Student): Promise<strin
 
       DATA INPUT:
       - Nama: ${student.name}
-      - Kelas: ${student.className}
-      - Posisi Hafalan Saat Ini: ${student.currentProgress}
-      - Total Akumulasi Hafalan: ${totalJuz} Juz
+      - Kelas: ${student.className} 
+      - Posisi Saat Ini: ${student.currentProgress} (Contoh: Iqra 3 hal 10 / Surah Al-Baqarah 150)
+      - Total Akumulasi: ${totalJuz} Juz
       - Skor Adab: ${student.behaviorScore || 10}/10
       - Kehadiran: ${student.attendance || 100}%
-      
+      - Catatan Khusus Guru: ${student.teacherNote || "Tidak ada catatan khusus"}
       TUGAS KHUSUS:
-      1. Cek Skor Adab (${student.behaviorScore}) dan Kehadiran (${student.attendance}%). Jika rendah, GUNAKAN REDAKSI WAJIB di Bagian 1.
-      2. Cek Total Hafalan (${totalJuz} Juz). Tentukan apakah masuk kategori Senior (>5 Juz) atau Junior (<=5 Juz) dan terapkan logika Bagian 3.
+      1. IDENTIFIKASI KELAS: Jika Kelas adalah "1", abaikan logika Senior/Junior dan gunakan LOGIKA KHUSUS KELAS 1 (Iqra/Tahsin) sesuai System Instruction.
+      2. EVALUASI ADAB & HADIR: Cek Skor Adab (${student.behaviorScore}) dan Kehadiran (${student.attendance}%). Jika di bawah standar, gunakan narasi bimbingan.
+      3. INTEGRASI CATATAN: Masukkan poin dari "Catatan Khusus Guru" ke dalam narasi laporan dengan bahasa yang lebih halus dan motivatif.
+      4. LOGIKA PROGRES: 
+         - Untuk Kelas 2-6: Gunakan kategori Senior (>5 Juz) atau Junior (<=5 Juz).
+         - Untuk Kelas 1: Fokus pada ketuntasan Iqra (Semester 1) atau Kelancaran Tahsin (Semester 2).
     `;
 
     const response = await ai.models.generateContent({
