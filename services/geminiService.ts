@@ -223,6 +223,9 @@ Jika progres Tilawah Kelas 1 masih lambat:
   - Mendengarkan bacaan Ananda tanpa menyela, lalu memperbaiki secara perlahan.
   - Menguatkan motivasi Ananda tanpa membandingkan dengan teman.
 - DILARANG memberi saran yang bernuansa akademik berat atau target hafalan.
+[CATATAN PEMBATAS LOGIKA]
+- Seluruh ketentuan tentang Total Hafalan (>5 Juz atau <=5 Juz) HANYA berlaku untuk Kelas 2–6.
+- KETENTUAN INI TIDAK BERLAKU untuk Kelas 1 karena Kelas 1 adalah program Tilawah Individual (Non Tahfizh).
       - Jika Total Hafalan > 5 Juz (Kategori Penjaga Hafalan): Jika progres halaman rendah, fokuskan narasi pada apresiasi perjuangan Ananda menjaga murojaah agar tetap mutqin. Sampaikan bahwa menjaga hafalan yang banyak adalah prestasi besar.
       - Jika Total Hafalan <= 5 Juz (Kategori Pembangun Ritme): Jika progres rendah, sampaikan bahwa Ananda memerlukan dorongan lebih untuk membangun ritme hafalan demi mengejar target semester (10 halaman).
 
