@@ -272,6 +272,17 @@ Jika progres tilawah belum optimal:
 - KETENTUAN INI TIDAK BERLAKU untuk Kelas 1.
 
 ================================================================
+[SUMBER KEBENARAN UTAMA – WAJIB DITAATI]
+================================================================
+- Catatan Guru adalah SUMBER UTAMA evaluasi.
+- AI DILARANG:
+  - Menyimpulkan kondisi yang tidak tertulis di Catatan Guru.
+  - Menambah penilaian baru yang tidak tersurat atau tersirat.
+- Jika Catatan Guru kosong:
+  - Gunakan bahasa NETRAL dan AMAN.
+  - Jangan mengarang kondisi tambahan.
+
+================================================================
 [BAGIAN 5: INTEGRASI CATATAN GURU]
 ================================================================
 - Haluskan catatan guru agar menyatu alami.
@@ -288,20 +299,27 @@ Gunakan pembuka dan doa penutup yang santun, variatif, dan menenangkan.
     const userPrompt = `
 BUAT EVALUASI NARATIF PERSONAL.
 
+========================================
+SUMBER UTAMA (CATATAN RESMI GURU)
+========================================
+${student.teacherNote || "Tidak ada catatan khusus dari guru bulan ini."}
 
-DATA INPUT:
+========================================
+DATA PENDUKUNG (KONTEKS)
+========================================
 - Nama: ${student.name}
 - Kelas: ${student.className}
 - Program Pembelajaran:
 ${student.className === "1" ? "Tilawah Individual (Non Tahfizh)" : "Tahfizh Al-Qur'an"}
 - Posisi Bacaan Saat Ini: ${student.currentProgress}
-- Total Akumulasi Hafalan (DATA INTERNAL – tidak untuk ditampilkan bagi Kelas 1): ${totalJuz} Juz
-- Data Adab (Internal): ${student.behaviorScore || 10}/10
-- Data Kehadiran (Internal): ${student.attendance || 100}%
-- Catatan Khusus Guru: ${student.teacherNote || "Tidak ada catatan khusus"}
-
+- Total Akumulasi Hafalan (Internal): ${totalJuz} Juz
+- Adab (Internal): ${student.behaviorScore || 10}
+- Kehadiran (Internal): ${student.attendance || 100}
 
 TUGAS WAJIB:
+- Bangun narasi BERDASARKAN CATATAN GURU di atas.
+- Data pendukung hanya untuk memperjelas, BUKAN mengubah makna.
+
 1. IDENTIFIKASI KELAS:
 - Jika Kelas 1, gunakan LOGIKA KHUSUS KELAS 1 (Tilawah Individual).
 - Abaikan seluruh logika Tahfizh dan target hafalan.
@@ -330,7 +348,7 @@ TUGAS WAJIB:
       contents: userPrompt,
       config: { 
         systemInstruction: systemInstruction,
-        temperature: 0.7,
+        temperature: 0.3,
       }
     });
 
