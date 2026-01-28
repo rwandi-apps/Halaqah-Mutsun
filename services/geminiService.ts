@@ -167,12 +167,9 @@ export const generateStudentEvaluation = async (student: Student): Promise<strin
   try {
     const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
 
-    // Logika konversi Juz agar tidak muncul desimal 11.0
-    const rawJuz = student.totalHafalan?.juz || 0;
-    const rawPages = student.totalHafalan?.pages || 0;
-    
-    // Kirim data mentah ke AI, biarkan AI yang memformat sesuai System Instruction
-    const totalHafalanString = rawPages === 0 ? `${rawJuz} Juz` : `${rawJuz} Juz ${rawPages} halaman`;
+    // Hitung total halaman dari object totalHafalan untuk konteks AI
+    const totalPages = (student.totalHafalan?.juz || 0) * 20 + (student.totalHafalan?.pages || 0);
+    const totalJuz = (totalPages / 20).toFixed(1); // Konversi ke Juz desimal untuk logika
 
     const systemInstruction = `
       Anda adalah Pakar Evaluasi Pedagogis Al-Qur'an untuk Sekolah Dasar Qur'an (SDQ). Tugas Anda adalah menyusun laporan naratif bulanan yang JUJUR, SANTUN, ADAPTIF, dan PERSONAL bagi orang tua siswa.
@@ -231,40 +228,39 @@ export const generateStudentEvaluation = async (student: Student): Promise<strin
     `;
 
     const userPrompt = `
-      BUAT EVALUASI NARATIF PERSONAL BERDASARKAN DATA BERIKUT:
+      BUAT EVALUASI NARATIF PERSONAL:
 
       DATA INPUT:
-      - Nama: ${student.studentName}
+      - Nama: ${student.name}
       - Kelas: ${student.className} 
-      - Progres Saat Ini (PENTING): ${student.currentProgress} 
-      - Total Hafalan: ${totalHafalanString}
+      - Posisi Saat Ini: ${student.currentProgress} (Contoh: Iqra 3 hal 10 / Surah Al-Baqarah 150)
+      - Total Akumulasi: ${totalJuz} Juz
       - Skor Adab: ${student.behaviorScore || 10}/10
       - Kehadiran: ${student.attendance || 100}%
       - Catatan Khusus Guru: ${student.teacherNote || "Tidak ada catatan khusus"}
-      
-      TUGAS KHUSUS EVALUATOR:
-      1. CEK KELAS: Jika Kelas 1, abaikan "Total Hafalan". Fokus pada "Progres Saat Ini" (Target: Iqra 6/Tahsin).
-      2. CEK TARGET: Jika Progres Saat Ini lebih rendah dari target semester (Iqra 6), nyatakan secara santun bahwa Ananda perlu bimbingan lebih untuk mengejar ketertinggalan, jangan hanya dipuji.
-      3. INTEGRASI CATATAN: Masukkan detail dari guru (seperti masalah Mad Liin atau Tanwin) ke dalam narasi.
+      TUGAS KHUSUS:
+      1. IDENTIFIKASI KELAS: Jika Kelas adalah "1", abaikan logika Senior/Junior dan gunakan LOGIKA KHUSUS KELAS 1 (Iqra/Tahsin) sesuai System Instruction.
+      2. EVALUASI ADAB & HADIR: Cek Skor Adab (${student.behaviorScore}) dan Kehadiran (${student.attendance}%). Jika di bawah standar, gunakan narasi bimbingan.
+      3. INTEGRASI CATATAN: Masukkan poin dari "Catatan Khusus Guru" ke dalam narasi laporan dengan bahasa yang lebih halus dan motivatif.
+      4. LOGIKA PROGRES: 
+         - Untuk Kelas 2-6: Gunakan kategori Senior (>5 Juz) atau Junior (<=5 Juz).
+         - Untuk Kelas 1: Fokus pada ketuntasan Iqra (Semester 1) atau Kelancaran Tahsin (Semester 2).
     `;
 
-   const response = await ai.models.generateContent({
+    const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
-      contents: [{ role: "user", parts: [{ text: userPrompt }] }], 
+      contents: userPrompt,
       config: { 
         systemInstruction: systemInstruction,
         temperature: 0.7,
       }
     });
 
-    // Gunakan helper method .text() daripada akses manual property .value
-    // Ini lebih aman karena .text() akan menggabungkan semua parts jika responnya panjang
-    const resultText = response.text(); 
-
-    if (!resultText) {
-       // Log untuk debug jika benar-benar kosong
-       console.log("Raw Response:", JSON.stringify(response)); 
-       throw new Error("AI tidak memberikan respon.");
-    }
-    
-    return resultText.trim();
+    const resultText = response.text;
+    if (!resultText) throw new Error("AI tidak memberikan respon.");
+    return resultText;
+  } catch (error: any) {
+    console.error("Gemini Client Error:", error);
+    throw new Error(error.message || "Gagal membuat evaluasi santri.");
+  }
+};
