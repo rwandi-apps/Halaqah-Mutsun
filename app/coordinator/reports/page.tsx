@@ -1,156 +1,277 @@
-
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Report } from '../../../types';
-import { subscribeToReportsByTeacher, deleteReport } from '../../../services/firestoreService';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Report, User } from '../../../types';
+import {
+  getAllTeachers,
+  subscribeToReportsByTeacher
+} from '../../../services/firestoreService';
 import { SDQQuranEngine } from '../../../services/tahfizh/engine';
-import { Search, Edit2, Trash2, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 
-const ACADEMIC_YEARS = ["2023/2024", "2024/2025", "2025/2026"];
-const MONTHS = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+/** ======================
+ * CONSTANT
+ ======================= */
+const MONTHS = [
+  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+];
 
-const formatRangeDisplay = (raw: string | undefined): string => {
-  if (!raw || typeof raw !== 'string' || raw === '-') return "-";
-  const clean = raw.replace(/^[:\s]+/, '').replace(/[–—]/g, '-').replace(/\s+/g, ' ').trim();
-  const parts = clean.split(' - ');
-  if (parts.length === 2) {
-    const p1 = parts[0].split(':');
-    const p2 = parts[1].split(':');
-    if (p1.length === 2 && p2.length === 2) {
-      const s1 = p1[0].trim(), s2 = p2[0].trim(), a1 = p1[1].trim(), a2 = p2[1].trim();
-      if (s1 === s2) return `${s1}: ${a1}-${a2}`;
-    }
-  }
-  return clean;
-};
+type ReportType = 'BULANAN' | 'SEMESTER';
 
-// Updated: Accepts category to determine calculation mode
-const getStoredOrCalculatedResult = (report: Report, category: 'tahfizh' | 'tilawah') => {
-  const target = report[category];
-  
-  // Jika sudah ada hasil yang tersimpan (Result field)
-  if (target.result && target.result !== '-' && target.result !== '0H 0B') {
-    // Fix: Cek apakah formatnya sudah panjang ("Hal"/"Baris") agar tidak terganda (Halal/Barisaris)
-    if (target.result.includes('Hal') || target.result.includes('Baris')) {
-        return target.result;
-    }
-    // Jika format pendek ("2H 5B"), lakukan expand dengan regex yang aman
-    return target.result.replace(/(\d+)\s*H/gi, '$1 Hal').replace(/(\d+)\s*B/gi, '$1 Baris');
-  }
-
-  const cleanRange = formatRangeDisplay(target.individual);
-  if (cleanRange === '-') return "-";
-  
-  // Use correct mode based on category
-  const result = SDQQuranEngine.parseAndCalculate(cleanRange, category);
-  if (!result.valid) return "-";
-  return result.isIqra ? `${result.pages} Hal` : `${result.pages} Hal ${result.lines} Baris`;
-};
-
-const getStatusBadge = (report: Report) => {
-  // Use 'tahfizh' mode implicitly as this badge usually tracks Sabaq
-  const resultStr = getStoredOrCalculatedResult(report, 'tahfizh');
-  if (resultStr === '-') return <span className="text-gray-300">-</span>;
-  const pageMatch = resultStr.match(/(\d+)\s*Hal/);
-  const h = pageMatch ? parseInt(pageMatch[1]) : 0;
-  if (h >= 2) return <span className="flex items-center gap-1 text-emerald-600 font-black text-[8px] uppercase"><CheckCircle2 size={10}/> TERCAPAI</span>;
-  return <span className="flex items-center gap-1 text-orange-500 font-black text-[8px] uppercase"><AlertCircle size={10}/> BELUM</span>;
-};
-
+/** ======================
+ * HELPERS
+ ======================= */
 const formatTotalHafalan = (total: any) => {
-  if (!total) return "0 Juz";
-  const parts = [];
+  if (!total) return '-';
+
+  const parts: string[] = [];
   if (total.juz > 0) parts.push(`${total.juz} Juz`);
   if (total.pages > 0) parts.push(`${total.pages} Hal`);
-  return parts.length > 0 ? parts.join(' ') : "0 Juz";
+  if (total.lines > 0) parts.push(`${total.lines} Baris`);
+
+  return parts.join(' ') || '-';
 };
 
-const GuruViewReportPage: React.FC<{ teacherId?: string }> = ({ teacherId = '1' }) => {
-  const navigate = useNavigate();
+/** ======================
+ * PAGE
+ ======================= */
+export default function CoordinatorReportsPage() {
+  /** STATE */
+  const [teachers, setTeachers] = useState<User[]>([]);
+  const [selectedTeacherId, setSelectedTeacherId] = useState('');
+
   const [reports, setReports] = useState<Report[]>([]);
-  const [filteredReports, setFilteredReports] = useState<Report[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterYear, setFilterYear] = useState('2025/2026');
-  const [filterType, setFilterType] = useState('Laporan Bulanan');
-  const [filterPeriod, setFilterPeriod] = useState('Desember');
 
+  const [academicYear, setAcademicYear] = useState('2025/2026');
+  const [reportType, setReportType] = useState<ReportType>('BULANAN');
+  const [selectedMonth, setSelectedMonth] = useState('');
+  const [selectedSemester, setSelectedSemester] =
+    useState<'Ganjil' | 'Genap' | ''>('');
+  const [search, setSearch] = useState('');
+
+  /** ======================
+   * LOAD TEACHERS
+   ======================= */
   useEffect(() => {
-    if (!teacherId) return;
-    setIsLoading(true);
-    const unsubscribe = subscribeToReportsByTeacher(teacherId, (data) => { setReports(data); setIsLoading(false); });
-    return () => unsubscribe();
-  }, [teacherId]);
+    getAllTeachers().then(data => {
+      const onlyTeachers = data.filter(u => u.role === 'GURU');
+      setTeachers(onlyTeachers);
 
+      if (onlyTeachers.length) {
+        setSelectedTeacherId(onlyTeachers[0].id);
+      }
+    });
+  }, []);
+
+  /** ======================
+   * SUBSCRIBE REPORTS (REAL FIRESTORE)
+   ======================= */
   useEffect(() => {
-    let result = reports.filter(r => r.type === filterType);
-    if (searchTerm.trim() !== '') result = result.filter(r => r.studentName.toLowerCase().includes(searchTerm.toLowerCase()));
-    if (filterType === 'Laporan Bulanan') result = result.filter(r => r.month === filterPeriod);
-    else result = result.filter(r => r.month === filterPeriod);
-    setFilteredReports(result);
-  }, [filterYear, filterType, filterPeriod, searchTerm, reports]);
+    if (!selectedTeacherId) return;
 
+    const unsub = subscribeToReportsByTeacher(
+      selectedTeacherId,
+      data => setReports(data)
+    );
+
+    return () => unsub();
+  }, [selectedTeacherId]);
+
+  /** ======================
+   * FILTER LOGIC (SESUAI REQUEST)
+   ======================= */
+  const filteredReports = useMemo(() => {
+    let result = [...reports];
+
+    // 1️⃣ Tahun ajaran
+    result = result.filter(r => r.academicYear === academicYear);
+
+    // 2️⃣ Tipe laporan
+    if (reportType === 'BULANAN') {
+      result = result.filter(r => r.type === 'Laporan Bulanan');
+
+      if (selectedMonth) {
+        result = result.filter(r => r.month === selectedMonth);
+      }
+    }
+
+    if (reportType === 'SEMESTER') {
+      result = result.filter(r => r.type === 'Laporan Semester');
+
+      if (selectedSemester) {
+        result = result.filter(r => r.month === selectedSemester);
+      }
+    }
+
+    // 3️⃣ Search nama siswa
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter(r =>
+        r.studentName?.toLowerCase().includes(q)
+      );
+    }
+
+    return result;
+  }, [
+    reports,
+    academicYear,
+    reportType,
+    selectedMonth,
+    selectedSemester,
+    search
+  ]);
+
+  /** ======================
+   * RESULT (SAMA SEPERTI GURU)
+   ======================= */
+  const getResult = (
+    report: Report,
+    category: 'tahfizh' | 'tilawah'
+  ) => {
+    // kalau guru sudah simpan result → pakai
+    if (report[category]?.result) {
+      return report[category].result;
+    }
+
+    // fallback engine (aman)
+    const res = SDQQuranEngine.parseAndCalculate(
+      report[category]?.individual || ''
+    );
+
+    return res.valid
+      ? `${res.pages} Hal ${res.lines} Baris`
+      : '-';
+  };
+
+  /** ======================
+   * RENDER
+   ======================= */
   return (
-    <div className="space-y-6 max-w-full mx-auto pb-12 px-2">
-      <h2 className="text-2xl font-black text-gray-900 tracking-tight uppercase">Arsip Laporan</h2>
-      <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="relative group"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} /><input type="text" placeholder="Cari Siswa..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl bg-gray-50 text-sm font-bold outline-none focus:ring-2 focus:ring-primary-500 transition-all"/></div>
-        <select value={filterYear} onChange={e => setFilterYear(e.target.value)} className="p-2.5 border border-gray-200 rounded-xl bg-gray-50 text-sm font-bold outline-none">{ACADEMIC_YEARS.map(y => <option key={y} value={y}>{y}</option>)}</select>
-        <select value={filterType} onChange={e => { setFilterType(e.target.value); setFilterPeriod(e.target.value === 'Laporan Semester' ? 'Ganjil' : 'Desember'); }} className="p-2.5 border border-gray-200 rounded-xl bg-gray-50 text-sm font-bold outline-none"><option value="Laporan Bulanan">Laporan Bulanan</option><option value="Laporan Semester">Laporan Semester</option></select>
-        <select value={filterPeriod} onChange={e => setFilterPeriod(e.target.value)} className="p-2.5 border border-gray-200 rounded-xl bg-gray-50 text-sm font-bold outline-none">
-          {filterType === 'Laporan Semester' ? ["Ganjil", "Genap"].map(s => <option key={s} value={s}>{s}</option>) : MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
+    <div className="space-y-6 p-4">
+      <h2 className="text-2xl font-bold">
+        Monitoring Laporan Guru
+      </h2>
+
+      {/* FILTER */}
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-3 bg-white p-4 rounded-xl border">
+        {/* Guru */}
+        <select
+          value={selectedTeacherId}
+          onChange={e => setSelectedTeacherId(e.target.value)}
+          className="p-2 border rounded"
+        >
+          {teachers.map(t => (
+            <option key={t.id} value={t.id}>
+              {t.nickname || t.name}
+            </option>
+          ))}
         </select>
+
+        {/* Tahun ajaran */}
+        <input
+          value={academicYear}
+          onChange={e => setAcademicYear(e.target.value)}
+          placeholder="2025/2026"
+          className="p-2 border rounded"
+        />
+
+        {/* Tipe */}
+        <select
+          value={reportType}
+          onChange={e => {
+            setReportType(e.target.value as ReportType);
+            setSelectedMonth('');
+            setSelectedSemester('');
+          }}
+          className="p-2 border rounded"
+        >
+          <option value="BULANAN">Bulanan</option>
+          <option value="SEMESTER">Semester</option>
+        </select>
+
+        {/* Bulan */}
+        {reportType === 'BULANAN' && (
+          <select
+            value={selectedMonth}
+            onChange={e => setSelectedMonth(e.target.value)}
+            className="p-2 border rounded"
+          >
+            <option value="">Semua Bulan</option>
+            {MONTHS.map(m => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </select>
+        )}
+
+        {/* Semester */}
+        {reportType === 'SEMESTER' && (
+          <select
+            value={selectedSemester}
+            onChange={e =>
+              setSelectedSemester(e.target.value as any)
+            }
+            className="p-2 border rounded"
+          >
+            <option value="">Pilih Semester</option>
+            <option value="Ganjil">Ganjil</option>
+            <option value="Genap">Genap</option>
+          </select>
+        )}
+
+        {/* Search */}
+        <input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Cari nama siswa..."
+          className="p-2 border rounded"
+        />
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse whitespace-nowrap">
-            <thead>
-              <tr className="bg-[#155e75] text-white text-[9px] uppercase font-black tracking-wider text-center">
-                <th rowSpan={2} className="px-3 py-4 border-r border-white/10 w-10">NO</th>
-                <th rowSpan={2} className="px-3 py-4 border-r border-white/10 text-left">NAMA SISWA</th>
-                <th rowSpan={2} className="px-3 py-4 border-r border-white/10">JML HAFALAN</th>
-                <th colSpan={3} className="px-3 py-2 border-r border-white/10 bg-blue-700/50">TILAWAH</th>
-                <th colSpan={3} className="px-3 py-2 border-r border-white/10 bg-emerald-700/50">TAHFIZH</th>
-                <th rowSpan={2} className="px-3 py-4 border-r border-white/10">KET</th>
-                <th rowSpan={2} className="px-3 py-4 border-r border-white/10">CATATAN</th>
-                <th rowSpan={2} className="px-3 py-4">AKSI</th>
+      {/* TABLE (KOLUM SAMA DENGAN GURU) */}
+      <div className="bg-white rounded-xl border overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead className="bg-teal-700 text-white">
+            <tr>
+              <th className="p-2">No</th>
+              <th className="p-2 text-left">Nama Siswa</th>
+              <th className="p-2">Total Hafalan</th>
+              <th className="p-2">Tilawah</th>
+              <th className="p-2">Tahfizh</th>
+              <th className="p-2 text-left">Catatan Guru</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredReports.map((r, i) => (
+              <tr key={r.id} className="border-t">
+                <td className="p-2 text-center">
+                  {i + 1}
+                </td>
+                <td className="p-2 font-bold uppercase">
+                  {r.studentName}
+                </td>
+                <td className="p-2 text-center">
+                  {formatTotalHafalan(r.totalHafalan)}
+                </td>
+                <td className="p-2 text-center">
+                  {getResult(r, 'tilawah')}
+                </td>
+                <td className="p-2 text-center">
+                  {getResult(r, 'tahfizh')}
+                </td>
+                <td className="p-2 italic text-gray-600">
+                  {r.notes || '-'}
+                </td>
               </tr>
-              <tr className="bg-[#155e75] text-white text-[8px] uppercase font-black tracking-wider text-center border-t border-white/10">
-                <th className="px-2 py-2 border-r border-white/10 bg-blue-600/30">KLASIKAL</th>
-                <th className="px-2 py-2 border-r border-white/10 bg-blue-600/30">INDIVIDUAL</th>
-                <th className="px-2 py-2 border-r border-white/10 bg-blue-600/50">HASIL</th>
-                <th className="px-2 py-2 border-r border-white/10 bg-emerald-600/30">KLASIKAL</th>
-                <th className="px-2 py-2 border-r border-white/10 bg-emerald-600/30">INDIVIDUAL</th>
-                <th className="px-2 py-2 border-r border-white/10 bg-emerald-600/50">HASIL</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 text-[9px]">
-              {isLoading ? (<tr><td colSpan={12} className="px-6 py-20 text-center"><Loader2 size={32} className="text-primary-500 animate-spin mx-auto" /></td></tr>) : filteredReports.length > 0 ? (
-                filteredReports.map((report, idx) => (
-                  <tr key={report.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-3 py-4 text-center border-r font-bold text-gray-400">{idx + 1}</td>
-                    <td className="px-3 py-4 font-black text-gray-900 border-r uppercase">{report.studentName}</td>
-                    <td className="px-3 py-4 text-center border-r font-black text-[#155e75]">{formatTotalHafalan(report.totalHafalan)}</td>
-                    <td className="px-2 py-4 text-center border-r text-gray-400 italic">{formatRangeDisplay(report.tilawah.classical)}</td>
-                    <td className="px-2 py-4 text-center border-r font-bold">{formatRangeDisplay(report.tilawah.individual)}</td>
-                    <td className="px-2 py-4 text-center border-r font-black text-blue-600 bg-blue-50/20">{getStoredOrCalculatedResult(report, 'tilawah')}</td>
-                    <td className="px-2 py-4 text-center border-r text-gray-400 italic">{formatRangeDisplay(report.tahfizh.classical)}</td>
-                    <td className="px-2 py-4 text-center border-r font-bold">{formatRangeDisplay(report.tahfizh.individual)}</td>
-                    <td className="px-2 py-4 text-center border-r font-black text-emerald-600 bg-emerald-50/20">{getStoredOrCalculatedResult(report, 'tahfizh')}</td>
-                    <td className="px-3 py-4 text-center border-r">{getStatusBadge(report)}</td>
-                    <td className="px-3 py-4 border-r italic text-gray-500 truncate max-w-[100px]" title={report.notes}>{report.notes || "-"}</td>
-                    <td className="px-3 py-4 text-center">
-                      <div className="flex gap-1 justify-center"><button onClick={() => navigate('/guru/laporan', { state: { editReportId: report.id, reportData: report } })} className="p-1 text-blue-600 hover:bg-blue-50 rounded-md"><Edit2 size={12}/></button><button onClick={() => deleteReport(report.id)} className="p-1 text-rose-600 hover:bg-rose-50 rounded-md"><Trash2 size={12}/></button></div>
-                    </td>
-                  </tr>
-                ))
-              ) : (<tr><td colSpan={12} className="px-6 py-24 text-center text-gray-400 uppercase italic font-bold">Data Tidak Ditemukan</td></tr>)}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
+
+        {!filteredReports.length && (
+          <p className="text-center p-6 text-gray-400">
+            Tidak ada laporan sesuai filter
+          </p>
+        )}
       </div>
     </div>
   );
-};
-export default GuruViewReportPage;
+}
