@@ -167,229 +167,79 @@ export const generateStudentEvaluation = async (student: Student): Promise<strin
   try {
     const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
 
-    // Hitung total halaman dari object totalHafalan untuk konteks AI
-    const totalPages = (student.totalHafalan?.juz || 0) * 20 + (student.totalHafalan?.pages || 0);
-    const totalJuz = (totalPages / 20).toFixed(1); // Konversi ke Juz desimal untuk logika
+    // ================================
+    // HITUNG KONTEKS INTERNAL (AI)
+    // ================================
+    const totalPages =
+      (student.totalHafalan?.juz || 0) * 20 +
+      (student.totalHafalan?.pages || 0);
 
-const currentProgress =
-  student.className.trim().startsWith("1")
-    ? student.tilawah?.individual
-    : student.currentProgress;
-    
-    const systemInstruction = `
-      Anda adalah Pakar Evaluasi Pedagogis Al-Qur'an untuk Sekolah Dasar Qur'an (SDQ).
-Tugas Anda adalah menyusun laporan naratif bulanan yang JUJUR, SANTUN, ADAPTIF, dan PERSONAL bagi orang tua siswa.
+    const totalJuz = totalPages > 0 ? (totalPages / 20).toFixed(1) : "0";
 
-================================================================
-[ATURAN PENULISAN WAJIB]
-================================================================
-- Dilarang menggunakan singkatan:
-  Tulis lengkap: "Subhanahu wa Ta'ala", "Shallallahu 'alaihi wa sallam", dan "halaman".
-- Diversity Rule:
-  Gunakan variasi kalimat pembuka dan penutup agar tidak terkesan copy-paste massal.
-- Tanpa Label Teknis:
-  DILARANG menyebut kata "Senior", "Junior", "Skor", atau "Persentase".
-- Panggilan:
-  Gunakan sebutan "Ananda" dan tujukan laporan kepada "Ayah dan Bunda".
+    const currentProgress =
+      student.className.trim().startsWith("1")
+        ? student.tilawah?.individual || "-"
+        : student.currentProgress || "-";
 
-================================================================
-[BAGIAN 1: ADAB & KEHADIRAN]
-================================================================
-- Jika adab kurang baik:
-  Gunakan redaksi: 
-  "Ananda memerlukan perhatian khusus dan bimbingan lebih intensif terkait adab serta fokus di dalam halaqah."
-- Jika kehadiran kurang konsisten:
-  Gunakan redaksi:
-  "Intensitas kehadiran Ananda di bulan ini perlu ditingkatkan kembali agar ritme interaksi dengan Al-Qur'an tetap terjaga."
-- Jika adab dan kehadiran baik:
-  Berikan apresiasi yang tulus dan membina.
+    // ================================
+    // MAPPING FINAL UNTUK AI
+    // ================================
+    const aiStudentContext = {
+      name: student.name,
+      className: student.className,
+      teacherNote: student.teacherNote || "",
+      currentProgress,
+      totalJuz,
+      behavior: student.behavior || "Baik",
+      attendance: student.attendance || "Baik",
+    };
 
-================================================================
-[BAGIAN 2: POSISI BACAAN – WAJIB AKURAT]
-================================================================
-[PENGUNCI KERAS POSISI BACAAN – TANPA PENGECUALIAN]
-
-- Jika "Posisi Saat Ini" berupa IQRA:
-  1. WAJIB menyebutkan JILID IQRA dan HALAMAN.
-  2. DILARANG KERAS menyebut:
-     - Surah
-     - Ayat
-     - Hafalan Al-Qur'an
-     - Ayat suci
-     - Interaksi dengan Surah tertentu
-  3. DILARANG mengonversi atau menebak Surah apa pun.
-
-- Jika "Posisi Saat Ini" berupa SURAH & AYAT:
-  Gunakan format Surah dan Ayat dengan benar.
-
-- Jika terjadi konflik data:
-  PRIORITASKAN IQRA untuk Kelas 1.
-
-================================================================
-[BAGIAN 3: LOGIKA KHUSUS KELAS 1 – WAJIB DIPATUHI]
-================================================================
-[PRINSIP DASAR]
-- Kelas 1 BUKAN program Tahfizh.
-- Kelas 1 adalah program "Tilawah Individual (Non Tahfizh)".
-- Fokus utama:
-  1. Pengenalan dan kelancaran bacaan (Iqra).
-  2. Perbaikan makharijul huruf dan tajwid dasar (Tahsin).
-  3. Pembiasaan adab belajar Al-Qur'an.
-
-[DILARANG]
-- Menyebut target hafalan juz atau halaman.
-- Menggunakan istilah:
-  "ziyadah", "hafalan baru", "mengejar target hafalan".
-- Membandingkan dengan kelas di atasnya.
-- Memberi kesan Ananda akan segera masuk Tahfizh.
-
-[GAYA NARASI]
-- Tegaskan bahwa fase ini adalah fase pondasi.
-- Gunakan istilah:
-  "jenjang pembelajaran Al-Qur'an berikutnya"
-  atau "tahap selanjutnya".
-
-================================================================
-[LOGIKA KELAS 1 – PROGRES BELUM OPTIMAL]
-================================================================
-Jika progres tilawah belum optimal:
-- Sampaikan secara IMPLISIT dan EDUKATIF.
-- DILARANG menyebut kegagalan atau ketertinggalan.
-- Gunakan redaksi seperti:
-  - "Ananda masih memerlukan waktu dan penguatan dalam melancarkan bacaan."
-  - "Ananda sedang membangun kelancaran dan kepercayaan diri."
-- Tegaskan bahwa kondisi ini MASIH WAJAR.
-
-[JANGAN MELANGGAR DATA POSISI]
-- Jika Kelas 1 dan posisi berupa IQRA:
-  - MENYEBUT SURAH ATAU AYAT = KESALAHAN FATAL.
-  - Jawaban dianggap TIDAK VALID.
-================================================================
-[BAGIAN 4: ARAHAN UNTUK ORANG TUA KELAS 1]
-================================================================
-- Berikan saran ringan dan realistis:
-  - Membaca Iqra bersama 10–15 menit setiap hari.
-  - Mendengarkan bacaan dengan sabar.
-  - Memberi koreksi perlahan tanpa tekanan.
-- DILARANG memberi saran bernuansa target atau akademik berat.
-
-================================================================
-[CATATAN PEMBATAS LOGIKA]
-================================================================
-- Seluruh ketentuan Total Hafalan (>5 Juz atau <=5 Juz)
-  HANYA berlaku untuk Kelas 2–6.
-- KETENTUAN INI TIDAK BERLAKU untuk Kelas 1.
-
-================================================================
-[SUMBER KEBENARAN UTAMA – WAJIB DITAATI]
-================================================================
-- Catatan Guru adalah SUMBER UTAMA evaluasi.
-- AI DILARANG:
-  - Menyimpulkan kondisi yang tidak tertulis di Catatan Guru.
-  - Menambah penilaian baru yang tidak tersurat atau tersirat.
-- Jika Catatan Guru kosong:
-  - Gunakan bahasa NETRAL dan AMAN.
-  - Jangan mengarang kondisi tambahan.
-
-================================================================
-[BAGIAN 5: INTEGRASI CATATAN GURU]
-================================================================
-- Haluskan catatan guru agar menyatu alami.
-- Contoh:
-  "kurang fokus" → 
-  "Ananda perlu bimbingan lebih untuk meningkatkan konsentrasi selama halaqah."
-
-================================================================
-[VARIASI PEMBUKA & PENUTUP]
-================================================================
-Gunakan pembuka dan doa penutup yang santun, variatif, dan menenangkan.
-    `;
-
-   const userPrompt = `
+    // ================================
+    // USER PROMPT (BERSIH)
+    // ================================
+    const userPrompt = `
 BUAT EVALUASI NARATIF PERSONAL.
 
 ========================================
 SUMBER UTAMA (CATATAN RESMI GURU)
 ========================================
-${student.teacherNote || "Tidak ada catatan khusus dari guru bulan ini."}
+${aiStudentContext.teacherNote || "Tidak ada catatan khusus dari guru bulan ini."}
 
 ========================================
 DATA PENDUKUNG (KONTEKS)
 ========================================
-- Nama: ${student.name}
-- Kelas: ${student.className}
+- Nama: ${aiStudentContext.name}
+- Kelas: ${aiStudentContext.className}
 - Program Pembelajaran:
-${student.className === "1"
+${aiStudentContext.className === "1"
   ? "Tilawah Individual (Non Tahfizh)"
   : "Tahfizh Al-Qur'an"}
-- Posisi Bacaan Saat Ini: ${student.currentProgress}
-- Total Akumulasi Hafalan (Internal): ${student.totalJuz} Juz
-- Adab (Internal): ${student.behavior || "Baik"}
-- Kehadiran (Internal): ${student.attendance || "Baik"}
-`;
+- Posisi Bacaan Saat Ini: ${aiStudentContext.currentProgress}
+- Total Akumulasi Hafalan (Internal): ${aiStudentContext.totalJuz} Juz
+- Adab (Internal): ${aiStudentContext.behavior}
+- Kehadiran (Internal): ${aiStudentContext.attendance}
 
 TUGAS WAJIB:
 - Bangun narasi BERDASARKAN CATATAN GURU di atas.
 - Data pendukung hanya untuk memperjelas, BUKAN mengubah makna.
-
-1. IDENTIFIKASI KELAS:
-- Jika Kelas 1, gunakan LOGIKA KHUSUS KELAS 1 (Tilawah Individual).
-- Abaikan seluruh logika Tahfizh dan target hafalan.
-
-
-2. POSISI BACAAN:
-- Jika IQRA → sebutkan JILID dan HALAMAN saja.
-- DILARANG menyebut Surah atau Ayat.
-
-
-3. ADAB & KEHADIRAN:
-- Gunakan data internal sebagai dasar narasi.
-- DILARANG menyebut angka, skor, atau persentase.
-
-
-4. PROGRES:
-- Jika progres belum optimal, gunakan narasi edukatif, wajar, dan solutif.
-
-
-5. CATATAN GURU:
-- Integrasikan secara halus dan membina.
-Jika Catatan Guru kosong:
-- Gunakan bahasa NETRAL dan AMAN.
-- Jangan mengarang kondisi tambahan.
-- Fokuskan laporan pada apresiasi umum dan motivasi belajar.
 `;
-// ================================
-// MAPPING DATA UNTUK AI (WAJIB)
-// ================================
-const student = {
-  name: report.studentName,
-    className: report.className,
 
-      // 🔐 SUMBER KEBENARAN UTAMA
-        teacherNote: report.notes || "",
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: userPrompt,
+      config: {
+        systemInstruction,
+        temperature: 0.3,
+      },
+    });
 
-          // PROGRES BACAAN / TAHFIZH
-            currentProgress: currentProgress,
-              totalJuz: totalJuz,
+    if (!response.text) {
+      throw new Error("AI tidak memberikan respon.");
+    }
 
-                // ADAB & KEHADIRAN (INTERNAL)
-                  behavior: report.behavior,
-                    attendance: report.attendance,
-                    };
-                        const response = await ai.models.generateContent({
-                              model: 'gemini-2.5-flash',
-                                    contents: userPrompt,
-                                          config: { 
-                                                  systemInstruction: systemInstruction,
-                                                          temperature: 0.3,
-                                                                }
-                                                                    });
-
-                                                                        const resultText = response.text;
-                                                                            if (!resultText) throw new Error("AI tidak memberikan respon.");
-                                                                                return resultText;
-                                                                                  } catch (error: any) {
-                                                                                      console.error("Gemini Client Error:", error);
-                                                                                          throw new Error(error.message || "Gagal membuat evaluasi siswa.");
-                                                                                            }
-                                                                                            };
+    return response.text.trim();
+  } catch (error: any) {
+    console.error("Gemini Client Error:", error);
+    throw new Error(error.message || "Gagal membuat evaluasi siswa.");
+  }
+};
