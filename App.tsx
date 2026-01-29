@@ -21,8 +21,7 @@ import { getStoredUser, simpleLogout } from './services/simpleAuth';
 import { User } from './types';
 
 function App() {
-  const [user, setUser] = useState<User | null>(getStoredUser());'
-  });
+  const [user, setUser] = useState<User | null>(getStoredUser());
 
   const handleLogin = (newUser: User) => {
   setUser(newUser);
