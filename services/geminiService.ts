@@ -305,7 +305,7 @@ Jika progres tilawah belum optimal:
 Gunakan pembuka dan doa penutup yang santun, variatif, dan menenangkan.
     `;
 
-    const userPrompt = `
+   const userPrompt = `
 BUAT EVALUASI NARATIF PERSONAL.
 
 ========================================
@@ -319,11 +319,14 @@ DATA PENDUKUNG (KONTEKS)
 - Nama: ${student.name}
 - Kelas: ${student.className}
 - Program Pembelajaran:
-${student.className === "1" ? "Tilawah Individual (Non Tahfizh)" : "Tahfizh Al-Qur'an"}
-- Posisi Bacaan Saat Ini: ${currentProgress}
-- Total Akumulasi Hafalan (Internal): ${totalJuz} Juz
-- Adab (Internal): ${student.behaviorScore || 10}
-- Kehadiran (Internal): ${student.attendance || 100}
+${student.className === "1"
+  ? "Tilawah Individual (Non Tahfizh)"
+  : "Tahfizh Al-Qur'an"}
+- Posisi Bacaan Saat Ini: ${student.currentProgress}
+- Total Akumulasi Hafalan (Internal): ${student.totalJuz} Juz
+- Adab (Internal): ${student.behavior || "Baik"}
+- Kehadiran (Internal): ${student.attendance || "Baik"}
+`;
 
 TUGAS WAJIB:
 - Bangun narasi BERDASARKAN CATATAN GURU di atas.
@@ -350,23 +353,43 @@ TUGAS WAJIB:
 
 5. CATATAN GURU:
 - Integrasikan secara halus dan membina.
-
+Jika Catatan Guru kosong:
+- Gunakan bahasa NETRAL dan AMAN.
+- Jangan mengarang kondisi tambahan.
+- Fokuskan laporan pada apresiasi umum dan motivasi belajar.
 `;
+// ================================
+// MAPPING DATA UNTUK AI (WAJIB)
+// ================================
+const student = {
+  name: report.studentName,
+    className: report.className,
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: userPrompt,
-      config: { 
-        systemInstruction: systemInstruction,
-        temperature: 0.3,
-      }
-    });
+      // 🔐 SUMBER KEBENARAN UTAMA
+        teacherNote: report.notes || "",
 
-    const resultText = response.text;
-    if (!resultText) throw new Error("AI tidak memberikan respon.");
-    return resultText;
-  } catch (error: any) {
-    console.error("Gemini Client Error:", error);
-    throw new Error(error.message || "Gagal membuat evaluasi siswa.");
-  }
-};
+          // PROGRES BACAAN / TAHFIZH
+            currentProgress: currentProgress,
+              totalJuz: totalJuz,
+
+                // ADAB & KEHADIRAN (INTERNAL)
+                  behavior: report.behavior,
+                    attendance: report.attendance,
+                    };
+                        const response = await ai.models.generateContent({
+                              model: 'gemini-2.5-flash',
+                                    contents: userPrompt,
+                                          config: { 
+                                                  systemInstruction: systemInstruction,
+                                                          temperature: 0.3,
+                                                                }
+                                                                    });
+
+                                                                        const resultText = response.text;
+                                                                            if (!resultText) throw new Error("AI tidak memberikan respon.");
+                                                                                return resultText;
+                                                                                  } catch (error: any) {
+                                                                                      console.error("Gemini Client Error:", error);
+                                                                                          throw new Error(error.message || "Gagal membuat evaluasi siswa.");
+                                                                                            }
+                                                                                            };
