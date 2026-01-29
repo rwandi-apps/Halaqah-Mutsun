@@ -53,9 +53,9 @@ export default function LoginPage({ onLogin }: LoginProps) {
       <div className="relative z-10 w-full max-w-[400px] px-6 flex flex-col items-center">
         
         {/* Logo Area */}
-        <div className="mb-10 bg-white/95 backdrop-blur-sm px-6 py-4 rounded-3xl shadow-2xl">
-          <LogoSDQ />
-        </div>
+        <div className="mb-10">
+  <LogoSDQ className="h-20 drop-shadow-[0_0_15px_rgba(255,255,255,0.35)]" />
+</div>
 
         {/* Title */}
         <div className="text-center mb-10">
