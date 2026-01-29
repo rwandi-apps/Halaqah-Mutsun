@@ -157,122 +157,90 @@ export const generateEvaluasiAI = async (reportType: string, period: string, con
 };
 
 /**
- * Service untuk generate evaluasi naratif personal siswa menggunakan Gemini AI.
+ * Generate evaluasi naratif personal siswa menggunakan Gemini AI
  */
-export const generateStudentEvaluation = async (student: Student): Promise<string> => {
-  if (!import.meta.env.VITE_GEMINI_API_KEY) {
-    throw new Error("API_KEY tidak ditemukan.");
-  }
-const SYSTEM_INSTRUCTION_CORE = `
+export const generateStudentEvaluation = async (
+  student: Student
+): Promise<string> => {
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (!apiKey) throw new Error("API_KEY tidak ditemukan.");
+
+  const ai = new GoogleGenAI({ apiKey });
+
+  // ================================
+  // HITUNG KONTEKS INTERNAL
+  // ================================
+  const totalPages =
+    (student.totalHafalan?.juz || 0) * 20 +
+    (student.totalHafalan?.pages || 0);
+
+  const totalJuz = totalPages > 0 ? (totalPages / 20).toFixed(1) : "0";
+
+  const currentProgress =
+    student.className.trim().startsWith("1")
+      ? student.tilawah?.individual || "-"
+      : student.currentProgress || "-";
+
+  // ================================
+  // PROMPT FINAL (SYSTEM + USER)
+  // ================================
+  const prompt = `
+ANDA ADALAH SISTEM.
 Anda adalah Pakar Evaluasi Pedagogis Al-Qur'an untuk Sekolah Dasar Qur'an (SDQ).
-Tugas Anda menyusun laporan naratif bulanan yang santun, jujur, membina, dan personal
-untuk orang tua siswa (Ayah dan Bunda).
 
 ATURAN WAJIB:
-- Gunakan bahasa santun, reflektif, dan positif-konstruktif.
+- Bahasa santun, reflektif, membina.
 - Gunakan sebutan "Ananda".
-- DILARANG menyebut: skor, angka, persentase, istilah teknis penilaian.
-- DILARANG menggunakan singkatan:
-  Tulis lengkap "Subhanahu wa Ta'ala", "Shallallahu 'alaihi wa sallam", dan "halaman".
-- Catatan Guru adalah SUMBER KEBENARAN UTAMA.
-- Jika Catatan Guru kosong, gunakan bahasa netral dan aman.
-- Jangan menambah penilaian baru di luar Catatan Guru.
-
-Gunakan variasi kalimat pembuka dan penutup agar tidak terkesan laporan massal.
-`;
-  try {
-    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
-
-    // ================================
-    // HITUNG KONTEKS INTERNAL (AI)
-    // ================================
-    const totalPages =
-      (student.totalHafalan?.juz || 0) * 20 +
-      (student.totalHafalan?.pages || 0);
-
-    const totalJuz = totalPages > 0 ? (totalPages / 20).toFixed(1) : "0";
-
-    const currentProgress =
-      student.className.trim().startsWith("1")
-        ? student.tilawah?.individual || "-"
-        : student.currentProgress || "-";
-
-    // ================================
-    // MAPPING FINAL UNTUK AI
-    // ================================
-    const aiStudentContext = {
-      name: student.name,
-      className: student.className,
-      teacherNote: student.teacherNote || "",
-      currentProgress,
-      totalJuz,
-      behavior: student.behavior || "Baik",
-      attendance: student.attendance || "Baik",
-    };
-
-    // ================================
-    // USER PROMPT (BERSIH)
-    // ================================
-    const userPrompt = `
-BUAT EVALUASI NARATIF PERSONAL.
+- DILARANG menyebut skor, angka, persentase, istilah teknis.
+- DILARANG singkatan:
+  tulis lengkap "Subhanahu wa Ta'ala", "Shallallahu 'alaihi wa sallam", "halaman".
+- Catatan Guru adalah SUMBER UTAMA.
+- Jangan menambah penilaian di luar Catatan Guru.
+- Variasikan pembuka dan penutup.
 
 ========================================
-SUMBER UTAMA (CATATAN RESMI GURU)
+CATATAN RESMI GURU
 ========================================
-${aiStudentContext.teacherNote || "Tidak ada catatan khusus dari guru bulan ini."}
+${student.teacherNote || "Tidak ada catatan khusus dari guru bulan ini."}
 
 ========================================
 DATA PENDUKUNG (KONTEKS)
 ========================================
-- Nama: ${aiStudentContext.name}
-- Kelas: ${aiStudentContext.className}
-- Program Pembelajaran:
-${aiStudentContext.className === "1"
+- Nama: ${student.name}
+- Kelas: ${student.className}
+- Program:
+${student.className === "1"
   ? "Tilawah Individual (Non Tahfizh)"
   : "Tahfizh Al-Qur'an"}
-- Posisi Bacaan Saat Ini: ${aiStudentContext.currentProgress}
-- Total Akumulasi Hafalan (Internal): ${aiStudentContext.totalJuz} Juz
-- Adab (Internal): ${aiStudentContext.behavior}
-- Kehadiran (Internal): ${aiStudentContext.attendance}
+- Posisi Bacaan: ${currentProgress}
+- Total Akumulasi Hafalan (Internal): ${totalJuz} Juz
+- Adab: ${student.behavior || "Baik"}
+- Kehadiran: ${student.attendance || "Baik"}
 
 ========================================
-ATURAN KHUSUS (WAJIB DIPATUHI)
+LOGIKA KHUSUS
 ========================================
+[ KELAS 1 ]
+- BUKAN tahfizh
+- Fokus kelancaran bacaan dan adab
+- Jika IQRA: sebut JILID dan HALAMAN
+- DILARANG surah, ayat, juz
 
-[LOGIKA KELAS 1]
-- Kelas 1 BUKAN program Tahfizh.
-- Fokus pada kelancaran bacaan (Iqra) dan adab belajar.
-- Jika posisi berupa IQRA:
-  - WAJIB sebut JILID dan HALAMAN.
-  - DILARANG menyebut Surah, Ayat, atau hafalan.
-- DILARANG menyebut target juz atau halaman hafalan.
-- Seluruh ketentuan hafalan TIDAK BERLAKU untuk Kelas 1.
+[ KELAS 2–6 ]
+- Hafalan hanya konteks, bukan target kaku
 
-[LOGIKA KELAS 2–6]
-- Gunakan data hafalan hanya sebagai konteks, bukan target kaku.
-- Jika progres belum optimal, sampaikan secara edukatif dan solutif.
-
-[ADAB & KEHADIRAN]
-- Jangan menyebut angka atau persentase.
-- Jika perlu perbaikan, sampaikan dengan bahasa halus dan membina.
-- Jika baik, berikan apresiasi wajar.
-
-[TUGAS UTAMA]
-- Bangun narasi berdasarkan Catatan Guru.
-- Data pendukung hanya untuk memperjelas, bukan mengubah makna.
+Buat evaluasi naratif personal.
 `;
 
-    const response = await ai.models.generateContent({
-  model: "gemini-2.5-flash",
-  contents: userPrompt,
-  config: {
-    systemInstruction: SYSTEM_INSTRUCTION_CORE,
-    temperature: 0.3,
-  },
-});
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: prompt,
+    config: { temperature: 0.3 },
+  });
 
-if (!response.text) {
-  throw new Error("AI tidak memberikan respon.");
-}
+  if (!response.text) {
+    throw new Error("AI tidak memberikan respon.");
+  }
 
-return response.text.trim();
+  return response.text.trim();
+};
