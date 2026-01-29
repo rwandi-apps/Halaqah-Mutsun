@@ -164,7 +164,6 @@ export default function CoordinatorReportsPage() {
                 <td>{formatRange(r.tahfizh?.classical)}</td>
                 <td>{formatRange(r.tahfizh?.individual)}</td>
                 <td className="font-black">{r.tahfizh?.result || '-'}</td>
-                <td>{statusBadge(r)}</td>
 
                 <td>-</td>
                 <td className="italic max-w-[220px] truncate">{r.notes || '-'}</td>
