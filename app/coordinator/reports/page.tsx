@@ -125,11 +125,12 @@ export default function CoordinatorReportsPage() {
               <th>Nama</th>
               <th>Hadir</th>
               <th>Sikap</th>
+              <th>Total Hafalan</th>
               <th>Tilawah Klasikal</th>
               <th>Tilawah Individu</th>
+              <th>Hasil</th>
               <th>Tahfizh Klasikal</th>
               <th>Tahfizh Individu</th>
-              <th>Total Hafalan</th>
               <th>Catatan</th>
             </tr>
           </thead>
@@ -140,11 +141,12 @@ export default function CoordinatorReportsPage() {
                 <td className="font-bold">{r.studentName}</td>
                 <td>{r.attendance}%</td>
                 <td>{r.behaviorScore}</td>
+                <td>{formatTotalHafalan(r.totalHafalan)}</td>
                 <td>{r.tilawah?.classical || '-'}</td>
                 <td>{r.tilawah?.individual || '-'}</td>
+                <td>{r.tilawah?.result || '-'}</td>
                 <td>{r.tahfizh?.classical || '-'}</td>
                 <td>{r.tahfizh?.individual || '-'}</td>
-                <td>{formatTotalHafalan(r.totalHafalan)}</td>
                 <td className="italic">{r.notes || '-'}</td>
               </tr>
             ))}
