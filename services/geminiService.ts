@@ -163,7 +163,23 @@ export const generateStudentEvaluation = async (student: Student): Promise<strin
   if (!import.meta.env.VITE_GEMINI_API_KEY) {
     throw new Error("API_KEY tidak ditemukan.");
   }
+const SYSTEM_INSTRUCTION_CORE = `
+Anda adalah Pakar Evaluasi Pedagogis Al-Qur'an untuk Sekolah Dasar Qur'an (SDQ).
+Tugas Anda menyusun laporan naratif bulanan yang santun, jujur, membina, dan personal
+untuk orang tua siswa (Ayah dan Bunda).
 
+ATURAN WAJIB:
+- Gunakan bahasa santun, reflektif, dan positif-konstruktif.
+- Gunakan sebutan "Ananda".
+- DILARANG menyebut: skor, angka, persentase, istilah teknis penilaian.
+- DILARANG menggunakan singkatan:
+  Tulis lengkap "Subhanahu wa Ta'ala", "Shallallahu 'alaihi wa sallam", dan "halaman".
+- Catatan Guru adalah SUMBER KEBENARAN UTAMA.
+- Jika Catatan Guru kosong, gunakan bahasa netral dan aman.
+- Jangan menambah penilaian baru di luar Catatan Guru.
+
+Gunakan variasi kalimat pembuka dan penutup agar tidak terkesan laporan massal.
+`;
   try {
     const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
 
@@ -219,27 +235,44 @@ ${aiStudentContext.className === "1"
 - Adab (Internal): ${aiStudentContext.behavior}
 - Kehadiran (Internal): ${aiStudentContext.attendance}
 
-TUGAS WAJIB:
-- Bangun narasi BERDASARKAN CATATAN GURU di atas.
-- Data pendukung hanya untuk memperjelas, BUKAN mengubah makna.
+========================================
+ATURAN KHUSUS (WAJIB DIPATUHI)
+========================================
+
+[LOGIKA KELAS 1]
+- Kelas 1 BUKAN program Tahfizh.
+- Fokus pada kelancaran bacaan (Iqra) dan adab belajar.
+- Jika posisi berupa IQRA:
+  - WAJIB sebut JILID dan HALAMAN.
+  - DILARANG menyebut Surah, Ayat, atau hafalan.
+- DILARANG menyebut target juz atau halaman hafalan.
+- Seluruh ketentuan hafalan TIDAK BERLAKU untuk Kelas 1.
+
+[LOGIKA KELAS 2–6]
+- Gunakan data hafalan hanya sebagai konteks, bukan target kaku.
+- Jika progres belum optimal, sampaikan secara edukatif dan solutif.
+
+[ADAB & KEHADIRAN]
+- Jangan menyebut angka atau persentase.
+- Jika perlu perbaikan, sampaikan dengan bahasa halus dan membina.
+- Jika baik, berikan apresiasi wajar.
+
+[TUGAS UTAMA]
+- Bangun narasi berdasarkan Catatan Guru.
+- Data pendukung hanya untuk memperjelas, bukan mengubah makna.
 `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: userPrompt,
-      config: {
-        systemInstruction,
-        temperature: 0.3,
-      },
-    });
+  model: "gemini-2.5-flash",
+  contents: userPrompt,
+  config: {
+    systemInstruction: SYSTEM_INSTRUCTION_CORE,
+    temperature: 0.3,
+  },
+});
 
-    if (!response.text) {
-      throw new Error("AI tidak memberikan respon.");
-    }
+if (!response.text) {
+  throw new Error("AI tidak memberikan respon.");
+}
 
-    return response.text.trim();
-  } catch (error: any) {
-    console.error("Gemini Client Error:", error);
-    throw new Error(error.message || "Gagal membuat evaluasi siswa.");
-  }
-};
+return response.text.trim();
