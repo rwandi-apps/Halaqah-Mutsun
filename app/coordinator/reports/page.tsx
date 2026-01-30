@@ -25,7 +25,27 @@ const formatRange = (v?: string) => {
   if (!v) return '-';
   return v.replace(/[–—]/g, '-').replace(/\s+/g, ' ').trim();
 };
+const getKet = (r: Report) => {
+  const result = r.tahfizh?.result;
+  if (!result || result === '-') return '-';
 
+  const match = result.match(/(\d+)\s*Hal/);
+  const pages = match ? parseInt(match[1]) : 0;
+
+  if (pages >= 2) {
+    return (
+      <span className="text-emerald-600 font-black text-[8px]">
+        TERCAPAI
+      </span>
+    );
+  }
+
+  return (
+    <span className="text-orange-500 font-black text-[8px]">
+      BELUM
+    </span>
+  );
+};
 export default function CoordinatorReportsPage() {
   const [teachers, setTeachers] = useState<User[]>([]);
   const [selectedTeacherId, setSelectedTeacherId] = useState('');
@@ -165,7 +185,9 @@ export default function CoordinatorReportsPage() {
                 <td>{formatRange(r.tahfizh?.individual)}</td>
                 <td className="font-black">{r.tahfizh?.result || '-'}</td>
 
-                <td>-</td>
+                <td className="text-center whitespace-nowrap">
+  {getKet(r)}
+</td>
                 <td className="italic max-w-[220px] truncate">{r.notes || '-'}</td>
               </tr>
             ))}
