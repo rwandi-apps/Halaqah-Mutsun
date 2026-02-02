@@ -13,7 +13,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     // Fix: Validating API_KEY before initialization
-    if (!import.meta.env.VITE_GEMINI_ API_KEY) {
+    if (!import.meta.env.VITE_GEMINI_API_KEY) {
       return new Response(JSON.stringify({ error: "API Key server tidak ditemukan." }), { 
         status: 500,
         headers: { 'Content-Type': 'application/json' }
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     }
 
     // Fix: Initializing GoogleGenAI with named parameter apiKey as per guidelines
-    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_ API_KEY });
+    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
     
     const systemInstruction = `
       Anda adalah pakar Supervisor Pendidikan Al-Qur'an (Koordinator Tahfizh).
