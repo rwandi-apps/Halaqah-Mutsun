@@ -164,7 +164,7 @@ DATA INPUT:
 TUGAS:
 1. Identifikasi kelas (Kelas 1 atau 2-6) dan terapkan logika yang sesuai.
 2. Terapkan aturan ketat Adab/Kehadiran jika di bawah ambang batas.
-3. Gunakan variasi pembuka seperti "Alhamdulillah...", "Salam takzim...", atau "Bismillah...".
+3. Gunakan variasi pembuka seperti "Alhamdulillah...", "salam hangat...", atau "Bismillah...".
 4. Gunakan doa penutup yang indah seperti "Semoga Allah Subhanahu wa Ta'ala senantiasa..." atau "Barakallahu fiikum...".
     `;
 
