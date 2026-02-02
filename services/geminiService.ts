@@ -4,10 +4,9 @@ import { Student } from "../types";
 
 /**
  * Service untuk menyempurnakan redaksi catatan wali kelas (Kelas 4-6).
- * AI bertindak sebagai editor bahasa agar lebih santun, profesional, dan membina.
  */
 export const improveTeacherNotes = async (originalText: string): Promise<string> => {
-  if (!import.meta.env.VITE_GEMINI_API_KEY) {
+  if (!process.env.API_KEY) {
     throw new Error("API_KEY tidak ditemukan.");
   }
 
@@ -16,7 +15,7 @@ export const improveTeacherNotes = async (originalText: string): Promise<string>
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     const systemInstruction = `
       Anda adalah AI Assistant yang bertugas sebagai EDITOR BAHASA untuk Catatan Rapor Siswa Kelas 4–6 SDQ.
@@ -30,11 +29,11 @@ export const improveTeacherNotes = async (originalText: string): Promise<string>
       
       OUTPUT:
       - Berupa 1 paragraf saja.
-      - Hanya teks hasil perbaikan, tanpa penjelasan tambahan atau embel-embel AI.
+      - Hanya teks hasil perbaikan, tanpa penjelasan tambahan.
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash-preview',
       contents: `Sempurnakan redaksi catatan guru berikut: "${originalText}"`,
       config: { 
         systemInstruction: systemInstruction,
@@ -43,204 +42,144 @@ export const improveTeacherNotes = async (originalText: string): Promise<string>
     });
 
     const resultText = response.text;
-    if (!resultText) throw new Error("AI tidak memberikan respon.");
-
-    return resultText.trim();
+    return resultText?.trim() || originalText;
   } catch (error: any) {
     console.error("Gemini Notes Redaction Error:", error);
-    throw new Error(error.message || "Gagal menyempurnakan catatan.");
+    return originalText;
   }
 };
 
 /**
  * Service untuk menyempurnakan redaksi bahasa rapor deskriptif (Kelas 1-3).
- * AI bertindak sebagai editor bahasa, bukan penilai.
  */
 export const improveReportRedaction = async (originalText: string): Promise<string> => {
-  if (!import.meta.env.VITE_GEMINI_API_KEY) {
+  if (!process.env.API_KEY) {
     throw new Error("API_KEY tidak ditemukan.");
   }
 
-  if (!originalText || originalText.trim().length < 5) {
-    throw new Error("Teks terlalu singkat untuk disempurnakan.");
-  }
-
   try {
-    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
-
-    const systemInstruction = `
-      Anda adalah AI Assistant untuk guru SD Al-Qur'an (SDQ) yang bertugas MEMPERBAIKI REDAKSI KALIMAT RAPOR DESKRIPSI.
-      Tugas utama: Perbaiki tata bahasa, alur, kelembutan bahasa, dan kejelasan makna agar sesuai dengan standar rapor SDQ.
-      
-      BATASAN KERAS:
-      1. JANGAN mengubah makna atau substansi penilaian.
-      2. JANGAN menambah poin penilaian baru atau mengubah capaian siswa.
-      3. Gunakan gaya bahasa santun, positif, edukatif, dan membina.
-      4. Gunakan istilah: "Ananda", "menunjukkan", "perlu pendampingan", "terus dibimbing".
-      
-      OUTPUT:
-      - Berupa 1 paragraf saja.
-      - Hanya teks hasil perbaikan, tanpa penjelasan tambahan atau embel-embel AI.
-    `;
-
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const systemInstruction = `Anda adalah EDITOR BAHASA Rapor Deskripsi SDQ. Perbaiki tata bahasa menjadi santun dan membina tanpa mengubah makna.`;
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: `Sempurnakan redaksi kalimat rapor berikut tanpa mengubah maknanya: "${originalText}"`,
-      config: { 
-        systemInstruction: systemInstruction,
-        temperature: 0.3, // Rendah agar tetap setia pada teks asli
-      }
+      model: 'gemini-3-flash-preview',
+      contents: `Sempurnakan: "${originalText}"`,
+      config: { systemInstruction: systemInstruction, temperature: 0.3 }
     });
-
-    const resultText = response.text;
-    if (!resultText) throw new Error("AI tidak memberikan respon.");
-
-    return resultText.trim();
-  } catch (error: any) {
-    console.error("Gemini Redaction Error:", error);
-    throw new Error(error.message || "Gagal menyempurnakan bahasa.");
+    return response.text?.trim() || originalText;
+  } catch (error) {
+    return originalText;
   }
 };
 
 /**
- * Service untuk generate evaluasi kolektif Halaqah menggunakan Gemini AI (Client-Side).
+ * Service untuk generate evaluasi kolektif Halaqah.
  */
 export const generateEvaluasiAI = async (reportType: string, period: string, contextData: string) => {
-  if (!import.meta.env.VITE_GEMINI_API_KEY) {
+  if (!process.env.API_KEY) {
+    throw new Error("API_KEY tidak ditemukan.");
+  }
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-flash-preview',
+    contents: `Analis data halaqah periode ${period}: ${contextData}`,
+    config: { 
+      systemInstruction: "Anda adalah Supervisor Tahfizh. Berikan evaluasi strategis dalam format JSON.",
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          insightUtama: { type: Type.STRING },
+          kendalaTerindikasi: { type: Type.STRING },
+          tindakLanjut: { type: Type.STRING },
+          targetBulanDepan: { type: Type.STRING },
+        },
+        required: ["insightUtama", "kendalaTerindikasi", "tindakLanjut", "targetBulanDepan"],
+      },
+      temperature: 0.2,
+    }
+  });
+  return JSON.parse(response.text || "{}");
+};
+
+/**
+ * Service Utama: Generate Evaluasi Naratif Personal Santri (Triggered from Dashboard).
+ */
+export const generateStudentEvaluation = async (student: Student, teacherNotes?: string): Promise<string> => {
+  if (!process.env.API_KEY) {
     throw new Error("API_KEY tidak ditemukan.");
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+    // Hitung akumulasi untuk membantu AI (Desimal tetap dikirim tapi AI dilarang menuliskannya)
+    const totalPagesRaw = (student.totalHafalan?.juz || 0) * 20 + (student.totalHafalan?.pages || 0);
+    const decimalJuz = totalPagesRaw / 20;
 
     const systemInstruction = `
-      Anda adalah pakar Supervisor Pendidikan Al-Qur'an (Koordinator Tahfizh).
-      Tugas Anda adalah menganalisis data laporan halaqah dan memberikan evaluasi strategis untuk guru.
-      Gaya Bahasa: Formal, Profesional, Memotivasi, dan Islami.
+Anda adalah Pakar Evaluasi Pedagogis Al-Qur'an untuk Sekolah Dasar Qur'an (SDQ).
+Tugas Anda adalah menyusun laporan evaluasi naratif yang JUJUR, SANTUN, ADAPTIF, dan PERSONAL bagi Ayah dan Bunda.
+
+📌 [ATURAN PENULISAN WAJIB]
+1. Dilarang Menggunakan Singkatan: 
+   - Wajib ditulis lengkap: "Subhanahu wa Ta'ala", "Shallallahu 'alaihi wa sallam", dan "halaman". 
+   - Dilarang keras "SWT", "SAW", "hal".
+2. Diversity Rule: Gunakan variasi kalimat pembuka dan penutup. Jangan monoton antar siswa.
+3. Tanpa Label Teknis: DILARANG menyebut kata "Senior", "Junior", "Skor", atau "Persentase".
+4. Panggilan: Gunakan sebutan "Ananda". Tujuan laporan adalah "Ayah dan Bunda".
+
+🧩 [BAGIAN 1: ADAB & KEHADIRAN]
+- Jika adab <= 6: DILARANG memuji. Gunakan redaksi: "Ananda memerlukan perhatian khusus dan bimbingan lebih intensif terkait adab serta fokus di dalam halaqah."
+- Jika kehadiran < 80%: DILARANG menyebut angka/persen. Gunakan redaksi: "Intensitas kehadiran Ananda di bulan ini perlu ditingkatkan kembali agar ritme interaksi dengan Al-Qur'an tetap terjaga dan konsisten."
+- Jika baik: Berikan apresiasi yang tulus dan proporsional.
+
+📖 [BAGIAN 2: FORMAT CAPAIAN]
+- Sebutkan posisi terakhir (Iqra jilid/halaman atau Surah/Ayat).
+- Akumulasi hafalan (Al-Qur'an): Konversi desimal ke "X Juz Y halaman" (0.1 Juz = 2 halaman). DILARANG menulis angka desimal.
+
+🎯 [BAGIAN 3: LOGIKA PROGRES ADAPTIF]
+- KHUSUS KELAS 1: Fokus pada pengenalan huruf, kelancaran Iqra (Smt 1 target Iqra 6 hal 31) atau Tahsin (Smt 2). Dilarang menuntut target Juz atau menyebut "ziyadah".
+- KELAS 2–6 (> 5 Juz): Fokus pada penguatan murojaah. Menjaga hafalan banyak adalah prestasi besar.
+- KELAS 2–6 (<= 5 Juz): Fokus pada pembentukan ritme dan motivasi menambah hafalan baru.
+
+🏠 [BAGIAN 4: SINERGI ORANG TUA]
+Berikan arahan spesifik sesuai kondisi (Adab, Kehadiran, atau tipe hafalan) agar Ayah Bunda dapat mendampingi di rumah.
+
+📝 [BAGIAN 5: INTEGRASI CATATAN GURU]
+Olah catatan guru menjadi narasi halus dan membangun. Jangan copy-paste mentah.
     `;
 
     const userPrompt = `
-      ANALISIS DATA BERIKUT:
-      Tipe Laporan: ${reportType}
-      Periode: ${period}
-      Data siswa (Nama, Capaian, Catatan Guru, Kehadiran, Skor Adab):
-      ${contextData}
+BUAT EVALUASI NARATIF PERSONAL SISWA:
+
+DATA INPUT:
+- Nama: ${student.name}
+- Kelas: ${student.className}
+- Posisi Saat Ini: ${student.currentProgress}
+- Total Akumulasi (Desimal): ${decimalJuz} Juz
+- Nilai Adab: ${student.behaviorScore}/10
+- Kehadiran: ${student.attendance}%
+- Catatan Guru: ${teacherNotes || 'Nihil'}
+
+TUGAS:
+1. Identifikasi kelas (Kelas 1 atau 2-6) dan terapkan logika yang sesuai.
+2. Terapkan aturan ketat Adab/Kehadiran jika di bawah ambang batas.
+3. Gunakan variasi pembuka seperti "Alhamdulillah...", "Salam takzim...", atau "Bismillah...".
+4. Gunakan doa penutup yang indah seperti "Semoga Allah Subhanahu wa Ta'ala senantiasa..." atau "Barakallahu fiikum...".
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash-preview',
       contents: userPrompt,
       config: { 
         systemInstruction: systemInstruction,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            insightUtama: { type: Type.STRING },
-            kendalaTerindikasi: { type: Type.STRING },
-            tindakLanjut: { type: Type.STRING },
-            targetBulanDepan: { type: Type.STRING },
-          },
-          required: ["insightUtama", "kendalaTerindikasi", "tindakLanjut", "targetBulanDepan"],
-        },
-        temperature: 0.2,
+        temperature: 0.8, // Sedikit lebih tinggi untuk variasi kalimat (Diversity Rule)
       }
     });
 
-    const resultText = response.text;
-    if (!resultText) throw new Error("AI tidak memberikan respon.");
-    return JSON.parse(resultText);
+    return response.text?.trim() || "Gagal menghasilkan evaluasi.";
   } catch (error: any) {
-    console.error("Gemini Client Error:", error);
-    throw new Error(error.message || "Gagal menghubungi AI Gemini.");
+    console.error("Gemini Student Eval Error:", error);
+    throw new Error("Gagal membuat evaluasi santri.");
   }
-};
-
-/**
- * Generate evaluasi naratif personal siswa menggunakan Gemini AI
- */
-export const generateStudentEvaluation = async (
-  student: Student
-): Promise<string> => {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  if (!apiKey) throw new Error("API_KEY tidak ditemukan.");
-
-  const ai = new GoogleGenAI({ apiKey });
-
-  // ================================
-  // HITUNG KONTEKS INTERNAL
-  // ================================
-  const totalPages =
-    (student.totalHafalan?.juz || 0) * 20 +
-    (student.totalHafalan?.pages || 0);
-
-  const totalJuz = totalPages > 0 ? (totalPages / 20).toFixed(1) : "0";
-
-  const currentProgress =
-    student.className.trim().startsWith("1")
-      ? student.tilawah?.individual || "-"
-      : student.currentProgress || "-";
-
-  // ================================
-  // PROMPT FINAL (SYSTEM + USER)
-  // ================================
-  const prompt = `
-ANDA ADALAH SISTEM.
-Anda adalah Pakar Evaluasi Pedagogis Al-Qur'an untuk Sekolah Dasar Qur'an (SDQ).
-
-ATURAN WAJIB:
-- Bahasa santun, reflektif, membina.
-- Gunakan sebutan "Ananda".
-- DILARANG menyebut skor, angka, persentase, istilah teknis.
-- DILARANG singkatan:
-  tulis lengkap "Subhanahu wa Ta'ala", "Shallallahu 'alaihi wa sallam", "halaman".
-- Catatan Guru adalah SUMBER UTAMA.
-- Jangan menambah penilaian di luar Catatan Guru.
-- Variasikan pembuka dan penutup.
-
-========================================
-CATATAN RESMI GURU
-========================================
-${student.teacherNote || "Tidak ada catatan khusus dari guru bulan ini."}
-
-========================================
-DATA PENDUKUNG (KONTEKS)
-========================================
-- Nama: ${student.name}
-- Kelas: ${student.className}
-- Program:
-${student.className === "1"
-  ? "Tilawah Individual (Non Tahfizh)"
-  : "Tahfizh Al-Qur'an"}
-- Posisi Bacaan: ${currentProgress}
-- Total Akumulasi Hafalan (Internal): ${totalJuz} Juz
-- Adab: ${student.behavior || "Baik"}
-- Kehadiran: ${student.attendance || "Baik"}
-
-========================================
-LOGIKA KHUSUS
-========================================
-[ KELAS 1 ]
-- BUKAN tahfizh
-- Fokus kelancaran bacaan dan adab
-- Jika IQRA: sebut JILID dan HALAMAN
-- DILARANG surah, ayat, juz
-
-[ KELAS 2–6 ]
-- Hafalan hanya konteks, bukan target kaku
-
-Buat evaluasi naratif personal.
-`;
-
-  const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: prompt,
-    config: { temperature: 0.3 },
-  });
-
-  if (!response.text) {
-    throw new Error("AI tidak memberikan respon.");
-  }
-
-  return response.text.trim();
 };
