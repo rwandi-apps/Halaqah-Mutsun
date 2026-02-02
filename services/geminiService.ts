@@ -6,7 +6,7 @@ import { Student } from "../types";
  * Service untuk menyempurnakan redaksi catatan wali kelas (Kelas 4-6).
  */
 export const improveTeacherNotes = async (originalText: string): Promise<string> => {
-  if (!process.env.API_KEY) {
+  if (!import.meta.env.VITE_GEMINI_ API_KEY) {
     throw new Error("API_KEY tidak ditemukan.");
   }
 
@@ -15,7 +15,7 @@ export const improveTeacherNotes = async (originalText: string): Promise<string>
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_ API_KEY });
 
     const systemInstruction = `
       Anda adalah AI Assistant yang bertugas sebagai EDITOR BAHASA untuk Catatan Rapor Siswa Kelas 4–6 SDQ.
@@ -33,7 +33,7 @@ export const improveTeacherNotes = async (originalText: string): Promise<string>
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-2.5-flash',
       contents: `Sempurnakan redaksi catatan guru berikut: "${originalText}"`,
       config: { 
         systemInstruction: systemInstruction,
@@ -53,15 +53,15 @@ export const improveTeacherNotes = async (originalText: string): Promise<string>
  * Service untuk menyempurnakan redaksi bahasa rapor deskriptif (Kelas 1-3).
  */
 export const improveReportRedaction = async (originalText: string): Promise<string> => {
-  if (!process.env.API_KEY) {
+  if (!import.meta.env.VITE_GEMINI_ API_KEY) {
     throw new Error("API_KEY tidak ditemukan.");
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_ API_KEY });
     const systemInstruction = `Anda adalah EDITOR BAHASA Rapor Deskripsi SDQ. Perbaiki tata bahasa menjadi santun dan membina tanpa mengubah makna.`;
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-2.5-flash',
       contents: `Sempurnakan: "${originalText}"`,
       config: { systemInstruction: systemInstruction, temperature: 0.3 }
     });
@@ -75,12 +75,12 @@ export const improveReportRedaction = async (originalText: string): Promise<stri
  * Service untuk generate evaluasi kolektif Halaqah.
  */
 export const generateEvaluasiAI = async (reportType: string, period: string, contextData: string) => {
-  if (!process.env.API_KEY) {
+  if (!import.meta.env.VITE_GEMINI_ API_KEY) {
     throw new Error("API_KEY tidak ditemukan.");
   }
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_ API_KEY });
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-2.5-flash',
     contents: `Analis data halaqah periode ${period}: ${contextData}`,
     config: { 
       systemInstruction: "Anda adalah Supervisor Tahfizh. Berikan evaluasi strategis dalam format JSON.",
@@ -105,12 +105,12 @@ export const generateEvaluasiAI = async (reportType: string, period: string, con
  * Service Utama: Generate Evaluasi Naratif Personal Santri (Triggered from Dashboard).
  */
 export const generateStudentEvaluation = async (student: Student, teacherNotes?: string): Promise<string> => {
-  if (!process.env.API_KEY) {
+  if (!import.meta.env.VITE_GEMINI_ API_KEY) {
     throw new Error("API_KEY tidak ditemukan.");
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_ API_KEY });
 
     // Hitung akumulasi untuk membantu AI (Desimal tetap dikirim tapi AI dilarang menuliskannya)
     const totalPagesRaw = (student.totalHafalan?.juz || 0) * 20 + (student.totalHafalan?.pages || 0);
@@ -169,7 +169,7 @@ TUGAS:
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-2.5-flash',
       contents: userPrompt,
       config: { 
         systemInstruction: systemInstruction,
