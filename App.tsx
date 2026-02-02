@@ -21,21 +21,27 @@ import { getStoredUser, simpleLogout } from './services/simpleAuth';
 import { User } from './types';
 
 function App() {
-  const [user, setUser] = useState<User | null>(getStoredUser());
+  const [user, setUser] = useState<User | null>(getStoredUser() || {
+    id: 'u2',
+    name: 'Ust. Hasan (Auto-Login)',
+    nickname: 'Ustadz Hasan',
+    email: 'guru@sdq.com',
+    role: 'GURU'
+  });
 
   const handleLogin = (newUser: User) => {
-  setUser(newUser);
-  localStorage.setItem('sdq_user', JSON.stringify(newUser));
+    setUser(newUser);
   };
 
   const handleLogout = async () => {
-  try {
-    await simpleLogout();
-  } finally {
-    localStorage.removeItem('sdq_user');
-    setUser(null);
-  }
-};
+    try {
+      await simpleLogout();
+      setUser(null);
+    } catch (error) {
+      console.error("Gagal logout:", error);
+      setUser(null);
+    }
+  };
 
   return (
     <HashRouter>

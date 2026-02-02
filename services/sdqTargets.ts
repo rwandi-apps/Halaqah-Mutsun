@@ -1,5 +1,6 @@
 
 import { Student } from '../types';
+import { SURAH_LIST } from './mockBackend';
 
 export interface SDQProgressResult {
   current: number;
@@ -55,39 +56,42 @@ export const extractClassLevel = (input: any): number => {
 
 /**
  * Menghitung skor absolut untuk Iqra.
- * Format Input: "Iqra' 1: 1 - Iqra' 3: 15" -> Ambil "Iqra' 3: 15"
- * Rumus: ((Jilid - 1) * 31) + Halaman
+ * Jika siswa Kelas 1 sudah masuk Surah Al-Quran, otomatis dianggap tuntas target Iqra (100%).
  */
 const getIqraScore = (progressStr: string): number => {
   if (!progressStr || progressStr === 'Belum Ada' || progressStr === '-') return 0;
   
-  // Normalisasi string
   const lower = progressStr.toLowerCase();
-
-  // Jika formatnya Range ("Dari - Sampai"), ambil bagian kanan (Sampai)
   const parts = lower.split('-');
   const lastPart = parts[parts.length - 1].trim(); 
 
-  // Regex untuk menangkap Jilid dan Halaman
-  // Mendukung format: "Iqra 3 : 15", "Iqra' 3 hal 15", "Jilid 3 halaman 15"
+  // 1. Cek apakah ini level Al-Qur'an (Surah)
+  // Jika progres mengandung nama Surah, berarti sudah lulus Iqra
+  const isQuranLevel = SURAH_LIST.some(surah => 
+    lower.includes(surah.toLowerCase())
+  );
+
+  if (isQuranLevel) {
+    return TARGET_SCORE_KELAS_1;
+  }
+
+  // 2. Regex untuk menangkap Jilid dan Halaman Iqra
   const regex = /(?:iqra|jilid)\W*(\d+)\W*[:\s,halamanhal]*\W*(\d+)/i;
   const match = lastPart.match(regex);
 
   if (match && match[1] && match[2]) {
     const volume = parseInt(match[1], 10);
     const page = parseInt(match[2], 10);
-
-    // Validasi basic
     if (volume < 1) return 0;
+    
+    // Jika volume > 6, berarti sudah Al-Quran
+    if (volume > 6) return TARGET_SCORE_KELAS_1;
 
-    // Rumus Matematika: ((Jilid Saat Ini - 1) * 31) + Halaman Saat Ini
     return ((volume - 1) * PAGES_PER_IQRA) + page;
   }
 
-  // Fallback: Jika format tidak standar, coba cari angka terakhir sebagai halaman (asumsi jilid 1 jika gagal deteksi)
-  // Ini jarang terjadi jika input valid
+  // Fallback: Jika tidak terdeteksi Iqra tapi ada teks progres lain
   if (!lower.includes('iqra') && !lower.includes('jilid')) {
-     // Jika user input "Al-Quran" atau surah, anggap lulus Iqra (Max Score)
      if (lower.includes('quran') || lower.includes('al-fatihah')) return TARGET_SCORE_KELAS_1;
   }
 
@@ -125,10 +129,9 @@ export const calculateSDQProgress = (student: Student): SDQProgressResult => {
   let current = 0;
   let unit = "Juz";
 
-  // Logic Khusus Kelas 1 (Iqra Score via Tilawah String)
+  // Logic Khusus Kelas 1
   if (level === 1) {
     unit = "Poin Iqra";
-    // student.currentProgress di sini diharapkan sudah berisi string Tilawah (Iqra)
     current = getIqraScore(student.currentProgress || "");
   } else {
     // Logic Kelas 2-6 (Juz Quran via Total Hafalan)
@@ -140,9 +143,6 @@ export const calculateSDQProgress = (student: Student): SDQProgressResult => {
   if (target > 0) {
     percentage = Math.round((current / target) * 100);
   }
-
-  // Cap percentage max 100% untuk visualisasi, tapi biarkan calculation murni di atas
-  const visualPercentage = Math.min(percentage, 100);
 
   // Tentukan Status & Warna
   let colorClass = "";
@@ -175,15 +175,14 @@ export const calculateSDQProgress = (student: Student): SDQProgressResult => {
   // Label Display
   let label = "";
   if (level === 1) {
-    // Reverse Engineering dari Score ke Jilid & Hal untuk display
     if (current >= TARGET_SCORE_KELAS_1) {
-      label = "Tuntas Iqra 6";
+      // Cek apakah progres aslinya mengandung nama Surah
+      const lowerProgress = (student.currentProgress || "").toLowerCase();
+      const isActuallyQuran = SURAH_LIST.some(s => lowerProgress.includes(s.toLowerCase()));
+      label = isActuallyQuran ? `Al-Qur'an (${student.currentProgress})` : "Tuntas Iqra 6";
     } else {
       const displayVol = Math.floor(current / PAGES_PER_IQRA) + 1;
       const displayPage = current % PAGES_PER_IQRA; 
-      // Handle edge case modulo 0 (halaman terakhir jilid sebelumnya)
-      // Tapi rumus kita ((Vol-1)*31) + Page, jadi jika Page 31, Vol tetap.
-      // Jika Page 0, berarti belum mulai atau data error.
       label = `Iqra ${displayVol} Hal ${displayPage === 0 ? 1 : displayPage}`;
     }
   } else {
@@ -195,7 +194,7 @@ export const calculateSDQProgress = (student: Student): SDQProgressResult => {
     target,
     current, 
     unit,
-    percentage,
+    percentage: Math.min(percentage, 100),
     colorClass,
     badgeBg,
     badgeText,

@@ -53,14 +53,14 @@ export default function LoginPage({ onLogin }: LoginProps) {
       <div className="relative z-10 w-full max-w-[400px] px-6 flex flex-col items-center">
         
         {/* Logo Area */}
-        <div className="mb-10">
-  <LogoSDQ className="h-20 drop-shadow-[0_0_15px_rgba(255,255,255,0.35)]" />
-</div>
+        <div className="mb-10 bg-white/95 backdrop-blur-sm px-6 py-4 rounded-3xl shadow-2xl">
+          <LogoSDQ />
+        </div>
 
         {/* Title */}
         <div className="text-center mb-10">
-          <h2 className="text-white text-2xl font-bold tracking-tight">Halaqah SDQ</h2>
-          <p className="text-blue-100/60 text-sm mt-1">Sistem Informasi Tahfizh & Mutaba'ah</p>
+          <h2 className="text-white text-2xl font-bold tracking-tight">Laporan Semester</h2>
+          <p className="text-blue-100/60 text-sm mt-1">Masuk untuk mengelola halaqah</p>
         </div>
 
         {/* Error Notification */}
@@ -120,7 +120,7 @@ export default function LoginPage({ onLogin }: LoginProps) {
         </form>
 
         <p className="mt-12 text-white/20 text-[10px] tracking-widest uppercase font-medium">
-          Halaqah SDQ Manager &copy; 2025
+          Halaqah SDQ Manager &copy; 2024
         </p>
       </div>
     </div>

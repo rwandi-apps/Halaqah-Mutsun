@@ -78,7 +78,7 @@ export default function CoordinatorEvaluationsPage() {
 
   const handleGenerateAI = async () => {
     if (filteredReports.length === 0) {
-      alert(`Tidak ada data laporan siswa untuk dianalisis pada periode ${selectedPeriod}.`);
+      alert(`Tidak ada data laporan santri untuk dianalisis pada periode ${selectedPeriod}.`);
       return;
     }
 

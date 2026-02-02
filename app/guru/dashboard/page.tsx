@@ -83,10 +83,14 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
       const level = extractClassLevel(student.className);
       
       let progressString = student.currentProgress || "-";
+      
       if (latestReport) {
         if (level === 1) {
-          progressString = latestReport.tilawah?.individual || latestReport.tahfizh?.individual || progressString;
+          // KOREKSI: Untuk Kelas 1, progres terbaru HANYA diambil dari Tilawah Individual
+          // Jika isinya nama Surah, engine sdqTargets akan otomatis mendeteksi 100%
+          progressString = latestReport.tilawah?.individual || progressString;
         } else {
+          // Kelas 2-6: Progres terbaru diambil dari Tahfizh Individual (Sabaq)
           progressString = latestReport.tahfizh?.individual || progressString;
         }
       }
@@ -116,7 +120,6 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
   const handleGenerateEvaluation = async (student: StudentWithProgress) => {
     setIsGenerating(true);
     try {
-      // Mengirim student data dan latestNotes (catatan guru) ke AI
       const result = await generateStudentEvaluation(student, student.latestNotes);
       setAiEvaluation(result);
     } catch (e) {

@@ -152,7 +152,7 @@ export const GuruDashboard: React.FC<GuruDashboardProps> = ({ teacherId = '1' })
           <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl animate-in fade-in zoom-in duration-200">
             <div className="p-6 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10">
               <div>
-                <h3 className="text-xl font-bold text-gray-900">Evaluasi siswa</h3>
+                <h3 className="text-xl font-bold text-gray-900">Evaluasi Santri</h3>
                 <p className="text-sm text-gray-500">{selectedStudent.name} - Kelas {selectedStudent.className}</p>
               </div>
               <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 p-1">
@@ -170,7 +170,7 @@ export const GuruDashboard: React.FC<GuruDashboardProps> = ({ teacherId = '1' })
                   </div>
                   <h4 className="text-lg font-medium text-gray-900 mb-2">Generate Evaluasi dengan AI</h4>
                   <p className="text-gray-500 mb-6 max-w-md mx-auto">
-                    Gemini akan menganalisis data hafalan, kehadiran, and perilaku siswa untuk membuat laporan naratif yang personal.
+                    Gemini akan menganalisis data hafalan, kehadiran, and perilaku santri untuk membuat laporan naratif yang personal.
                   </p>
                   <Button 
                     onClick={() => handleGenerateEvaluation(selectedStudent)} 

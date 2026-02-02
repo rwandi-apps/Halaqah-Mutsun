@@ -63,7 +63,7 @@ Kelompok belajar mengaji. Satu kelas formal biasanya dibagi menjadi beberapa hal
 ---
 
 ## 4. Collection: `siswa`
-Data utama siswa.
+Data utama santri.
 
 **Document ID**: Auto-generated (misal: `s_001`)
 
