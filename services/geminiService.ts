@@ -33,7 +33,7 @@ export const improveTeacherNotes = async (originalText: string): Promise<string>
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash
+      model: 'gemini-2.5-flash'
       contents: `Sempurnakan redaksi catatan guru berikut: "${originalText}"`,
       config: { 
         systemInstruction: systemInstruction,
@@ -61,7 +61,7 @@ export const improveReportRedaction = async (originalText: string): Promise<stri
     const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
     const systemInstruction = `Anda adalah EDITOR BAHASA Rapor Deskripsi SDQ. Perbaiki tata bahasa menjadi santun dan membina tanpa mengubah makna.`;
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash
+      model: 'gemini-2.5-flash'
       contents: `Sempurnakan: "${originalText}"`,
       config: { systemInstruction: systemInstruction, temperature: 0.3 }
     });
@@ -80,7 +80,7 @@ export const generateEvaluasiAI = async (reportType: string, period: string, con
   }
   const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
   const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash
+    model: 'gemini-2.5-flash'
     contents: `Analis data halaqah periode ${period}: ${contextData}`,
     config: { 
       systemInstruction: "Anda adalah Supervisor Tahfizh. Berikan evaluasi strategis dalam format JSON.",
@@ -169,7 +169,7 @@ TUGAS:
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash
+      model: 'gemini-2.5-flash'
       contents: userPrompt,
       config: { 
         systemInstruction: systemInstruction,
