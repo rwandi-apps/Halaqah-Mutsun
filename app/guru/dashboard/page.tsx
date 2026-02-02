@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { Button } from '../../../components/Button';
-import { Sparkles, Trophy, X, ChevronRight } from 'lucide-react';
+import { Sparkles, Trophy, X, ChevronRight, Share2, Copy } from 'lucide-react';
 import { 
   subscribeToStudentsByTeacher, 
   subscribeToReportsByTeacher 
@@ -9,6 +9,7 @@ import {
 import { generateStudentEvaluation } from '../../../services/geminiService';
 import { calculateSDQProgress, SDQProgressResult, extractClassLevel } from '../../../services/sdqTargets';
 import { Student, Report } from '../../../types';
+import { SURAH_LIST } from '../../../services/mockBackend';
 
 interface GuruDashboardProps {
   teacherId?: string;
@@ -21,7 +22,6 @@ interface StudentWithProgress extends Student {
 
 /**
  * 3D Pixar-style Circular Progress Component V2
- * Enhanced with SVG Gradients and Glossy finish.
  */
 const PixarCircularGauge = ({ percentage }: { percentage: number }) => {
   const radius = 26;
@@ -86,11 +86,8 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
       
       if (latestReport) {
         if (level === 1) {
-          // KOREKSI: Untuk Kelas 1, progres terbaru HANYA diambil dari Tilawah Individual
-          // Jika isinya nama Surah, engine sdqTargets akan otomatis mendeteksi 100%
           progressString = latestReport.tilawah?.individual || progressString;
         } else {
-          // Kelas 2-6: Progres terbaru diambil dari Tahfizh Individual (Sabaq)
           progressString = latestReport.tahfizh?.individual || progressString;
         }
       }
@@ -129,6 +126,18 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
     }
   };
 
+  const shareToWhatsApp = () => {
+    if (!aiEvaluation) return;
+    const text = `*LAPORAN EVALUASI HALAQAH SDQ*\n\n${aiEvaluation}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  };
+
+  const copyToClipboard = () => {
+    if (!aiEvaluation) return;
+    navigator.clipboard.writeText(aiEvaluation);
+    alert("Teks berhasil disalin ke clipboard.");
+  };
+
   return (
     <div className="space-y-6 sm:space-y-8 max-w-7xl mx-auto pb-12 px-2 sm:px-0">
       <div className="flex justify-between items-center mt-2">
@@ -138,6 +147,7 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
         </div>
       </div>
 
+      {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-gradient-to-br from-indigo-600 to-purple-700 p-4 sm:p-6 rounded-2xl shadow-lg shadow-indigo-500/20 text-white group border border-white/10">
           <p className="text-[9px] sm:text-[10px] font-bold text-indigo-100 uppercase tracking-widest mb-1 opacity-80">Total Siswa</p>
@@ -201,12 +211,6 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
                   <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{student.progressStats.label}</p>
                   <div className="flex items-center gap-1 text-primary-500"><span className="text-[9px] font-black uppercase tracking-widest">Detail</span><ChevronRight size={12} /></div>
                 </div>
-                <div className="hidden sm:flex justify-center mt-4">
-                  <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all transform translate-y-1 group-hover:translate-y-0 duration-500">
-                    <Sparkles size={12} className="text-primary-500" />
-                    <span className="text-[9px] text-primary-500 font-black uppercase tracking-widest">Evaluasi AI</span>
-                  </div>
-                </div>
               </div>
             ))
           ) : (
@@ -215,38 +219,74 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
         </div>
       </div>
 
+      {/* EVALUATION POPUP - Updated for Full Height Mobile & WA Feature */}
       {selectedStudent && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <div className="bg-white rounded-t-[2rem] sm:rounded-[2.5rem] max-w-lg w-full p-6 sm:p-10 shadow-2xl animate-in slide-in-from-bottom sm:zoom-in duration-300">
-             <div className="flex justify-between items-start mb-6 sm:mb-8">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] w-full max-w-2xl h-[92vh] sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-300">
+             {/* Header */}
+             <div className="px-6 py-6 sm:px-10 sm:py-8 border-b border-gray-100 flex justify-between items-center bg-white shrink-0">
                <div>
-                 <h3 className="text-xl sm:text-2xl font-black text-gray-900 uppercase tracking-tighter">Evaluasi Siswa</h3>
-                 <p className="text-xs sm:text-sm text-gray-500 font-bold">{selectedStudent.name}</p>
+                 <div className="flex items-center gap-2 mb-1">
+                   <Sparkles size={14} className="text-primary-500" />
+                   <h3 className="text-lg sm:text-2xl font-black text-gray-900 uppercase tracking-tighter leading-none">Evaluasi Naratif</h3>
+                 </div>
+                 <p className="text-xs sm:text-sm text-gray-500 font-bold uppercase tracking-wide opacity-70">{selectedStudent.name} • {selectedStudent.className}</p>
                </div>
-               <button onClick={() => { setSelectedStudent(null); setAiEvaluation(null); }} className="p-2 bg-gray-100 hover:bg-gray-200 rounded-xl sm:rounded-2xl transition-all">
-                  <X size={18} className="text-gray-600 sm:w-5 sm:h-5" />
+               <button onClick={() => { setSelectedStudent(null); setAiEvaluation(null); }} className="p-2.5 bg-gray-100 hover:bg-gray-200 rounded-2xl transition-all">
+                  <X size={20} className="text-gray-600 sm:w-6 sm:h-6" />
                </button>
              </div>
-             {!aiEvaluation ? (
-               <div className="text-center pb-8 sm:pb-0">
-                 <div className="w-16 h-16 sm:w-20 sm:h-20 bg-primary-50 rounded-[1.25rem] sm:rounded-[1.5rem] flex items-center justify-center mx-auto mb-5 sm:mb-6 text-primary-600 border border-primary-100 shadow-inner">
-                    <Sparkles size={32} className="sm:w-10 sm:h-10 animate-pulse" />
+
+             {/* Content Area */}
+             <div className="flex-1 overflow-y-auto custom-scrollbar p-6 sm:p-10">
+               {!aiEvaluation ? (
+                 <div className="h-full flex flex-col items-center justify-center text-center">
+                   <div className="w-20 h-20 sm:w-28 sm:h-28 bg-primary-50 rounded-[2rem] sm:rounded-[2.5rem] flex items-center justify-center mb-6 text-primary-600 border border-primary-100 shadow-inner">
+                      <Sparkles size={40} className="sm:w-16 sm:h-16 animate-pulse" />
+                   </div>
+                   <h4 className="text-lg sm:text-xl font-black text-gray-800 mb-3">Siap Generate Evaluasi?</h4>
+                   <p className="text-sm sm:text-base text-gray-500 mb-10 max-w-xs mx-auto font-medium leading-relaxed">
+                     AI akan menyusun kalimat naratif yang personal untuk Ayah dan Bunda berdasarkan progres <span className="font-black text-primary-600">{selectedStudent.progressStats.percentage}%</span> bulan ini.
+                   </p>
+                   <Button onClick={() => handleGenerateEvaluation(selectedStudent)} isLoading={isGenerating} className="w-full sm:w-auto px-12 py-5 rounded-2xl text-sm font-black uppercase tracking-widest shadow-xl shadow-primary-500/20">
+                      Mulai Analisis AI
+                   </Button>
                  </div>
-                 <p className="text-xs sm:text-sm text-gray-600 mb-8 sm:mb-10 font-medium leading-relaxed px-4">
-                   Ingin membuat evaluasi naratif otomatis berdasarkan capaian <span className="font-black text-primary-600">{selectedStudent.progressStats.percentage}%</span> bulan ini?
-                 </p>
-                 <Button onClick={() => handleGenerateEvaluation(selectedStudent)} isLoading={isGenerating} className="w-full py-4 sm:py-5 rounded-[1rem] sm:rounded-[1.25rem] text-xs sm:text-sm font-black uppercase tracking-widest shadow-xl shadow-primary-500/10">
-                    Buat Evaluasi AI
+               ) : (
+                 <div className="space-y-8 animate-in fade-in zoom-in duration-500">
+                   <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white shrink-0">
+                        <Trophy size={16} />
+                      </div>
+                      <p className="text-xs font-bold text-emerald-800">Evaluasi naratif berhasil dibuat! Silakan tinjau dan bagikan ke orang tua.</p>
+                   </div>
+                   
+                   <div className="bg-gray-50/80 p-6 sm:p-8 rounded-[2rem] text-[13px] sm:text-[15px] whitespace-pre-wrap leading-relaxed font-medium text-gray-700 shadow-inner border border-gray-100 relative group">
+                     {aiEvaluation}
+                     <button 
+                        onClick={copyToClipboard}
+                        className="absolute top-4 right-4 p-2 bg-white rounded-xl shadow-sm border border-gray-100 text-gray-400 hover:text-primary-600 transition-colors"
+                        title="Salin Teks"
+                      >
+                        <Copy size={16} />
+                     </button>
+                   </div>
+                 </div>
+               )}
+             </div>
+
+             {/* Footer Actions */}
+             {aiEvaluation && (
+               <div className="px-6 py-6 sm:px-10 sm:py-8 border-t border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row gap-3 shrink-0">
+                 <Button 
+                   onClick={shareToWhatsApp} 
+                   className="flex-1 py-4 sm:py-5 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-xs sm:text-sm font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20"
+                 >
+                   <Share2 size={18} className="mr-2" /> Kirim ke WhatsApp
                  </Button>
-               </div>
-             ) : (
-               <div className="space-y-6 pb-8 sm:pb-0">
-                 <div className="bg-gray-50 p-4 sm:p-6 rounded-[1.25rem] sm:rounded-[1.5rem] text-xs sm:text-sm whitespace-pre-wrap leading-relaxed max-h-[50vh] sm:max-h-[40vh] overflow-y-auto custom-scrollbar font-medium text-gray-700 shadow-inner border border-gray-100">
-                   {aiEvaluation}
-                 </div>
-                 <div className="flex gap-3">
-                   <Button variant="secondary" onClick={() => setAiEvaluation(null)} className="flex-1 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-xs">Ulangi</Button>
-                   <Button className="flex-1 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-xs" onClick={() => setSelectedStudent(null)}>Tutup</Button>
+                 <div className="flex gap-2 sm:gap-3">
+                    <Button variant="secondary" onClick={() => setAiEvaluation(null)} className="flex-1 py-4 sm:py-5 border-gray-200 rounded-2xl font-bold text-xs">Ulangi AI</Button>
+                    <Button variant="secondary" className="flex-1 py-4 sm:py-5 border-gray-200 rounded-2xl font-bold text-xs" onClick={() => setSelectedStudent(null)}>Tutup</Button>
                  </div>
                </div>
              )}
