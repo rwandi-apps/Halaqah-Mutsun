@@ -266,15 +266,15 @@ export default function CoordinatorReportsPage() {
                     <td className="px-2 py-4 text-center border-r font-black text-violet-600 bg-violet-50/30">
                       {getStoredOrCalculatedResult(report, 'tahfizh')}
                     </td>
+                    <td className="px-3 py-4 text-center border-r">
+                      {getStatusBadge(report)}
+                    </td>
                     {/* NEW COLUMNS: HADIR & ADAB */}
                     <td className="px-3 py-4 text-center border-r font-black text-blue-600 bg-blue-50/10">
                       {report.attendance || 0}%
                     </td>
                     <td className="px-3 py-4 text-center border-r font-black text-amber-600 bg-amber-50/10">
                       {report.behaviorScore || 0}/10
-                    </td>
-                    <td className="px-3 py-4 text-center border-r">
-                      {getStatusBadge(report)}
                     </td>
                     <td className="px-3 py-4 italic text-gray-500 truncate max-w-[200px]" title={report.notes}>
                       {report.notes || "-"}
