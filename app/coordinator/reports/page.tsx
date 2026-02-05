@@ -211,9 +211,9 @@ export default function CoordinatorReportsPage() {
                 <th rowSpan={2} className="px-3 py-4 border-r border-white/10">JML HAFALAN</th>
                 <th colSpan={3} className="px-3 py-2 border-r border-white/10 bg-indigo-800">TILAWAH</th>
                 <th colSpan={3} className="px-3 py-2 border-r border-white/10 bg-violet-800">TAHFIZH</th>
+                <th rowSpan={2} className="px-3 py-4 border-r border-white/10">KET</th>
                 <th rowSpan={2} className="px-3 py-4 border-r border-white/10">HADIR</th>
                 <th rowSpan={2} className="px-3 py-4 border-r border-white/10">ADAB</th>
-                <th rowSpan={2} className="px-3 py-4 border-r border-white/10">KET</th>
                 <th rowSpan={2} className="px-3 py-4">CATATAN GURU</th>
               </tr>
               {/* Row 2 Header */}
