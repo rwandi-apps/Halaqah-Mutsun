@@ -3,7 +3,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { Report, User } from '../../../types';
 import { getAllTeachers, subscribeToReportsByTeacher } from '../../../services/firestoreService';
 import { SDQQuranEngine } from '../../../services/tahfizh/engine';
-import { Search, Loader2, AlertCircle, CheckCircle2, Filter, Calendar, Users, BookOpen } from 'lucide-react';
+import { Search, Loader2, AlertCircle, CheckCircle2, Filter, Calendar, Users, BookOpen, Heart, Star } from 'lucide-react';
 
 const ACADEMIC_YEARS = ["2023/2024", "2024/2025", "2025/2026"];
 const MONTHS = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
@@ -112,7 +112,7 @@ export default function CoordinatorReportsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-full mx-auto pb-12 px-2 animate-in fade-in duration-500">
+    <div className="space-y-6 max-full mx-auto pb-12 px-2 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-2xl font-black text-gray-900 tracking-tight uppercase">Monitoring Laporan Halaqah</h2>
@@ -211,6 +211,8 @@ export default function CoordinatorReportsPage() {
                 <th rowSpan={2} className="px-3 py-4 border-r border-white/10">JML HAFALAN</th>
                 <th colSpan={3} className="px-3 py-2 border-r border-white/10 bg-indigo-800">TILAWAH</th>
                 <th colSpan={3} className="px-3 py-2 border-r border-white/10 bg-violet-800">TAHFIZH</th>
+                <th rowSpan={2} className="px-3 py-4 border-r border-white/10">HADIR</th>
+                <th rowSpan={2} className="px-3 py-4 border-r border-white/10">ADAB</th>
                 <th rowSpan={2} className="px-3 py-4 border-r border-white/10">KET</th>
                 <th rowSpan={2} className="px-3 py-4">CATATAN GURU</th>
               </tr>
@@ -227,14 +229,14 @@ export default function CoordinatorReportsPage() {
             <tbody className="divide-y divide-gray-100 text-[10px]">
               {isLoading ? (
                 <tr>
-                  <td colSpan={11} className="px-6 py-20 text-center">
+                  <td colSpan={13} className="px-6 py-20 text-center">
                     <Loader2 size={32} className="text-primary-500 animate-spin mx-auto" />
                     <p className="mt-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Memuat Data Laporan...</p>
                   </td>
                 </tr>
               ) : !selectedTeacherId ? (
                 <tr>
-                  <td colSpan={11} className="px-6 py-24 text-center text-gray-400 uppercase italic font-bold">
+                  <td colSpan={13} className="px-6 py-24 text-center text-gray-400 uppercase italic font-bold">
                     Silakan Pilih Guru Terlebih Dahulu
                   </td>
                 </tr>
@@ -264,6 +266,13 @@ export default function CoordinatorReportsPage() {
                     <td className="px-2 py-4 text-center border-r font-black text-violet-600 bg-violet-50/30">
                       {getStoredOrCalculatedResult(report, 'tahfizh')}
                     </td>
+                    {/* NEW COLUMNS: HADIR & ADAB */}
+                    <td className="px-3 py-4 text-center border-r font-black text-blue-600 bg-blue-50/10">
+                      {report.attendance || 0}%
+                    </td>
+                    <td className="px-3 py-4 text-center border-r font-black text-amber-600 bg-amber-50/10">
+                      {report.behaviorScore || 0}/10
+                    </td>
                     <td className="px-3 py-4 text-center border-r">
                       {getStatusBadge(report)}
                     </td>
@@ -274,7 +283,7 @@ export default function CoordinatorReportsPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={11} className="px-6 py-24 text-center text-gray-400 uppercase italic font-bold">
+                  <td colSpan={13} className="px-6 py-24 text-center text-gray-400 uppercase italic font-bold">
                     Data Laporan Tidak Ditemukan Untuk Periode Ini
                   </td>
                 </tr>
