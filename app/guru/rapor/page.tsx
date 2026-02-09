@@ -150,7 +150,7 @@ const GuruRaporPage: React.FC<GuruRaporProps> = ({ teacherId, teacherName }) => 
            </div>
         </div>
 
-        <div className="bg-white p-12 sm:p-16 shadow-2xl border border-gray-100 mx-auto w-full max-w-[210mm] print:shadow-none print:border-none print:p-0 print:mx-0 min-h-[297mm] font-serif text-gray-900 overflow-hidden">
+        <div className="bg-white p-12 sm:p-16 shadow-2xl border border-gray-100 mx-auto w-full max-w-[210mm] print:shadow-none print:border-none print:p-0 print:mx-0 min-h-[297mm] font-sans text-gray-900 overflow-hidden">
            
            {isDescriptionFormat ? (
              <div className="space-y-6">
