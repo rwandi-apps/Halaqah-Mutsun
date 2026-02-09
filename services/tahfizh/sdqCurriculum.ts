@@ -1,16 +1,7 @@
 
 export const SDQ_SURAH_ORDER = [
-  // 1. Juz 30 SDQ (Reversed)
-  "An-Nas", "Al-Falaq", "An-Nasr", "Al-Lahab", "Al-Ikhlas",
-  "Al-Kafirun", "Al-Kautsar", "Al-Ma'un", "Quraisy", "Al-Fil",
-  "Al-Humazah", "Al-'Asr", "At-Takatsur", "Al-Qari'ah",
-  "Al-'Adiyat", "Az-Zalzalah", "Al-Bayyinah",
-  "Al-Qadr", "Al-'Alaq", "At-Tin", "Al-Insyirah",
-  "Ad-Duha", "Al-Lail", "Asy-Syams", "Al-Balad",
-  "Al-Fajr", "Al-Ghasyiyah", "Al-A'la",
-  "Ath-Thariq", "Al-Buruj", "Al-Insyiqaq",
-  "Al-Muthaffifin", "Al-Infitar",
-  "At-Takwir", "'Abasa", "An-Nazi'at", "An-Naba'",
+  // 1. Juz 30 SDQ (Reversed for Sabaq calculation)
+  "An-Naba'", "An-Nazi'at", "'Abasa", "At-Takwir", "Al-Infitar", "Al-Muthaffifin", "Al-Insyiqaq", "Al-Buruj", "Ath-Thariq", "Al-A'la", "Al-Ghasyiyah", "Al-Fajr", "Al-Balad", "Asy-Syams", "Al-Lail", "Ad-Duha", "Al-Insyirah", "At-Tin", "Al-'Alaq", "Al-Qadr", "Al-Bayyinah", "Az-Zalzalah", "Al-Bayyinah", "Al-Qadr", "Al-'Alaq", "At-Tin", "Al-Insyirah", "Ad-Duha", "Al-Lail", "Asy-Syams", "Al-Balad", "Al-Fajr", "Al-Ghasyiyah", "Al-A'la", "Ath-Thariq", "Al-Buruj", "Al-Insyiqaq", "Al-Muthaffifin", "Al-Infitar", "At-Takwir", "'Abasa", "An-Nazi'at", "An-Naba'",
 
   // 2. Juz 29 SDQ
   "Al-Mulk", "Al-Qalam", "Al-Haqqah", "Al-Ma'arij",
@@ -22,7 +13,7 @@ export const SDQ_SURAH_ORDER = [
   "As-Saff", "Al-Jumu'ah", "Al-Munafiqun",
   "At-Taghabun", "At-Talaq", "At-Tahrim",
 
-  // 4. Juz 27 SDQ
+  // 4. Juz 27 SDQ (Dimulai dari Adz-Dzariyat 1 sesuai permintaan)
   "Adz-Dzariyat", "At-Tur", "An-Najm", "Al-Qamar", 
   "Ar-Rahman", "Al-Waqi'ah", "Al-Hadid",
 
