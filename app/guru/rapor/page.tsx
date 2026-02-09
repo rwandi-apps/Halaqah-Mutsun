@@ -18,7 +18,7 @@ const GuruRaporPage: React.FC<GuruRaporProps> = ({ teacherId, teacherName }) => 
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
   const [search, setSearch] = useState('');
   
-  // STATE BARU: Pilihan Semester
+  // STATE: Pilihan Semester
   const [selectedSemester, setSelectedSemester] = useState<'Ganjil' | 'Genap'>('Ganjil');
   
   const [viewingReport, setViewingReport] = useState<SemesterReport | null>(null);
@@ -28,9 +28,17 @@ const GuruRaporPage: React.FC<GuruRaporProps> = ({ teacherId, teacherName }) => 
 
   const DEFAULT_YEAR = '2025 / 2026';
 
-  // LOGIKA BARU: Sanitasi Tahun (Menghapus spasi dan garis miring)
-  // Menghasilkan format "20252026" agar sinkron dengan ID di Firestore
+  // HELPER: Sanitasi Tahun
   const getCleanYear = (year: string) => year.replace(/[\s/]/g, '');
+
+  // HELPER: Mengubah Teks menjadi Title Case (Huruf Besar di Awal Kata)
+  const toTitleCase = (str: string = '') => {
+    return str
+      .toLowerCase()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
 
   useEffect(() => {
     if (teacherId) {
@@ -47,8 +55,6 @@ const GuruRaporPage: React.FC<GuruRaporProps> = ({ teacherId, teacherName }) => 
 
   const handleViewReport = async (student: Student, index: number) => {
     setIsLoading(true);
-    
-    // Gunakan tahun yang sudah dibersihkan dan semester dari state
     const cleanYear = getCleanYear(DEFAULT_YEAR);
     const report = await getSemesterReport(student.id, cleanYear, selectedSemester);
     
@@ -63,7 +69,6 @@ const GuruRaporPage: React.FC<GuruRaporProps> = ({ teacherId, teacherName }) => 
   };
 
   const handleEditReport = (student: Student) => {
-    // Navigasi ke input nilai dengan membawa state studentId dan semester
     navigate('/guru/grades', { state: { studentId: student.id, semester: selectedSemester } });
   };
 
@@ -136,7 +141,7 @@ const GuruRaporPage: React.FC<GuruRaporProps> = ({ teacherId, teacherName }) => 
                 <ChevronLeft size={24} />
               </button>
               <div className="px-4 text-sm font-bold text-gray-700 border-x text-center min-w-[200px]">
-                {selectedStudent.name} <br/>
+                {toTitleCase(selectedStudent.name)} <br/>
                 <span className="text-[10px] text-primary-600 uppercase tracking-widest">{viewingReport.semester}</span>
               </div>
               <button onClick={goToNext} disabled={currentIndex === filteredStudents.length - 1} className="p-2 hover:bg-gray-100 rounded-lg disabled:opacity-30 transition-colors">
@@ -150,9 +155,14 @@ const GuruRaporPage: React.FC<GuruRaporProps> = ({ teacherId, teacherName }) => 
            </div>
         </div>
 
-        <div className="bg-white p-12 sm:p-16 shadow-2xl border border-gray-100 mx-auto w-full max-w-[210mm] print:shadow-none print:border-none print:p-0 print:mx-0 min-h-[297mm] font-sans text-gray-900 overflow-hidden">
+        {/* PAPER CONTAINER - Style Font Arial diterapkan di sini */}
+        <div 
+          className="bg-white p-12 sm:p-16 shadow-2xl border border-gray-100 mx-auto w-full max-w-[210mm] print:shadow-none print:border-none print:p-0 print:mx-0 min-h-[297mm] text-gray-900 overflow-hidden"
+          style={{ fontFamily: 'Arial, sans-serif' }}
+        >
            
            {isDescriptionFormat ? (
+             /* FORMAT KELAS 1-3: DESKRIPSI */
              <div className="space-y-6">
                 <div className="text-center space-y-1 mb-10">
                    <h1 className="text-xl font-bold uppercase tracking-widest">Laporan Perkembangan Belajar</h1>
@@ -160,8 +170,8 @@ const GuruRaporPage: React.FC<GuruRaporProps> = ({ teacherId, teacherName }) => 
                    <h3 className="text-lg font-bold uppercase pt-1">Tahun Pelajaran {viewingReport.academicYear.replace(/\s/g, '')}</h3>
                 </div>
                 <div className="space-y-1 text-sm font-bold mb-8">
-                   <div className="flex"><span className="w-32">Nama Siswa</span><span className="mr-2">:</span><span className="uppercase">{selectedStudent.name}</span></div>
-                   <div className="flex"><span className="w-32">Kelas</span><span className="mr-2">:</span><span className="uppercase">{selectedStudent.className}</span></div>
+                   <div className="flex"><span className="w-32">Nama Siswa</span><span className="mr-2">:</span><span>{toTitleCase(selectedStudent.name)}</span></div>
+                   <div className="flex"><span className="w-32">Kelas</span><span className="mr-2">:</span><span>{toTitleCase(selectedStudent.className)}</span></div>
                    <div className="flex"><span className="w-32">Semester</span><span className="mr-2">:</span><span>{viewingReport.semester}</span></div>
                 </div>
                 <div className="space-y-6">
@@ -187,6 +197,7 @@ const GuruRaporPage: React.FC<GuruRaporProps> = ({ teacherId, teacherName }) => 
                 </div>
              </div>
            ) : (
+             /* FORMAT KELAS 4-6: TABEL */
              <div className="space-y-6">
                 <div className="text-center space-y-1 mb-10">
                    <h1 className="text-xl font-bold uppercase tracking-widest">Laporan Penilaian Al-Quran</h1>
@@ -194,16 +205,17 @@ const GuruRaporPage: React.FC<GuruRaporProps> = ({ teacherId, teacherName }) => 
                    <h3 className="text-lg font-bold uppercase pt-1">Tahun Pelajaran {viewingReport.academicYear.replace(/\s/g, '')}</h3>
                 </div>
 
+                {/* GRID HEADER: Sisi kanan diatur agar menempel ke margin kanan tabel */}
                 <div className="grid grid-cols-2 gap-x-12 mb-8 text-[13px] font-bold text-gray-800">
                    <div className="space-y-1">
-                      <div className="flex"><span className="w-40 shrink-0">Nama Siswa</span><span className="mr-2">:</span><span className="uppercase">{selectedStudent.name}</span></div>
+                      <div className="flex"><span className="w-40 shrink-0">Nama Siswa</span><span className="mr-2">:</span><span>{toTitleCase(selectedStudent.name)}</span></div>
                       <div className="flex whitespace-nowrap"><span className="w-40 shrink-0">Nomor Induk / NISN</span><span className="mr-2">:</span><span>{selectedStudent.nis || '-'} / {selectedStudent.nisn || '-'}</span></div>
-                      <div className="flex"><span className="w-40 shrink-0">Kelas</span><span className="mr-2">:</span><span className="uppercase">{selectedStudent.className}</span></div>
+                      <div className="flex"><span className="w-40 shrink-0">Kelas</span><span className="mr-2">:</span><span>{toTitleCase(selectedStudent.className)}</span></div>
                    </div>
-                   <div className="space-y-1">
-                      <div className="flex"><span className="w-32 shrink-0">Tahun Ajaran</span><span className="mr-2">:</span><span>{viewingReport.academicYear}</span></div>
-                      <div className="flex"><span className="w-32 shrink-0">Semester</span><span className="mr-2">:</span><span>{viewingReport.semester}</span></div>
-                      <div className="flex"><span className="w-32 shrink-0">Target Hafalan</span><span className="mr-2">:</span><span>{viewingReport.targetHafalan}</span></div>
+                   <div className="space-y-1 ml-auto w-full max-w-[250px]">
+                      <div className="flex justify-between"><span>Tahun Ajaran</span><span>: {viewingReport.academicYear}</span></div>
+                      <div className="flex justify-between"><span>Semester</span><span>: {viewingReport.semester}</span></div>
+                      <div className="flex justify-between"><span>Target Hafalan</span><span>: {viewingReport.targetHafalan}</span></div>
                    </div>
                 </div>
 
@@ -298,7 +310,7 @@ const GuruRaporPage: React.FC<GuruRaporProps> = ({ teacherId, teacherName }) => 
           />
         </div>
 
-        {/* UI BARU: Semester Selector (Tabs) */}
+        {/* Semester Selector (Tabs) */}
         <div className="flex items-center gap-2 p-1 bg-gray-100 rounded-2xl shrink-0">
           <button 
             onClick={() => setSelectedSemester('Ganjil')}
@@ -340,8 +352,12 @@ const GuruRaporPage: React.FC<GuruRaporProps> = ({ teacherId, teacherName }) => 
                       {student.name.charAt(0)}
                     </div>
                     <div>
-                       <h3 className="font-black text-gray-900 uppercase tracking-tight group-hover:text-primary-600 transition-colors">{student.name}</h3>
-                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{student.className}</p>
+                       <h3 className="font-black text-gray-900 uppercase tracking-tight group-hover:text-primary-600 transition-colors">
+                          {toTitleCase(student.name)}
+                       </h3>
+                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                          {toTitleCase(student.className)}
+                       </p>
                     </div>
                  </div>
                  <span className="px-2 py-1 bg-gray-50 rounded-lg text-[8px] font-black text-gray-400 border border-gray-100 uppercase tracking-widest">
