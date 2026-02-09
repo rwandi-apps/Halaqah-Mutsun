@@ -20,9 +20,10 @@ const SDQ_CURRICULUM_ORDER = [
   "Al-Mulk", "Al-Qalam", "Al-Haqqah", "Al-Ma'arij", "Nuh", "Al-Jinn", "Al-Muzzammil", "Al-Muddassir", "Al-Qiyamah", "Al-Insan", "Al-Mursalat",
   // Juz 28
   "Al-Mujadilah", "Al-Hasyr", "Al-Mumtahanah", "As-Saff", "Al-Jumu'ah", "Al-Munafiqun", "At-Taghabun", "At-Talaq", "At-Tahrim",
-  // Juz 27 & 26 (Special handling Adz-Dzariyat di kode engine)
-  "Adz-Dzariyat_31_60", "At-Tur", "An-Najm", "Al-Qamar", "Ar-Rahman", "Al-Waqi'ah", "Al-Hadid",
-  "Al-Ahqaf", "Muhammad", "Al-Fath", "Al-Hujurat", "Qaf", "Adz-Dzariyat_1_30",
+  // Juz 27 (Dimulai dari Adz-Dzariyat Ayat 1 sesuai permintaan)
+  "Adz-Dzariyat", "At-Tur", "An-Najm", "Al-Qamar", "Ar-Rahman", "Al-Waqi'ah", "Al-Hadid",
+  // Juz 26
+  "Al-Ahqaf", "Muhammad", "Al-Fath", "Al-Hujurat", "Qaf",
   // 1 - 25 Linear
   "Al-Fatihah", "Al-Baqarah", "Ali 'Imran", "An-Nisa'", "Al-Ma'idah", "Al-An'am", "Al-A'raf", "Al-Anfal", "At-Taubah", "Yunus", "Hud", "Yusuf", "Ar-Ra'd", "Ibrahim", "Al-Hijr", "An-Nahl", "Al-Isra'", "Al-Kahf", "Maryam", "Ta-Ha", "Al-Anbiya'", "Al-Hajj", "Al-Mu'minun", "An-Nur", "Al-Furqan", "Asy-Syu'ara'", "An-Naml", "Al-Qasas", "Al-'Ankabut", "Ar-Rum", "Luqman", "As-Sajdah", "Al-Ahzab", "Saba'", "Fatir", "Ya-Sin", "As-Saffat", "Sad", "Az-Zumar", "Ghafir", "Fussilat", "Asy-Syura", "Az-Zukhruf", "Ad-Dukhan", "Al-Jasiyah"
 ];
@@ -44,33 +45,19 @@ export class SDQQuranEngine {
     const surahName = this.normalizeSurahName(surahRaw);
     if (!surahName) return 0;
 
-    // Tentukan Array Urutan berdasarkan Mode
     const orderArray = mode === 'tahfizh' ? SDQ_CURRICULUM_ORDER : STANDARD_SURAH_ORDER;
-
-    // Handle split Adz-Dzariyat (Hanya berlaku di mode Tahfizh / SDQ Curriculum)
-    let lookupName = surahName;
-    if (mode === 'tahfizh' && surahName === "Adz-Dzariyat") {
-      lookupName = ayahNum <= 30 ? "Adz-Dzariyat_1_30" : "Adz-Dzariyat_31_60";
-    }
 
     // Hitung posisi di kurikulum/urutan
     let totalLinesBefore = 0;
-    const currentIndex = orderArray.indexOf(lookupName);
+    const currentIndex = orderArray.indexOf(surahName);
     
     if (currentIndex === -1) return 0;
 
     for (let i = 0; i < currentIndex; i++) {
       const sName = orderArray[i];
-      const realName = sName.split('_')[0];
-      const meta = QURAN_METADATA[realName];
+      const meta = QURAN_METADATA[sName];
       if (meta) {
-        if (mode === 'tahfizh' && sName.includes("_1_30")) {
-           totalLinesBefore += 11; // Estimasi 11 baris untuk 1-30 (Tahfizh)
-        } else if (mode === 'tahfizh' && sName.includes("_31_60")) {
-           totalLinesBefore += 11; // Estimasi 11 baris untuk 31-60 (Tahfizh)
-        } else {
-           totalLinesBefore += (meta.endPage - meta.startPage) * this.LINES_PER_PAGE + 15;
-        }
+        totalLinesBefore += (meta.endPage - meta.startPage) * this.LINES_PER_PAGE + 15;
       }
     }
 
