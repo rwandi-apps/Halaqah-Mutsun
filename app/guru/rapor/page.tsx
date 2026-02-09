@@ -5,7 +5,7 @@ import { Student, SemesterReport } from '../../../types';
 import { getStudentsByTeacher, getSemesterReport, deleteSemesterReport } from '../../../services/firestoreService';
 import { extractClassLevel } from '../../../services/sdqTargets';
 import { Button } from '../../../components/Button';
-import { FileText, Printer, ArrowLeft, Search, ChevronLeft, ChevronRight, Edit2, Trash2 } from 'lucide-react';
+import { FileText, Printer, ArrowLeft, Search, ChevronLeft, ChevronRight, Edit2, Trash2, CalendarDays } from 'lucide-react';
 
 interface GuruRaporProps {
   teacherId?: string;
@@ -17,12 +17,20 @@ const GuruRaporPage: React.FC<GuruRaporProps> = ({ teacherId, teacherName }) => 
   const [students, setStudents] = useState<Student[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
   const [search, setSearch] = useState('');
+  
+  // STATE BARU: Pilihan Semester
+  const [selectedSemester, setSelectedSemester] = useState<'Ganjil' | 'Genap'>('Ganjil');
+  
   const [viewingReport, setViewingReport] = useState<SemesterReport | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [isLoading, setIsLoading] = useState(false);
 
   const DEFAULT_YEAR = '2025 / 2026';
+
+  // LOGIKA BARU: Sanitasi Tahun (Menghapus spasi dan garis miring)
+  // Menghasilkan format "20252026" agar sinkron dengan ID di Firestore
+  const getCleanYear = (year: string) => year.replace(/[\s/]/g, '');
 
   useEffect(() => {
     if (teacherId) {
@@ -39,26 +47,33 @@ const GuruRaporPage: React.FC<GuruRaporProps> = ({ teacherId, teacherName }) => 
 
   const handleViewReport = async (student: Student, index: number) => {
     setIsLoading(true);
-    const report = await getSemesterReport(student.id, DEFAULT_YEAR, 'Ganjil');
+    
+    // Gunakan tahun yang sudah dibersihkan dan semester dari state
+    const cleanYear = getCleanYear(DEFAULT_YEAR);
+    const report = await getSemesterReport(student.id, cleanYear, selectedSemester);
+    
     if (report) {
       setViewingReport(report);
       setSelectedStudent(student);
       setCurrentIndex(index);
     } else {
-      alert(`Data rapor belum diinput untuk ${student.name} pada tahun ajaran ${DEFAULT_YEAR}.`);
+      alert(`Data rapor ${selectedSemester} belum diinput untuk ${student.name} pada tahun ajaran ${DEFAULT_YEAR}.`);
     }
     setIsLoading(false);
   };
 
   const handleEditReport = (student: Student) => {
-    navigate('/guru/grades', { state: { studentId: student.id } });
+    // Navigasi ke input nilai dengan membawa state studentId dan semester
+    navigate('/guru/grades', { state: { studentId: student.id, semester: selectedSemester } });
   };
 
   const handleDeleteReport = async (student: Student) => {
-    if (!window.confirm(`Apakah Anda yakin ingin menghapus rapor ${student.name}?`)) return;
+    if (!window.confirm(`Apakah Anda yakin ingin menghapus rapor ${selectedSemester} ${student.name}?`)) return;
+    
     setIsLoading(true);
     try {
-      await deleteSemesterReport(student.id, DEFAULT_YEAR, 'Ganjil');
+      const cleanYear = getCleanYear(DEFAULT_YEAR);
+      await deleteSemesterReport(student.id, cleanYear, selectedSemester);
       alert("Rapor berhasil dihapus.");
       setViewingReport(null);
       setSelectedStudent(null);
@@ -106,6 +121,7 @@ const GuruRaporPage: React.FC<GuruRaporProps> = ({ teacherId, teacherName }) => 
   const level = selectedStudent ? extractClassLevel(selectedStudent.className) : 0;
   const isDescriptionFormat = level >= 1 && level <= 3;
 
+  // VIEW MODE: Rapor Detail
   if (viewingReport && selectedStudent) {
     const signatureName = cleanTeacherName(teacherName);
 
@@ -119,8 +135,9 @@ const GuruRaporPage: React.FC<GuruRaporProps> = ({ teacherId, teacherName }) => 
               <button onClick={goToPrev} disabled={currentIndex === 0} className="p-2 hover:bg-gray-100 rounded-lg disabled:opacity-30 transition-colors">
                 <ChevronLeft size={24} />
               </button>
-              <div className="px-4 text-sm font-bold text-gray-700 border-x">
-                {selectedStudent.name} ({currentIndex + 1}/{filteredStudents.length})
+              <div className="px-4 text-sm font-bold text-gray-700 border-x text-center min-w-[200px]">
+                {selectedStudent.name} <br/>
+                <span className="text-[10px] text-primary-600 uppercase tracking-widest">{viewingReport.semester}</span>
               </div>
               <button onClick={goToNext} disabled={currentIndex === filteredStudents.length - 1} className="p-2 hover:bg-gray-100 rounded-lg disabled:opacity-30 transition-colors">
                 <ChevronRight size={24} />
@@ -177,7 +194,6 @@ const GuruRaporPage: React.FC<GuruRaporProps> = ({ teacherId, teacherName }) => 
                    <h3 className="text-lg font-bold uppercase pt-1">Tahun Pelajaran {viewingReport.academicYear.replace(/\s/g, '')}</h3>
                 </div>
 
-                {/* Updated Grid for Class 4-6 as requested: Name/Year, NISN/Semester, Class/Target */}
                 <div className="grid grid-cols-2 gap-x-12 mb-8 text-[13px] font-bold text-gray-800">
                    <div className="space-y-1">
                       <div className="flex"><span className="w-40 shrink-0">Nama Siswa</span><span className="mr-2">:</span><span className="uppercase">{selectedStudent.name}</span></div>
@@ -214,7 +230,6 @@ const GuruRaporPage: React.FC<GuruRaporProps> = ({ teacherId, teacherName }) => 
                    </tbody>
                 </table>
 
-                {/* Updated Status Hafalan Table matching screenshot exactly */}
                 <table className="w-full border-2 border-gray-900 text-center text-[12px] font-bold border-collapse">
                    <thead>
                       <tr className="border-b-2 border-gray-900">
@@ -259,37 +274,112 @@ const GuruRaporPage: React.FC<GuruRaporProps> = ({ teacherId, teacherName }) => 
     );
   }
 
+  // LIST MODE: Daftar Siswa
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="max-w-7xl mx-auto space-y-6 pb-12 px-2">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Laporan Rapor</h2>
-          <p className="text-gray-500 mt-1">Format deskripsi untuk kelas 1-3 dan format tabel untuk kelas 4-6.</p>
+          <h2 className="text-2xl font-black text-gray-900 tracking-tight uppercase">Arsip Rapor Semester</h2>
+          <p className="text-gray-500 text-sm mt-1">Pilih periode dan lihat capaian penilaian Al-Quran santri.</p>
         </div>
       </div>
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex items-center gap-4">
-        <Search className="text-gray-400" size={20} />
-        <input type="text" placeholder="Cari nama siswa..." value={search} onChange={(e) => setSearch(e.target.value)} className="flex-1 outline-none bg-transparent text-sm"/>
+
+      {/* FILTER BAR: Search + Semester Selector */}
+      <div className="bg-white p-4 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col md:flex-row gap-6">
+        {/* Search */}
+        <div className="flex-1 flex items-center gap-3 bg-gray-50 px-5 py-3 rounded-2xl border border-gray-100 focus-within:border-primary-300 focus-within:ring-2 focus-within:ring-primary-500/5 transition-all">
+          <Search className="text-gray-400 shrink-0" size={18} />
+          <input 
+            type="text" 
+            placeholder="Cari nama siswa..." 
+            value={search} 
+            onChange={(e) => setSearch(e.target.value)} 
+            className="flex-1 outline-none bg-transparent text-sm font-bold"
+          />
+        </div>
+
+        {/* UI BARU: Semester Selector (Tabs) */}
+        <div className="flex items-center gap-2 p-1 bg-gray-100 rounded-2xl shrink-0">
+          <button 
+            onClick={() => setSelectedSemester('Ganjil')}
+            className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${selectedSemester === 'Ganjil' ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+          >
+            Ganjil
+          </button>
+          <button 
+            onClick={() => setSelectedSemester('Genap')}
+            className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${selectedSemester === 'Genap' ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+          >
+            Genap
+          </button>
+        </div>
+        
+        {/* Info Box */}
+        <div className="flex items-center gap-3 px-4 py-2 bg-primary-50 rounded-2xl border border-primary-100">
+           <CalendarDays className="text-primary-500" size={18} />
+           <div className="flex flex-col">
+              <span className="text-[8px] font-black text-primary-400 uppercase tracking-widest leading-none">Tahun Ajaran</span>
+              <span className="text-xs font-black text-primary-700 leading-tight">{DEFAULT_YEAR}</span>
+           </div>
+        </div>
       </div>
+
+      {/* Grid Kartu Siswa */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredStudents.map((student, index) => (
-          <div key={student.id} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all group">
-            <div className="flex items-center gap-4 mb-4">
-               <div className="w-12 h-12 rounded-full bg-primary-50 text-primary-600 flex items-center justify-center font-bold text-lg">{student.name.charAt(0)}</div>
-               <div>
-                  <h3 className="font-bold text-gray-900">{student.name}</h3>
-                  <p className="text-xs text-gray-500">{student.className}</p>
-               </div>
-            </div>
-            <div className="flex gap-2">
-               <Button onClick={() => handleViewReport(student, index)} variant="secondary" className="flex-1 text-xs uppercase tracking-widest font-bold">
-                 <FileText size={16} className="mr-1"/> Lihat Rapor
-               </Button>
-               <button onClick={() => handleEditReport(student)} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg border border-gray-100"><Edit2 size={16} /></button>
-               <button onClick={() => handleDeleteReport(student)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg border border-gray-100"><Trash2 size={16} /></button>
-            </div>
+        {isLoading ? (
+          <div className="col-span-full py-20 text-center">
+             <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+             <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Sinkronisasi Database...</p>
           </div>
-        ))}
+        ) : filteredStudents.length > 0 ? (
+          filteredStudents.map((student, index) => (
+            <div key={student.id} className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all group flex flex-col h-full">
+              <div className="flex items-start justify-between mb-6">
+                 <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100 text-primary-600 flex items-center justify-center font-black text-xl shadow-inner border border-white">
+                      {student.name.charAt(0)}
+                    </div>
+                    <div>
+                       <h3 className="font-black text-gray-900 uppercase tracking-tight group-hover:text-primary-600 transition-colors">{student.name}</h3>
+                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{student.className}</p>
+                    </div>
+                 </div>
+                 <span className="px-2 py-1 bg-gray-50 rounded-lg text-[8px] font-black text-gray-400 border border-gray-100 uppercase tracking-widest">
+                   ID: {student.id.substring(0, 4)}
+                 </span>
+              </div>
+
+              <div className="mt-auto flex gap-2 pt-4 border-t border-gray-50">
+                 <Button 
+                   onClick={() => handleViewReport(student, index)} 
+                   variant="secondary" 
+                   className="flex-1 text-[10px] uppercase tracking-widest font-black h-12 rounded-xl bg-primary-50 border-primary-100 text-primary-700 hover:bg-primary-100 transition-all"
+                 >
+                   <FileText size={16} className="mr-2"/> Lihat Rapor
+                 </Button>
+                 <button 
+                   onClick={() => handleEditReport(student)} 
+                   className="p-3 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl border border-gray-100 transition-all shadow-sm active:scale-90"
+                   title="Edit Rapor"
+                 >
+                   <Edit2 size={18} />
+                 </button>
+                 <button 
+                   onClick={() => handleDeleteReport(student)} 
+                   className="p-3 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl border border-gray-100 transition-all shadow-sm active:scale-90"
+                   title="Hapus Rapor"
+                 >
+                   <Trash2 size={18} />
+                 </button>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="col-span-full py-24 text-center bg-white rounded-[2rem] border-2 border-dashed border-gray-200">
+             <Search size={40} className="mx-auto text-gray-200 mb-4" />
+             <p className="text-sm font-black text-gray-400 uppercase tracking-widest">Siswa tidak ditemukan</p>
+          </div>
+        )}
       </div>
     </div>
   );
