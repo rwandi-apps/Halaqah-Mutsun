@@ -36,6 +36,7 @@ const GuruRaporPage: React.FC<GuruRaporProps> = ({ teacherId, teacherName }) => 
     return str
       .toLowerCase()
       .split(' ')
+      .filter(word => word.length > 0)
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
   };
@@ -155,7 +156,7 @@ const GuruRaporPage: React.FC<GuruRaporProps> = ({ teacherId, teacherName }) => 
            </div>
         </div>
 
-        {/* PAPER CONTAINER - Style Font Arial diterapkan di sini */}
+        {/* PAPER CONTAINER - Style Font Arial */}
         <div 
           className="bg-white p-12 sm:p-16 shadow-2xl border border-gray-100 mx-auto w-full max-w-[210mm] print:shadow-none print:border-none print:p-0 print:mx-0 min-h-[297mm] text-gray-900 overflow-hidden"
           style={{ fontFamily: 'Arial, sans-serif' }}
@@ -169,11 +170,30 @@ const GuruRaporPage: React.FC<GuruRaporProps> = ({ teacherId, teacherName }) => 
                    <h2 className="text-2xl font-black uppercase">SDQ Mutiara Sunnah</h2>
                    <h3 className="text-lg font-bold uppercase pt-1">Tahun Pelajaran {viewingReport.academicYear.replace(/\s/g, '')}</h3>
                 </div>
-                <div className="space-y-1 text-sm font-bold mb-8">
-                   <div className="flex"><span className="w-32">Nama Siswa</span><span className="mr-2">:</span><span>{toTitleCase(selectedStudent.name)}</span></div>
-                   <div className="flex"><span className="w-32">Kelas</span><span className="mr-2">:</span><span>{toTitleCase(selectedStudent.className)}</span></div>
-                   <div className="flex"><span className="w-32">Semester</span><span className="mr-2">:</span><span>{viewingReport.semester}</span></div>
+                
+                {/* HEADER INFO: DESKRIPSI */}
+                <div className="flex justify-between items-start mb-10 text-sm">
+                   <div className="space-y-1.5 flex-1">
+                      <div className="grid grid-cols-[140px_20px_1fr]">
+                        <span className="font-bold">Nama Siswa</span>
+                        <span className="font-bold">:</span>
+                        <span className="font-bold">{toTitleCase(selectedStudent.name)}</span>
+                      </div>
+                      <div className="grid grid-cols-[140px_20px_1fr]">
+                        <span className="font-bold">Kelas</span>
+                        <span className="font-bold">:</span>
+                        <span className="font-bold">{toTitleCase(selectedStudent.className)}</span>
+                      </div>
+                   </div>
+                   <div className="space-y-1.5 ml-auto text-right min-w-[200px]">
+                      <div className="grid grid-cols-[100px_20px_1fr] text-left">
+                        <span className="font-bold">Semester</span>
+                        <span className="font-bold">:</span>
+                        <span className="font-bold">{viewingReport.semester}</span>
+                      </div>
+                   </div>
                 </div>
+
                 <div className="space-y-6">
                    <div>
                       <h4 className="font-bold mb-2 uppercase">A. Tahfizh</h4>
@@ -205,17 +225,44 @@ const GuruRaporPage: React.FC<GuruRaporProps> = ({ teacherId, teacherName }) => 
                    <h3 className="text-lg font-bold uppercase pt-1">Tahun Pelajaran {viewingReport.academicYear.replace(/\s/g, '')}</h3>
                 </div>
 
-                {/* GRID HEADER: Sisi kanan diatur agar menempel ke margin kanan tabel */}
-                <div className="grid grid-cols-2 gap-x-12 mb-8 text-[13px] font-bold text-gray-800">
-                   <div className="space-y-1">
-                      <div className="flex"><span className="w-40 shrink-0">Nama Siswa</span><span className="mr-2">:</span><span>{toTitleCase(selectedStudent.name)}</span></div>
-                      <div className="flex whitespace-nowrap"><span className="w-40 shrink-0">Nomor Induk / NISN</span><span className="mr-2">:</span><span>{selectedStudent.nis || '-'} / {selectedStudent.nisn || '-'}</span></div>
-                      <div className="flex"><span className="w-40 shrink-0">Kelas</span><span className="mr-2">:</span><span>{toTitleCase(selectedStudent.className)}</span></div>
+                {/* GRID HEADER INFORMASI: Sisi kiri dan kanan yang simetris dan rapi */}
+                <div className="flex justify-between items-start mb-8 text-[13px] leading-relaxed">
+                   {/* Kolom Kiri */}
+                   <div className="space-y-1.5 flex-1 max-w-[55%]">
+                      <div className="grid grid-cols-[140px_20px_1fr]">
+                        <span className="font-bold">Nama Siswa</span>
+                        <span className="font-bold">:</span>
+                        <span className="font-bold">{toTitleCase(selectedStudent.name)}</span>
+                      </div>
+                      <div className="grid grid-cols-[140px_20px_1fr]">
+                        <span className="font-bold">Nomor Induk / NISN</span>
+                        <span className="font-bold">:</span>
+                        <span className="font-bold">{selectedStudent.nis || '-'} / {selectedStudent.nisn || '-'}</span>
+                      </div>
+                      <div className="grid grid-cols-[140px_20px_1fr]">
+                        <span className="font-bold">Kelas</span>
+                        <span className="font-bold">:</span>
+                        <span className="font-bold">{toTitleCase(selectedStudent.className)}</span>
+                      </div>
                    </div>
-                   <div className="space-y-1 ml-auto w-full max-w-[250px]">
-                      <div className="flex justify-between"><span>Tahun Ajaran</span><span>: {viewingReport.academicYear}</span></div>
-                      <div className="flex justify-between"><span>Semester</span><span>: {viewingReport.semester}</span></div>
-                      <div className="flex justify-between"><span>Target Hafalan</span><span>: {viewingReport.targetHafalan}</span></div>
+
+                   {/* Kolom Kanan: Menempel ke ujung kanan tabel */}
+                   <div className="space-y-1.5 shrink-0 ml-auto min-w-[260px]">
+                      <div className="grid grid-cols-[110px_20px_1fr]">
+                        <span className="font-bold">Tahun Ajaran</span>
+                        <span className="font-bold">:</span>
+                        <span className="font-bold">{viewingReport.academicYear}</span>
+                      </div>
+                      <div className="grid grid-cols-[110px_20px_1fr]">
+                        <span className="font-bold">Semester</span>
+                        <span className="font-bold">:</span>
+                        <span className="font-bold">{viewingReport.semester}</span>
+                      </div>
+                      <div className="grid grid-cols-[110px_20px_1fr]">
+                        <span className="font-bold">Target Hafalan</span>
+                        <span className="font-bold">:</span>
+                        <span className="font-bold">{viewingReport.targetHafalan}</span>
+                      </div>
                    </div>
                 </div>
 
