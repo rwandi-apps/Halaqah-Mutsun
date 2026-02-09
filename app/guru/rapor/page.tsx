@@ -156,7 +156,7 @@ const GuruRaporPage: React.FC<GuruRaporProps> = ({ teacherId, teacherName }) => 
            </div>
         </div>
 
-        {/* PAPER CONTAINER - Style Font Arial */}
+        {/* PAPER CONTAINER - Font Arial */}
         <div 
           className="bg-white p-12 sm:p-16 shadow-2xl border border-gray-100 mx-auto w-full max-w-[210mm] print:shadow-none print:border-none print:p-0 print:mx-0 min-h-[297mm] text-gray-900 overflow-hidden"
           style={{ fontFamily: 'Arial, sans-serif' }}
@@ -208,6 +208,7 @@ const GuruRaporPage: React.FC<GuruRaporProps> = ({ teacherId, teacherName }) => 
                       </div>
                    </div>
                 </div>
+                
                 <div className="mt-10 text-sm font-bold">
                    <div className="text-right mb-16">Bogor, {viewingReport.dateHijri || '... Hijriah'}<br/>{viewingReport.dateStr || '... Masehi'}</div>
                    <div className="grid grid-cols-2 text-center">
@@ -225,9 +226,8 @@ const GuruRaporPage: React.FC<GuruRaporProps> = ({ teacherId, teacherName }) => 
                    <h3 className="text-lg font-bold uppercase pt-1">Tahun Pelajaran {viewingReport.academicYear.replace(/\s/g, '')}</h3>
                 </div>
 
-                {/* GRID HEADER INFORMASI: Sisi kiri dan kanan yang simetris dan rapi */}
+                {/* HEADER INFO: TABEL (ALIGNMENT FIXED) */}
                 <div className="flex justify-between items-start mb-8 text-[13px] leading-relaxed">
-                   {/* Kolom Kiri */}
                    <div className="space-y-1.5 flex-1 max-w-[55%]">
                       <div className="grid grid-cols-[140px_20px_1fr]">
                         <span className="font-bold">Nama Siswa</span>
@@ -246,7 +246,6 @@ const GuruRaporPage: React.FC<GuruRaporProps> = ({ teacherId, teacherName }) => 
                       </div>
                    </div>
 
-                   {/* Kolom Kanan: Menempel ke ujung kanan tabel */}
                    <div className="space-y-1.5 shrink-0 ml-auto min-w-[260px]">
                       <div className="grid grid-cols-[110px_20px_1fr]">
                         <span className="font-bold">Tahun Ajaran</span>
@@ -319,6 +318,12 @@ const GuruRaporPage: React.FC<GuruRaporProps> = ({ teacherId, teacherName }) => 
                    </tbody>
                 </table>
 
+                {/* KOLOM CATATAN WALI KELAS (DITAMBAHKAN) */}
+                <div className="border-2 border-gray-900 p-4">
+                  <h4 className="font-bold text-[13px] border-b border-gray-900 pb-1 mb-2 uppercase">Catatan Wali Kelas:</h4>
+                  <p className="text-xs leading-relaxed italic font-bold">"{viewingReport.notes || '-'}"</p>
+                </div>
+
                 <div className="mt-10 text-sm font-bold">
                    <div className="text-right mb-16">Bogor, {viewingReport.dateHijri}<br/>{viewingReport.dateStr}</div>
                    <div className="grid grid-cols-2 text-center">
@@ -343,9 +348,8 @@ const GuruRaporPage: React.FC<GuruRaporProps> = ({ teacherId, teacherName }) => 
         </div>
       </div>
 
-      {/* FILTER BAR: Search + Semester Selector */}
+      {/* FILTER BAR */}
       <div className="bg-white p-4 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col md:flex-row gap-6">
-        {/* Search */}
         <div className="flex-1 flex items-center gap-3 bg-gray-50 px-5 py-3 rounded-2xl border border-gray-100 focus-within:border-primary-300 focus-within:ring-2 focus-within:ring-primary-500/5 transition-all">
           <Search className="text-gray-400 shrink-0" size={18} />
           <input 
@@ -357,7 +361,6 @@ const GuruRaporPage: React.FC<GuruRaporProps> = ({ teacherId, teacherName }) => 
           />
         </div>
 
-        {/* Semester Selector (Tabs) */}
         <div className="flex items-center gap-2 p-1 bg-gray-100 rounded-2xl shrink-0">
           <button 
             onClick={() => setSelectedSemester('Ganjil')}
@@ -373,7 +376,6 @@ const GuruRaporPage: React.FC<GuruRaporProps> = ({ teacherId, teacherName }) => 
           </button>
         </div>
         
-        {/* Info Box */}
         <div className="flex items-center gap-3 px-4 py-2 bg-primary-50 rounded-2xl border border-primary-100">
            <CalendarDays className="text-primary-500" size={18} />
            <div className="flex flex-col">
