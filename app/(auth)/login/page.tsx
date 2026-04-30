@@ -59,7 +59,7 @@ export default function LoginPage({ onLogin }: LoginProps) {
 
         {/* Title */}
         <div className="text-center mb-10">
-          <h2 className="text-white text-2xl font-bold tracking-tight">Laporan Semester</h2>
+          <h2 className="text-white text-2xl font-bold tracking-tight">Laporan Al-Qur'an</h2>
           <p className="text-blue-100/60 text-sm mt-1">Masuk untuk mengelola halaqah</p>
         </div>
 
