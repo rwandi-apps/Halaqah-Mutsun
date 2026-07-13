@@ -73,10 +73,22 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
              if (p > 0) parts.push(`${p} Halaman`);
              
              hafalanDisplay = parts.length > 0 ? parts.join(' ') : "0 Juz";
+          } else if (student.totalHafalan) {
+             const j = Number(student.totalHafalan.juz || 0);
+             const p = Number(student.totalHafalan.pages || 0);
+             
+             const parts = [];
+             if (j > 0) parts.push(`${j} Juz`);
+             if (p > 0) parts.push(`${p} Halaman`);
+             
+             hafalanDisplay = parts.length > 0 ? parts.join(' ') : "0 Juz";
           }
 
           const sabaqRaw = latest?.tahfizh?.individual;
-          const sabaqDisplay = getEndPart(sabaqRaw);
+          let sabaqDisplay = getEndPart(sabaqRaw);
+          if (sabaqDisplay === '-' && student.currentProgress && student.currentProgress !== 'Belum Ada') {
+             sabaqDisplay = getEndPart(student.currentProgress);
+          }
 
           const tilawahRaw = latest?.tilawah?.individual;
           const tilawahDisplay = getEndPart(tilawahRaw);
