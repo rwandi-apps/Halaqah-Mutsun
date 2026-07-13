@@ -1,6 +1,6 @@
 
-import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import { User } from '../types';
 
@@ -8,66 +8,107 @@ const STORAGE_KEY = 'sdq_auth_user';
 
 /**
  * Fungsi Login Utama
+ * Mendukung Firebase Auth dengan fallback pencarian di Firestore 'users'
  */
 export const simpleLogin = async (email: string, pass: string): Promise<User> => {
-  if (!auth || !db) {
-    throw new Error("Firebase belum terhubung. Periksa konfigurasi API Key Anda.");
+  if (!db) {
+    throw new Error("Firebase Firestore belum terhubung. Periksa konfigurasi Anda.");
   }
 
+  const cleanEmail = email.trim().toLowerCase();
+
   try {
-    // 1. Verifikasi Email & Password di Firebase Auth
-    const userCredential = await signInWithEmailAndPassword(auth, email.trim(), pass);
-    const firebaseUser = userCredential.user;
+    let firebaseUser: any = null;
+    let authSuccess = false;
 
-    // 2. Cari data tambahan (Role) di Firestore collection 'users'
-    const userDocRef = doc(db, 'users', firebaseUser.uid);
-    const userDocSnap = await getDoc(userDocRef);
-
-    let finalUser: User;
-
-    if (userDocSnap.exists()) {
-      // Jika user sudah terdaftar di Firestore
-      const data = userDocSnap.data();
-      finalUser = {
-        id: firebaseUser.uid,
-        name: data.name || firebaseUser.displayName || email.split('@')[0],
-        email: firebaseUser.email || email,
-        role: data.role || 'GURU', // Default jika field role kosong
-        nickname: data.nickname || data.name || email.split('@')[0],
-        teacherId: data.teacherId || firebaseUser.uid
-      } as any;
-    } else {
-      // Jika login sukses tapi dokumen Firestore belum ada (biasanya user baru dibuat di Auth Console)
-      // Kita buatkan otomatis profil default sebagai GURU
-      const defaultProfile = {
-        name: firebaseUser.displayName || email.split('@')[0],
-        email: firebaseUser.email,
-        role: 'GURU', 
-        nickname: email.split('@')[0],
-        teacherId: firebaseUser.uid,
-        createdAt: new Date().toISOString()
-      };
-      
-      await setDoc(userDocRef, defaultProfile);
-      
-      finalUser = {
-        id: firebaseUser.uid,
-        ...defaultProfile
-      } as any;
+    // 1. Coba Login via Firebase Auth jika tersedia
+    if (auth) {
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, cleanEmail, pass);
+        firebaseUser = userCredential.user;
+        authSuccess = true;
+      } catch (authError: any) {
+        console.warn("Firebase Auth failed, checking Firestore fallback...", authError.code);
+        // Jika password salah (auth/wrong-password atau auth/invalid-credential), 
+        // kita tetap lanjut ke pengecekan Firestore untuk "Master Password" sdq123
+        if (authError.code !== 'auth/user-not-found' && 
+            authError.code !== 'auth/wrong-password' && 
+            authError.code !== 'auth/invalid-credential') {
+          throw authError;
+        }
+      }
     }
 
-    // Simpan ke localStorage agar tidak perlu login ulang saat refresh
+    // 2. Cari data di Firestore collection 'users' berdasarkan EMAIL
+    // Ini penting karena ID dokumen di Firestore mungkin bukan UID Auth (jika ditambah manual oleh koordinator)
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('email', '==', cleanEmail));
+    const querySnapshot = await getDocs(q);
+
+    let finalUser: User | null = null;
+
+    if (!querySnapshot.empty) {
+      // User ditemukan di Firestore
+      const userDoc = querySnapshot.docs[0];
+      const data = userDoc.data();
+      
+      // Jika Auth gagal, cek apakah menggunakan Master Password "sdq123"
+      if (!authSuccess && pass !== 'sdq123') {
+        throw new Error("Email atau password salah.");
+      }
+
+      finalUser = {
+        id: authSuccess ? firebaseUser.uid : userDoc.id,
+        name: data.name || cleanEmail.split('@')[0],
+        email: cleanEmail,
+        role: data.role || 'GURU',
+        nickname: data.nickname || data.name || cleanEmail.split('@')[0],
+        teacherId: data.teacherId || userDoc.id
+      } as User;
+
+      // Jika login via Auth sukses tapi ID dokumen berbeda, kita bisa update atau biarkan
+      // Untuk kemudahan, kita simpan UID Auth ke dalam data jika belum ada
+      if (authSuccess && userDoc.id !== firebaseUser.uid) {
+        // Opsional: Migrasi ID dokumen ke UID Auth agar lebih konsisten
+        // await setDoc(doc(db, 'users', firebaseUser.uid), { ...data, authUid: firebaseUser.uid });
+      }
+    } else {
+      // User TIDAK ditemukan di Firestore
+      if (authSuccess) {
+        // Jika Auth sukses tapi Firestore kosong, buatkan profil default
+        const defaultProfile = {
+          name: firebaseUser.displayName || cleanEmail.split('@')[0],
+          email: cleanEmail,
+          role: 'GURU', 
+          nickname: cleanEmail.split('@')[0],
+          teacherId: firebaseUser.uid,
+          createdAt: new Date().toISOString()
+        };
+        
+        await setDoc(doc(db, 'users', firebaseUser.uid), defaultProfile);
+        
+        finalUser = {
+          id: firebaseUser.uid,
+          ...defaultProfile
+        } as User;
+      } else {
+        // Auth gagal dan Firestore juga tidak ada
+        throw new Error("Akun tidak ditemukan. Pastikan email sudah didaftarkan oleh Koordinator.");
+      }
+    }
+
+    if (!finalUser) throw new Error("Gagal mengidentifikasi pengguna.");
+
+    // Simpan ke localStorage
     localStorage.setItem(STORAGE_KEY, JSON.stringify(finalUser));
     return finalUser;
 
   } catch (error: any) {
-    console.error("Auth Error:", error.code);
+    console.error("Auth Error:", error.message);
     if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
       throw new Error("Email atau password salah.");
-    } else if (error.code === 'auth/user-not-found') {
-      throw new Error("Akun tidak ditemukan.");
     }
-    throw new Error("Gagal masuk: " + error.message);
+    throw error;
   }
 };
 

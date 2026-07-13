@@ -11,7 +11,18 @@ export default function CoordinatorEvaluationsPage() {
   const [selectedTeacherId, setSelectedTeacherId] = useState('');
   const [reportType, setReportType] = useState('Laporan Bulanan');
   const [selectedPeriod, setSelectedPeriod] = useState('Desember');
+  const [academicYear, setAcademicYear] = useState('2026/2027');
   const [allTeacherReports, setAllTeacherReports] = useState<Report[]>([]);
+
+  const getCalendarYear = (month: string, acadYear: string) => {
+    const parts = acadYear.split('/');
+    if (parts.length !== 2) return acadYear;
+    const secondHalfMonths = ["Januari", "Februari", "Maret", "April", "Mei", "Juni"];
+    if (secondHalfMonths.includes(month)) {
+      return parts[1]; // e.g. 2027
+    }
+    return parts[0]; // e.g. 2026
+  };
   const [filteredReports, setFilteredReports] = useState<Report[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -49,7 +60,8 @@ export default function CoordinatorEvaluationsPage() {
     const filtered = allTeacherReports.filter(r => {
       const typeMatch = r.type === reportType;
       const periodMatch = r.month === selectedPeriod;
-      return typeMatch && periodMatch;
+      const yearMatch = !academicYear || r.academicYear === academicYear;
+      return typeMatch && periodMatch && yearMatch;
     });
     
     setFilteredReports(filtered);
@@ -57,10 +69,12 @@ export default function CoordinatorEvaluationsPage() {
     if (selectedTeacherId && selectedPeriod) {
       loadExistingEvaluation();
     }
-  }, [allTeacherReports, reportType, selectedPeriod, selectedTeacherId]);
+  }, [allTeacherReports, reportType, selectedPeriod, selectedTeacherId, academicYear]);
 
   const loadExistingEvaluation = async () => {
-    const periodLabel = reportType === 'Laporan Semester' ? `Semester ${selectedPeriod} 2025/2026` : `${selectedPeriod} 2025`;
+    const periodLabel = reportType === 'Laporan Semester' 
+      ? `Semester ${selectedPeriod} ${academicYear}` 
+      : `${selectedPeriod} ${getCalendarYear(selectedPeriod, academicYear)}`;
     const existingEval = await getHalaqahEvaluation(selectedTeacherId, periodLabel);
     
     if (existingEval) {
@@ -111,11 +125,13 @@ export default function CoordinatorEvaluationsPage() {
     if (!selectedTeacherId) return;
     setIsSaving(true);
     try {
-      const periodLabel = reportType === 'Laporan Semester' ? `Semester ${selectedPeriod} 2025/2026` : `${selectedPeriod} 2025`;
+      const periodLabel = reportType === 'Laporan Semester' 
+        ? `Semester ${selectedPeriod} ${academicYear}` 
+        : `${selectedPeriod} ${getCalendarYear(selectedPeriod, academicYear)}`;
       await saveHalaqahEvaluation({
         teacherId: selectedTeacherId,
         period: periodLabel,
-        academicYear: '2025/2026',
+        academicYear: academicYear,
         insightUtama: evaluation.insightUtama || '',
         kendalaTerindikasi: evaluation.kendalaTerindikasi || '',
         tindakLanjut: evaluation.tindakLanjut || '',
@@ -139,7 +155,7 @@ export default function CoordinatorEvaluationsPage() {
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="space-y-2">
           <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Guru Halaqah</label>
           <div className="relative">
@@ -147,6 +163,17 @@ export default function CoordinatorEvaluationsPage() {
             <select value={selectedTeacherId} onChange={e => setSelectedTeacherId(e.target.value)} className="w-full pl-10 pr-4 py-3 border-2 border-gray-50 rounded-2xl bg-gray-50 text-sm font-bold focus:border-primary-500 focus:bg-white outline-none transition-all">
               <option value="">-- Pilih Guru --</option>
               {teachers.map(t => <option key={t.id} value={t.id}>{t.nickname || t.name}</option>)}
+            </select>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Tahun Ajaran</label>
+          <div className="relative">
+            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-500" size={16} />
+            <select value={academicYear} onChange={e => setAcademicYear(e.target.value)} className="w-full pl-10 pr-4 py-3 border-2 border-gray-50 rounded-2xl bg-gray-50 text-sm font-bold focus:border-primary-500 focus:bg-white outline-none transition-all">
+              <option value="2025/2026">2025/2026</option>
+              <option value="2026/2027">2026/2027</option>
             </select>
           </div>
         </div>
@@ -169,7 +196,7 @@ export default function CoordinatorEvaluationsPage() {
             <select value={selectedPeriod} onChange={e => setSelectedPeriod(e.target.value)} className="w-full pl-10 pr-4 py-3 border-2 border-gray-50 rounded-2xl bg-gray-50 text-sm font-bold focus:border-primary-500 focus:bg-white outline-none transition-all">
               {reportType === 'Laporan Semester' 
                 ? ["Ganjil", "Genap"].map(s => <option key={s} value={s}>Semester {s}</option>)
-                : ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"].map(m => <option key={m} value={m}>{m} 2025</option>)
+                : ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"].map(m => <option key={m} value={m}>{m} {getCalendarYear(m, academicYear)}</option>)
               }
             </select>
           </div>

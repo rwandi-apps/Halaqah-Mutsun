@@ -10,6 +10,7 @@ import CoordinatorKelasPage from './app/coordinator/kelas/page';
 import CoordinatorReportsPage from './app/coordinator/reports/page';
 import CoordinatorRaporPage from './app/coordinator/rapor/page';
 import CoordinatorEvaluationsPage from './app/coordinator/evaluations/page';
+import CoordinatorTransitionPage from './app/coordinator/transition/page';
 import GuruDashboard from './app/guru/dashboard/page';
 import GuruHalaqahPage from './app/guru/halaqah/page';
 import GuruLaporanPage from './app/guru/laporan/page';
@@ -21,13 +22,7 @@ import { getStoredUser, simpleLogout } from './services/simpleAuth';
 import { User } from './types';
 
 function App() {
-  const [user, setUser] = useState<User | null>(getStoredUser() || {
-    id: 'u2',
-    name: 'Ust. Hasan (Auto-Login)',
-    nickname: 'Ustadz Hasan',
-    email: 'guru@sdq.com',
-    role: 'GURU'
-  });
+  const [user, setUser] = useState<User | null>(getStoredUser());
 
   const handleLogin = (newUser: User) => {
     setUser(newUser);
@@ -66,6 +61,7 @@ function App() {
                 <Route path="/coordinator/reports" element={<CoordinatorReportsPage />} />
                 <Route path="/coordinator/rapor" element={<CoordinatorRaporPage />} />
                 <Route path="/coordinator/evaluations" element={<CoordinatorEvaluationsPage />} />
+                <Route path="/coordinator/transition" element={<CoordinatorTransitionPage />} />
                 
                 <Route path="/guru/dashboard" element={<GuruDashboard teacherId={user?.id} />} />
                 <Route path="/guru/halaqah" element={<GuruHalaqahPage teacherId={user?.id} />} />

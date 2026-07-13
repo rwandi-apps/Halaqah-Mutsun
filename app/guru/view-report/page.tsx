@@ -6,7 +6,7 @@ import { subscribeToReportsByTeacher, deleteReport } from '../../../services/fir
 import { SDQQuranEngine } from '../../../services/tahfizh/engine';
 import { Search, Edit2, Trash2, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 
-const ACADEMIC_YEARS = ["2023/2024", "2024/2025", "2025/2026"];
+const ACADEMIC_YEARS = ["2024/2025", "2025/2026", "2026/2027"];
 const MONTHS = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
 const formatRangeDisplay = (raw: string | undefined): string => {

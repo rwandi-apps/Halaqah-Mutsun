@@ -12,7 +12,8 @@ import {
   FileText,
   BarChart2,
   Bell,
-  ChevronDown
+  ChevronDown,
+  Calendar
 } from 'lucide-react';
 import LogoSDQ from './LogoSDQ';
 import { User } from '../types';
@@ -43,6 +44,7 @@ const Layout: React.FC<LayoutProps> = ({
     { to: "/coordinator/guru", icon: Users, label: "Data Guru" },
     { to: "/coordinator/siswa", icon: GraduationCap, label: "Data Siswa" },
     { to: "/coordinator/kelas", icon: BookOpen, label: "Data Kelas & Halaqah" },
+    { to: "/coordinator/transition", icon: Calendar, label: "Tahun Ajaran Baru" },
     { type: 'header', label: 'SUPERVISI' },
     { to: "/coordinator/reports", icon: FileText, label: "Pantau Laporan" },
     { to: "/coordinator/evaluations", icon: ClipboardList, label: "Input Evaluasi" },

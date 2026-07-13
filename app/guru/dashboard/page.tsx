@@ -21,7 +21,7 @@ interface StudentWithProgress extends Student {
 }
 
 /**
- * 3D Pixar-style Circular Progress Component V2
+ * 3D Pixar-style Circular Progress Component
  */
 const PixarCircularGauge = ({ percentage }: { percentage: number }) => {
   const radius = 26;
@@ -86,8 +86,11 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
       
       if (latestReport) {
         if (level === 1) {
+          // KOREKSI: Untuk Kelas 1, progres terbaru HANYA diambil dari Tilawah Individual (Iqra)
+          // Engine sdqTargets akan otomatis mendeteksi jika isinya Al-Quran (100%)
           progressString = latestReport.tilawah?.individual || progressString;
         } else {
+          // Kelas 2-6: Gunakan Tahfizh Individual
           progressString = latestReport.tahfizh?.individual || progressString;
         }
       }
@@ -127,15 +130,15 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
   };
 
   const shareToWhatsApp = () => {
-    if (!aiEvaluation) return;
-    const text = `*LAPORAN EVALUASI HALAQAH SDQ*\n\n${aiEvaluation}`;
+    if (!aiEvaluation || !selectedStudent) return;
+    const text = `*LAPORAN EVALUASI HALAQAH SDQ*\n*Nama:* ${selectedStudent.name}\n*Bulan:* ${new Date().toLocaleString('id-ID', { month: 'long' })}\n\n${aiEvaluation}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
 
   const copyToClipboard = () => {
     if (!aiEvaluation) return;
     navigator.clipboard.writeText(aiEvaluation);
-    alert("Teks berhasil disalin ke clipboard.");
+    alert("Teks berhasil disalin.");
   };
 
   return (
@@ -147,7 +150,6 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
         </div>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-gradient-to-br from-indigo-600 to-purple-700 p-4 sm:p-6 rounded-2xl shadow-lg shadow-indigo-500/20 text-white group border border-white/10">
           <p className="text-[9px] sm:text-[10px] font-bold text-indigo-100 uppercase tracking-widest mb-1 opacity-80">Total Siswa</p>
@@ -209,7 +211,7 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
                 <PixarLinearBar percentage={student.progressStats.percentage} colorClass={student.progressStats.colorClass} />
                 <div className="flex justify-between items-center sm:hidden mt-3">
                   <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{student.progressStats.label}</p>
-                  <div className="flex items-center gap-1 text-primary-500"><span className="text-[9px] font-black uppercase tracking-widest">Detail</span><ChevronRight size={12} /></div>
+                  <div className="flex items-center gap-1 text-primary-500 font-black uppercase text-[9px]">Detail <ChevronRight size={10} /></div>
                 </div>
               </div>
             ))
@@ -219,7 +221,7 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
         </div>
       </div>
 
-      {/* EVALUATION POPUP - Updated for Full Height Mobile & WA Feature */}
+      {/* MODAL EVALUASI - Diperbarui ke Lebar Penuh (Drawer) untuk Mobile */}
       {selectedStudent && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div className="bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] w-full max-w-2xl h-[92vh] sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-300">
@@ -238,7 +240,7 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
              </div>
 
              {/* Content Area */}
-             <div className="flex-1 overflow-y-auto custom-scrollbar p-6 sm:p-10">
+             <div className="flex-1 overflow-y-auto custom-scrollbar p-6 sm:p-10 bg-white">
                {!aiEvaluation ? (
                  <div className="h-full flex flex-col items-center justify-center text-center">
                    <div className="w-20 h-20 sm:w-28 sm:h-28 bg-primary-50 rounded-[2rem] sm:rounded-[2.5rem] flex items-center justify-center mb-6 text-primary-600 border border-primary-100 shadow-inner">
@@ -246,27 +248,24 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
                    </div>
                    <h4 className="text-lg sm:text-xl font-black text-gray-800 mb-3">Siap Generate Evaluasi?</h4>
                    <p className="text-sm sm:text-base text-gray-500 mb-10 max-w-xs mx-auto font-medium leading-relaxed">
-                     AI akan menyusun kalimat naratif yang personal untuk Ayah dan Bunda berdasarkan progres <span className="font-black text-primary-600">{selectedStudent.progressStats.percentage}%</span> bulan ini.
+                     AI akan menyusun kalimat naratif yang personal untuk Ayah dan Bunda berdasarkan capaian <span className="font-black text-primary-600">{selectedStudent.progressStats.percentage}%</span> bulan ini.
                    </p>
                    <Button onClick={() => handleGenerateEvaluation(selectedStudent)} isLoading={isGenerating} className="w-full sm:w-auto px-12 py-5 rounded-2xl text-sm font-black uppercase tracking-widest shadow-xl shadow-primary-500/20">
                       Mulai Analisis AI
                    </Button>
                  </div>
                ) : (
-                 <div className="space-y-8 animate-in fade-in zoom-in duration-500">
+                 <div className="space-y-6 animate-in fade-in zoom-in duration-500">
                    <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white shrink-0">
-                        <Trophy size={16} />
-                      </div>
-                      <p className="text-xs font-bold text-emerald-800">Evaluasi naratif berhasil dibuat! Silakan tinjau dan bagikan ke orang tua.</p>
+                      <Trophy size={18} className="text-emerald-500 shrink-0" />
+                      <p className="text-[11px] font-bold text-emerald-800">Evaluasi naratif berhasil dibuat! Silakan tinjau dan bagikan.</p>
                    </div>
                    
-                   <div className="bg-gray-50/80 p-6 sm:p-8 rounded-[2rem] text-[13px] sm:text-[15px] whitespace-pre-wrap leading-relaxed font-medium text-gray-700 shadow-inner border border-gray-100 relative group">
+                   <div className="bg-gray-50/80 p-6 sm:p-8 rounded-[2rem] text-[13px] sm:text-[15px] whitespace-pre-wrap leading-relaxed font-medium text-gray-700 shadow-inner border border-gray-100 relative">
                      {aiEvaluation}
                      <button 
                         onClick={copyToClipboard}
                         className="absolute top-4 right-4 p-2 bg-white rounded-xl shadow-sm border border-gray-100 text-gray-400 hover:text-primary-600 transition-colors"
-                        title="Salin Teks"
                       >
                         <Copy size={16} />
                      </button>
@@ -277,16 +276,16 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
 
              {/* Footer Actions */}
              {aiEvaluation && (
-               <div className="px-6 py-6 sm:px-10 sm:py-8 border-t border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row gap-3 shrink-0">
+               <div className="px-6 py-6 sm:px-10 sm:py-8 border-t border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row gap-3 shrink-0 pb-10 sm:pb-8">
                  <Button 
                    onClick={shareToWhatsApp} 
-                   className="flex-1 py-4 sm:py-5 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-xs sm:text-sm font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20"
+                   className="flex-1 py-4 sm:py-5 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-xs sm:text-sm font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 text-white"
                  >
                    <Share2 size={18} className="mr-2" /> Kirim ke WhatsApp
                  </Button>
                  <div className="flex gap-2 sm:gap-3">
-                    <Button variant="secondary" onClick={() => setAiEvaluation(null)} className="flex-1 py-4 sm:py-5 border-gray-200 rounded-2xl font-bold text-xs">Ulangi AI</Button>
-                    <Button variant="secondary" className="flex-1 py-4 sm:py-5 border-gray-200 rounded-2xl font-bold text-xs" onClick={() => setSelectedStudent(null)}>Tutup</Button>
+                    <Button variant="secondary" onClick={() => setAiEvaluation(null)} className="flex-1 py-4 sm:py-5 border-gray-200 rounded-2xl font-bold text-xs bg-white">Ulangi</Button>
+                    <Button variant="secondary" className="flex-1 py-4 sm:py-5 border-gray-200 rounded-2xl font-bold text-xs bg-white" onClick={() => setSelectedStudent(null)}>Tutup</Button>
                  </div>
                </div>
              )}

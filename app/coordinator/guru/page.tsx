@@ -176,9 +176,9 @@ const CoordinatorGuruPage: React.FC = () => {
             
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               {!editingId && (
-                <div className="p-3 bg-yellow-50 border border-yellow-100 rounded-lg text-xs text-yellow-800">
-                  <strong>Catatan:</strong> Menambah user baru di sini hanya menyimpan profil. 
-                  Anda perlu mendaftarkan email tersebut di Firebase Auth agar mereka bisa login.
+                <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg text-xs text-blue-800">
+                  <strong>Info Login:</strong> Guru yang didaftarkan dapat langsung masuk menggunakan password default: <strong>sdq123</strong>. 
+                  Untuk keamanan permanen, tetap disarankan mendaftarkan mereka di Firebase Auth.
                 </div>
               )}
 
