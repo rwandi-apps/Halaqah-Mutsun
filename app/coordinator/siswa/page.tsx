@@ -1,13 +1,15 @@
 
 import React, { useEffect, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Student, User } from '../../../types';
 import { getAllStudents, getAllTeachers, addStudent, updateStudent } from '../../../services/firestoreService';
 import { CLASS_LIST } from '../../../services/mockBackend';
 import { Button } from '../../../components/Button';
-import { Search, Filter, Download, Plus, X, Upload } from 'lucide-react';
+import { Search, Filter, Download, Plus, X, Upload, RefreshCw } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 export default function CoordinatorSiswaPage() {
+  const navigate = useNavigate();
   const [students, setStudents] = useState<Student[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
   const [teachers, setTeachers] = useState<User[]>([]);
@@ -244,7 +246,10 @@ export default function CoordinatorSiswaPage() {
            <Button variant="outline" onClick={handleImportClick} isLoading={isImporting}>
              <Upload size={18} className="mr-2" /> Import Excel
            </Button>
-           <Button onClick={handleOpenAddModal}><Plus size={18} className="mr-2" /> Tambah Siswa</Button>
+           <Button variant="outline" onClick={() => navigate('/coordinator/transition')} className="border-primary-500 text-primary-600 hover:bg-primary-50 mr-2">
+              <RefreshCw size={18} className="mr-2" /> Naik Kelas Massal
+            </Button>
+            <Button onClick={handleOpenAddModal}><Plus size={18} className="mr-2" /> Tambah Siswa</Button>
         </div>
       </div>
 
