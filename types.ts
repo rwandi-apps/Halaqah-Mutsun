@@ -11,6 +11,7 @@ export interface User {
   photoURL?: string;
   createdAt?: string;
   teacherId?: string;
+  status?: 'Aktif' | 'Nonaktif';
 }
 
 export interface Student {

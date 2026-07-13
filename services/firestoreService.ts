@@ -314,45 +314,139 @@ export const saveSDQReport = async (reportData: Omit<Report, 'id' | 'createdAt'>
 export const getReportsByTeacher = async (teacherId: string): Promise<Report[]> => {
   if (!db) return [];
   
-  const q = query(
+  // 1. Dapatkan daftar siswa aktif untuk guru ini
+  const students = await getStudentsByTeacher(teacherId);
+  const studentIds = students.map(s => s.id);
+  
+  const reportsMap = new Map<string, Report>();
+
+  // 2. Ambil laporan yang ditulis oleh guru ini
+  const qTeacher = query(
     collection(db, 'laporan'), 
     where('teacherId', '==', teacherId)
   );
+  const snapshotTeacher = await getDocs(qTeacher);
+  snapshotTeacher.docs.forEach(doc => {
+    reportsMap.set(doc.id, normalizeReportData(doc.id, doc.data()));
+  });
   
-  const snapshot = await getDocs(q);
+  // 3. Ambil laporan dari siswa yang sekarang diampu oleh guru ini (termasuk riwayat lama)
+  if (studentIds.length > 0) {
+    const chunks = [];
+    for (let i = 0; i < studentIds.length; i += 30) {
+      chunks.push(studentIds.slice(i, i + 30));
+    }
+    for (const chunk of chunks) {
+      const qStudents = query(
+        collection(db, 'laporan'),
+        where('studentId', 'in', chunk)
+      );
+      const snapshotStudents = await getDocs(qStudents);
+      snapshotStudents.docs.forEach(doc => {
+        reportsMap.set(doc.id, normalizeReportData(doc.id, doc.data()));
+      });
+    }
+  }
   
-  // Normalize & Sort di Client Side untuk menjamin urutan campuran data lama/baru
-  const reports = snapshot.docs.map(doc => normalizeReportData(doc.id, doc.data()));
-  
+  const reports = Array.from(reportsMap.values());
   return reports.sort((a, b) => {
-    // Priority Sort: Period Code Descending
     const codeA = a.periodCode || 0;
     const codeB = b.periodCode || 0;
     if (codeA !== codeB) return codeB - codeA;
-    // Fallback Sort: CreatedAt
     return b.createdAt.localeCompare(a.createdAt);
   });
 };
 
 export const subscribeToReportsByTeacher = (teacherId: string, onUpdate: (reports: Report[]) => void): Unsubscribe => {
   if (!db) return () => {};
-  const q = query(
-    collection(db, 'laporan'), 
+  
+  // Subscribe ke list siswa aktif guru ini agar list studentIds selalu update
+  const studentsQ = query(
+    collection(db, 'siswa'), 
     where('teacherId', '==', teacherId)
   );
   
-  return onSnapshot(q, (snapshot) => {
-    const reports = snapshot.docs.map(doc => normalizeReportData(doc.id, doc.data()));
+  let reportsUnsub: () => void = () => {};
+  
+  const studentsUnsub = onSnapshot(studentsQ, (studentsSnap) => {
+    // Unsubscribe listener laporan yang sebelumnya jika ada
+    reportsUnsub();
     
-    const sortedReports = reports.sort((a, b) => {
+    const studentIds = studentsSnap.docs.map(doc => doc.id);
+    
+    const unsubscribes: (() => void)[] = [];
+    const teacherReportsMap = new Map<string, Report>();
+    const studentReportsMap = new Map<string, Report>();
+    
+    // Listen laporan yang ditulis oleh guru ini
+    const qTeacher = query(collection(db, 'laporan'), where('teacherId', '==', teacherId));
+    const unsubTeacher = onSnapshot(qTeacher, (snap) => {
+      snap.docs.forEach(d => {
+        teacherReportsMap.set(d.id, normalizeReportData(d.id, d.data()));
+      });
+      // Bersihkan jika ada yang didelete
+      const currentIds = new Set(snap.docs.map(d => d.id));
+      for (const key of teacherReportsMap.keys()) {
+        if (!currentIds.has(key)) teacherReportsMap.delete(key);
+      }
+      triggerUpdate();
+    });
+    unsubscribes.push(unsubTeacher);
+    
+    // Listen laporan siswa yang saat ini diampu
+    if (studentIds.length > 0) {
+      const chunks = [];
+      for (let i = 0; i < studentIds.length; i += 30) {
+        chunks.push(studentIds.slice(i, i + 30));
+      }
+      
+      chunks.forEach((chunk) => {
+        const qStudents = query(collection(db, 'laporan'), where('studentId', 'in', chunk));
+        const unsubStudents = onSnapshot(qStudents, (snap) => {
+          snap.docs.forEach(d => {
+            studentReportsMap.set(d.id, normalizeReportData(d.id, d.data()));
+          });
+          // Bersihkan jika ada yang didelete
+          const currentIds = new Set(snap.docs.map(d => d.id));
+          for (const [key, report] of studentReportsMap.entries()) {
+            if (chunk.includes(report.studentId) && !currentIds.has(key)) {
+              studentReportsMap.delete(key);
+            }
+          }
+          triggerUpdate();
+        });
+        unsubscribes.push(unsubStudents);
+      });
+    } else {
+      // Jika tidak punya murid, pastikan state kosong murid bersih
+      studentReportsMap.clear();
+      triggerUpdate();
+    }
+    
+    function triggerUpdate() {
+      const mergedMap = new Map<string, Report>();
+      teacherReportsMap.forEach((r, id) => mergedMap.set(id, r));
+      studentReportsMap.forEach((r, id) => mergedMap.set(id, r));
+      
+      const reportsList = Array.from(mergedMap.values());
+      const sortedReports = reportsList.sort((a, b) => {
         const codeA = a.periodCode || 0;
         const codeB = b.periodCode || 0;
         if (codeA !== codeB) return codeB - codeA;
         return b.createdAt.localeCompare(a.createdAt);
-    });
+      });
+      onUpdate(sortedReports);
+    }
     
-    onUpdate(sortedReports);
+    reportsUnsub = () => {
+      unsubscribes.forEach(unsub => unsub());
+    };
   });
+  
+  return () => {
+    studentsUnsub();
+    reportsUnsub();
+  };
 };
 
 // --- RETAINED SERVICES (UNCHANGED) ---
@@ -502,7 +596,9 @@ export const getStudentsByTeacher = async (teacherId: string): Promise<Student[]
   if (!db) return [];
   const q = query(collection(db, 'siswa'), where('teacherId', '==', teacherId));
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Student));
+  return snapshot.docs
+    .map(doc => ({ id: doc.id, ...doc.data() } as Student))
+    .filter(student => student.className !== "Lulus / Alumni");
 };
 
 export const getHalaqahMonthlyReport = async (teacherId: string, period: string): Promise<HalaqahMonthlyReport | null> => {
@@ -523,8 +619,8 @@ export const saveHalaqahMonthlyReport = async (data: HalaqahMonthlyReport): Prom
 
 export const addTeacher = async (name: string, email: string, nickname: string, role: Role): Promise<User> => {
   if (!db) throw new Error("Firestore not initialized");
-  const docRef = await addDoc(collection(db, 'users'), { name, nickname, email, role, createdAt: serverTimestamp() });
-  return { id: docRef.id, name, nickname, email, role, createdAt: new Date().toISOString() } as User;
+  const docRef = await addDoc(collection(db, 'users'), { name, nickname, email, role, status: 'Aktif', createdAt: serverTimestamp() });
+  return { id: docRef.id, name, nickname, email, role, status: 'Aktif', createdAt: new Date().toISOString() } as User;
 };
 
 export const updateTeacher = async (id: string, data: Partial<User>): Promise<void> => {
@@ -605,7 +701,9 @@ export const subscribeToStudentsByTeacher = (teacherId: string, onUpdate: (stude
   if (!db) return () => {}; 
   const q = query(collection(db, 'siswa'), where('teacherId', '==', teacherId));
   return onSnapshot(q, (snapshot) => {
-    const students = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Student));
+    const students = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() } as Student))
+      .filter(student => student.className !== "Lulus / Alumni");
     onUpdate(students);
   });
 };

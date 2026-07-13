@@ -17,6 +17,7 @@ const CoordinatorGuruPage: React.FC = () => {
   const [newNickname, setNewNickname] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newRole, setNewRole] = useState<Role>('GURU');
+  const [newStatus, setNewStatus] = useState<'Aktif' | 'Nonaktif'>('Aktif');
 
   useEffect(() => {
     loadTeachers();
@@ -39,6 +40,7 @@ const CoordinatorGuruPage: React.FC = () => {
     setNewNickname('');
     setNewEmail('');
     setNewRole('GURU');
+    setNewStatus('Aktif');
     setIsModalOpen(true);
   };
 
@@ -49,6 +51,7 @@ const CoordinatorGuruPage: React.FC = () => {
     setNewNickname(teacher.nickname || '');
     setNewEmail(teacher.email);
     setNewRole(teacher.role);
+    setNewStatus(teacher.status || 'Aktif');
     setIsModalOpen(true);
   };
 
@@ -64,7 +67,8 @@ const CoordinatorGuruPage: React.FC = () => {
           name: newName,
           nickname: newNickname,
           email: newEmail,
-          role: newRole
+          role: newRole,
+          status: newStatus
         });
       } else {
         // Mode Tambah
@@ -123,13 +127,16 @@ const CoordinatorGuruPage: React.FC = () => {
                       {initial}
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-bold text-gray-900 group-hover:text-primary-600 transition-colors">
                           {nickname}
                         </h3>
                         {role === 'KOORDINATOR' && (
-                          <ShieldCheck size={14} className="text-purple-600" />
+                          <ShieldCheck size={14} className="text-purple-600 animate-pulse" />
                         )}
+                        <span className={`text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest ${teacher.status === 'Nonaktif' ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>
+                          {teacher.status || 'Aktif'}
+                        </span>
                       </div>
                       <p className="text-xs text-gray-500 truncate max-w-[150px]">{name}</p>
                       <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1">
@@ -215,6 +222,18 @@ const CoordinatorGuruPage: React.FC = () => {
                 >
                   <option value="GURU">Guru Halaqah</option>
                   <option value="KOORDINATOR">Koordinator</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status Keaktifan</label>
+                <select 
+                  value={newStatus}
+                  onChange={(e) => setNewStatus(e.target.value as 'Aktif' | 'Nonaktif')}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-white text-sm font-bold"
+                >
+                  <option value="Aktif">Aktif Mengajar</option>
+                  <option value="Nonaktif">Nonaktif (Sudah Tidak Mengajar)</option>
                 </select>
               </div>
               

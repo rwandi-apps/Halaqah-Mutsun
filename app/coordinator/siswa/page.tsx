@@ -390,6 +390,7 @@ export default function CoordinatorSiswaPage() {
                     {CLASS_LIST.map((cls) => (
                       <option key={cls} value={cls}>{cls}</option>
                     ))}
+                    <option value="Lulus / Alumni">Lulus / Alumni (Keluar)</option>
                   </select>
                 </div>
                 <div className="col-span-2">
@@ -412,9 +413,14 @@ export default function CoordinatorSiswaPage() {
                     required
                   >
                     <option value="">Pilih Guru...</option>
-                    {teachers.map(t => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
-                    ))}
+                    {teachers
+                      .filter(t => t.status !== 'Nonaktif' || t.id === formData.teacherId)
+                      .map(t => (
+                        <option key={t.id} value={t.id}>
+                          {t.name} {t.status === 'Nonaktif' ? '(Nonaktif)' : ''}
+                        </option>
+                      ))
+                    }
                   </select>
                 </div>
               </div>
