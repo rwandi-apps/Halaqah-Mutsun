@@ -39,7 +39,7 @@ const PixarCircularGauge = ({ percentage }: { percentage: number }) => {
       {/* Outer 3D Shadow Plate */}
       <div className="absolute inset-0 rounded-full bg-gradient-to-b from-gray-100 to-white shadow-[0_4px_10px_rgba(0,0,0,0.08),_inset_0_2px_4px_rgba(255,255,255,1)] border border-gray-100"></div>
       
-      <svg className="w-16 h-16 sm:w-20 sm:h-20 transform -rotate-90 relative z-10">
+      <svg viewBox="0 0 60 60" className="w-16 h-16 sm:w-20 sm:h-20 transform -rotate-90 relative z-10">
         <defs>
           <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#f472b6" />
@@ -48,20 +48,20 @@ const PixarCircularGauge = ({ percentage }: { percentage: number }) => {
             <stop offset="100%" stopColor="#a21caf" />
           </linearGradient>
           {/* Subtle drop shadow filter for active progress arc to look 3D */}
-          <filter id={filterId} x="-10%" y="-10%" width="120%" height="120%">
+          <filter id={filterId} x="-20%" y="-20%" width="140%" height="140%">
             <feDropShadow dx="0" dy="1.5" stdDeviation="1" floodColor="#86198f" floodOpacity="0.4" />
           </filter>
         </defs>
         {/* Track circle (semi-transparent pale fuchsia) */}
-        <circle cx="50%" cy="50%" r={radius} stroke="#fae8ff" strokeWidth="8" fill="transparent" opacity="0.5" />
+        <circle cx="30" cy="30" r={radius} stroke="#fae8ff" strokeWidth="6" fill="transparent" opacity="0.5" />
         
         {/* Active progress circle (beautiful fuchsia gradient with 3D drop shadow) */}
         <circle 
-          cx="50%" 
-          cy="50%" 
+          cx="30" 
+          cy="30" 
           r={radius} 
           stroke={`url(#${gradId})`} 
-          strokeWidth="8" 
+          strokeWidth="6" 
           fill="transparent" 
           strokeDasharray={circumference} 
           strokeDashoffset={offset} 

@@ -314,7 +314,7 @@ export const saveSDQReport = async (reportData: Omit<Report, 'id' | 'createdAt'>
 export const getReportsByTeacher = async (teacherId: string): Promise<Report[]> => {
   if (!db) return [];
   
-  // 1. Dapatkan daftar siswa aktif untuk guru ini
+  // 1. Dapatkan daftar siswa aktif untuk guru ini (exclude Lulus / Alumni)
   const students = await getStudentsByTeacher(teacherId);
   const studentIds = students.map(s => s.id);
   
@@ -348,7 +348,8 @@ export const getReportsByTeacher = async (teacherId: string): Promise<Report[]> 
     }
   }
   
-  const reports = Array.from(reportsMap.values());
+  const activeStudentIdsSet = new Set(studentIds);
+  const reports = Array.from(reportsMap.values()).filter(r => activeStudentIdsSet.has(r.studentId));
   return reports.sort((a, b) => {
     const codeA = a.periodCode || 0;
     const codeB = b.periodCode || 0;
@@ -372,7 +373,12 @@ export const subscribeToReportsByTeacher = (teacherId: string, onUpdate: (report
     // Unsubscribe listener laporan yang sebelumnya jika ada
     reportsUnsub();
     
-    const studentIds = studentsSnap.docs.map(doc => doc.id);
+    // Filter out "Lulus / Alumni" in memory to get only current active student IDs
+    const activeStudents = studentsSnap.docs
+      .map(doc => ({ id: doc.id, ...doc.data() } as Student))
+      .filter(student => student.className !== "Lulus / Alumni");
+      
+    const studentIds = activeStudents.map(s => s.id);
     
     const unsubscribes: (() => void)[] = [];
     const teacherReportsMap = new Map<string, Report>();
@@ -428,7 +434,9 @@ export const subscribeToReportsByTeacher = (teacherId: string, onUpdate: (report
       teacherReportsMap.forEach((r, id) => mergedMap.set(id, r));
       studentReportsMap.forEach((r, id) => mergedMap.set(id, r));
       
-      const reportsList = Array.from(mergedMap.values());
+      const activeStudentIdsSet = new Set(studentIds);
+      const reportsList = Array.from(mergedMap.values()).filter(r => activeStudentIdsSet.has(r.studentId));
+      
       const sortedReports = reportsList.sort((a, b) => {
         const codeA = a.periodCode || 0;
         const codeB = b.periodCode || 0;
