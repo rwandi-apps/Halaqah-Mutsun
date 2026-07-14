@@ -162,3 +162,23 @@ export interface SemesterReport {
   notes: string;
   createdAt?: string;
 }
+
+// Collection: setoran_sabak
+export interface SetoranSabak {
+  id?: string;
+  tanggal: string; // YYYY-MM-DD
+  guruId: string;
+  guruNama: string;
+  halaqahId: string;
+  halaqahNama: string;
+  siswaId: string;
+  namaSiswa: string;
+  surah: string;
+  ayatDari: number;
+  ayatSampai: number;
+  status: 'Tuntas' | 'Belum Tuntas';
+  catatan?: string;
+  createdAt?: any;
+  updatedAt?: any;
+}
+

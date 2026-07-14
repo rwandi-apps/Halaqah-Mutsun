@@ -6,6 +6,8 @@ import { getStudentsByTeacher, getReportsByTeacher } from '../../../services/fir
 import { QURAN_MAPPING } from '../../../services/quranMapping';
 import { Button } from '../../../components/Button';
 import { Search, MoreVertical, BookOpen, Plus } from 'lucide-react';
+import { getStoredUser } from '../../../services/simpleAuth';
+import { SetoranSabakModal } from '../../../components/SetoranSabakModal';
 
 interface GuruHalaqahPageProps {
   teacherId?: string;
@@ -25,6 +27,14 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
   const [filteredStudents, setFilteredStudents] = useState<StudentWithStats[]>([]);
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<StudentWithStats | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  useEffect(() => {
+    setCurrentUser(getStoredUser());
+  }, []);
 
   // Helper: Ambil bagian "Sampai" dari range string "Dari - Sampai"
   const getEndPart = (str: string | undefined) => {
@@ -232,10 +242,13 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
                    <Button 
                      variant="outline" 
                      className="w-full text-xs font-bold border-dashed border-[#0ea5e9] text-[#0ea5e9] hover:bg-sky-50 py-2 h-auto flex items-center justify-center gap-1.5"
-                     onClick={() => navigate('/guru/laporan', { state: { studentId: student.id } })}
+                     onClick={() => {
+                       setSelectedStudent(student);
+                       setIsModalOpen(true);
+                     }}
                    >
                      <BookOpen size={14} />
-                     Input Setoran
+                     Input Setoran Sabaq
                    </Button>
                 </div>
               </div>
@@ -246,6 +259,18 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
         <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
           <p className="text-gray-500">Tidak ada siswa ditemukan.</p>
         </div>
+      )}
+
+      {selectedStudent && (
+        <SetoranSabakModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedStudent(null);
+          }}
+          student={selectedStudent}
+          currentUser={currentUser}
+        />
       )}
     </div>
   );

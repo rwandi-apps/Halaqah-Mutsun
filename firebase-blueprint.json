@@ -1,0 +1,81 @@
+{
+  "entities": {
+    "Student": {
+      "title": "Siswa",
+      "description": "Informasi master data siswa tahfizh",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "nis": { "type": "string" },
+        "nisn": { "type": "string" },
+        "className": { "type": "string" },
+        "teacherId": { "type": "string" },
+        "currentProgress": { "type": "string" },
+        "memorizationTarget": { "type": "string" }
+      },
+      "required": ["name", "className", "teacherId"]
+    },
+    "User": {
+      "title": "Pengguna",
+      "description": "Profil pengguna sistem (Guru/Koordinator)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string" }
+      },
+      "required": ["name", "email", "role"]
+    },
+    "SetoranSabak": {
+      "title": "Setoran Sabaq",
+      "description": "Pencatatan setoran hafalan harian sabaq siswa",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "tanggal": { "type": "string" },
+        "guruId": { "type": "string" },
+        "guruNama": { "type": "string" },
+        "halaqahId": { "type": "string" },
+        "halaqahNama": { "type": "string" },
+        "siswaId": { "type": "string" },
+        "namaSiswa": { "type": "string" },
+        "surah": { "type": "string" },
+        "ayatDari": { "type": "number" },
+        "ayatSampai": { "type": "number" },
+        "status": { "type": "string", "enum": ["Tuntas", "Belum Tuntas"] },
+        "catatan": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": [
+        "tanggal",
+        "guruId",
+        "guruNama",
+        "halaqahId",
+        "halaqahNama",
+        "siswaId",
+        "namaSiswa",
+        "surah",
+        "ayatDari",
+        "ayatSampai",
+        "status"
+      ]
+    }
+  },
+  "firestore": {
+    "/siswa/{studentId}": {
+      "schema": "Student",
+      "description": "Koleksi data master siswa"
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Koleksi data guru dan pengurus"
+    },
+    "/setoran_sabak/{setoranId}": {
+      "schema": "SetoranSabak",
+      "description": "Koleksi catatan setoran sabaq harian siswa"
+    }
+  }
+}

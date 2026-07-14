@@ -18,7 +18,7 @@ import {
   writeBatch
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { User, Student, Report, Role, SemesterReport, HalaqahEvaluation, HalaqahMonthlyReport, HalaqahTeacherHistory } from '../types';
+import { User, Student, Report, Role, SemesterReport, HalaqahEvaluation, HalaqahMonthlyReport, HalaqahTeacherHistory, SetoranSabak } from '../types';
 import { extractClassLevel } from './sdqTargets';
 import { calculateFromRangeString } from './quranMapping';
 
@@ -781,3 +781,53 @@ export const getLatestTeacherActivities = async (limitCount: number): Promise<an
     time: `${String(8 + i).padStart(2, '0')}:30`
   }));
 };
+
+// --- SETORAN SABAQ SERVICES ---
+
+export const subscribeToSetoranSabakByStudent = (studentId: string, onUpdate: (data: SetoranSabak[]) => void): Unsubscribe => {
+  if (!db) return () => {};
+  const q = query(
+    collection(db, 'setoran_sabak'), 
+    where('siswaId', '==', studentId)
+  );
+  return onSnapshot(q, (snapshot) => {
+    const records = snapshot.docs.map(doc => ({ 
+      id: doc.id, 
+      ...doc.data() 
+    } as SetoranSabak));
+    // Sort descending by date (and secondarily by ID/createdAt) in memory to avoid needing a Firestore composite index
+    records.sort((a, b) => {
+      const dateA = new Date(a.tanggal).getTime();
+      const dateB = new Date(b.tanggal).getTime();
+      if (dateA !== dateB) return dateB - dateA;
+      return (b.id || '').localeCompare(a.id || '');
+    });
+    onUpdate(records);
+  });
+};
+
+export const addSetoranSabak = async (data: Omit<SetoranSabak, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
+  if (!db) throw new Error("Firestore not initialized");
+  const docRef = await addDoc(collection(db, 'setoran_sabak'), {
+    ...data,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  });
+  return docRef.id;
+};
+
+export const updateSetoranSabak = async (id: string, data: Partial<SetoranSabak>): Promise<void> => {
+  if (!db) throw new Error("Firestore not initialized");
+  const docRef = doc(db, 'setoran_sabak', id);
+  await updateDoc(docRef, {
+    ...data,
+    updatedAt: serverTimestamp()
+  });
+};
+
+export const deleteSetoranSabak = async (id: string): Promise<void> => {
+  if (!db) throw new Error("Firestore not initialized");
+  const docRef = doc(db, 'setoran_sabak', id);
+  await deleteDoc(docRef);
+};
+

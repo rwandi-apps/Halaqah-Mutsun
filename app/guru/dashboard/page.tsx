@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useId } from 'react';
 import { Button } from '../../../components/Button';
 import { Sparkles, Trophy, X, ChevronRight, Share2, Copy } from 'lucide-react';
 import { 
@@ -24,6 +24,11 @@ interface StudentWithProgress extends Student {
  * Creative Infographic Magenta-style Circular Progress Component (as requested in the image)
  */
 const PixarCircularGauge = ({ percentage }: { percentage: number }) => {
+  const uId = useId();
+  const cleanId = uId.replace(/:/g, '');
+  const gradId = `magenta-grad-${cleanId}`;
+  const filterId = `shadow-filter-${cleanId}`;
+  
   const radius = 24;
   const circumference = 2 * Math.PI * radius;
   const safePercentage = Math.min(Math.max(percentage, 0), 100);
@@ -36,14 +41,14 @@ const PixarCircularGauge = ({ percentage }: { percentage: number }) => {
       
       <svg className="w-16 h-16 sm:w-20 sm:h-20 transform -rotate-90 relative z-10">
         <defs>
-          <linearGradient id="magenta-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#f472b6" />
             <stop offset="30%" stopColor="#ec4899" />
             <stop offset="70%" stopColor="#d946ef" />
             <stop offset="100%" stopColor="#a21caf" />
           </linearGradient>
           {/* Subtle drop shadow filter for active progress arc to look 3D */}
-          <filter id="shadow-filter" x="-10%" y="-10%" width="120%" height="120%">
+          <filter id={filterId} x="-10%" y="-10%" width="120%" height="120%">
             <feDropShadow dx="0" dy="1.5" stdDeviation="1" floodColor="#86198f" floodOpacity="0.4" />
           </filter>
         </defs>
@@ -55,13 +60,13 @@ const PixarCircularGauge = ({ percentage }: { percentage: number }) => {
           cx="50%" 
           cy="50%" 
           r={radius} 
-          stroke="url(#magenta-grad)" 
+          stroke={`url(#${gradId})`} 
           strokeWidth="8" 
           fill="transparent" 
           strokeDasharray={circumference} 
           strokeDashoffset={offset} 
           strokeLinecap="round" 
-          filter="url(#shadow-filter)"
+          filter={`url(#${filterId})`}
           className="transition-all duration-1000 ease-out" 
         />
       </svg>
