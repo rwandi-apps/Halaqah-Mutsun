@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Pencil, Trash2, Check, AlertCircle, Calendar, BookOpen, FileText, Loader2 } from 'lucide-react';
+import { X, Plus, Pencil, Trash2, Check, AlertCircle, Calendar, BookOpen, FileText, Loader2, Search } from 'lucide-react';
 import { Student, SetoranSabak, User } from '../types';
 import { QURAN_MAPPING } from '../services/quranMapping';
 import { 
@@ -9,6 +9,52 @@ import {
   deleteSetoranSabak 
 } from '../services/firestoreService';
 import { Button } from './Button';
+
+// Helper to get initial surah based on student current memorization progress
+const getInitialSurah = (studentObj: any): string => {
+  if (!studentObj) return 'Al-Fatihah';
+  const sabaq = studentObj.sabaqDisplay || '';
+  const progress = studentObj.currentProgress || '';
+  const currentJuz = studentObj.currentJuzDisplay || '';
+
+  const findSurahInString = (str: string): string | null => {
+    if (!str || str === '-' || str.toLowerCase() === 'belum ada') return null;
+    
+    const normalizedStr = str.toLowerCase().replace(/['`’]/g, "'");
+    const sortedSurahs = [...QURAN_MAPPING].sort((a, b) => b.surah.length - a.surah.length);
+    
+    for (const q of sortedSurahs) {
+      const normalizedSurah = q.surah.toLowerCase().replace(/['`’]/g, "'");
+      if (normalizedStr.includes(normalizedSurah)) {
+        return q.surah;
+      }
+    }
+    
+    const parts = str.split(/[:\-]/);
+    for (const part of parts) {
+      const trimmedPart = part.trim().toLowerCase().replace(/['`’]/g, "'");
+      for (const q of sortedSurahs) {
+        const normalizedSurah = q.surah.toLowerCase().replace(/['`’]/g, "'");
+        if (trimmedPart === normalizedSurah || normalizedSurah.includes(trimmedPart) || trimmedPart.includes(normalizedSurah)) {
+          return q.surah;
+        }
+      }
+    }
+    
+    return null;
+  };
+
+  let found = findSurahInString(sabaq);
+  if (found) return found;
+
+  found = findSurahInString(progress);
+  if (found) return found;
+
+  found = findSurahInString(currentJuz);
+  if (found) return found;
+
+  return 'Al-Fatihah';
+};
 
 interface SetoranSabakModalProps {
   isOpen: boolean;
@@ -31,7 +77,23 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
   // Form states
   const [editingId, setEditingId] = useState<string | null>(null);
   const [tanggal, setTanggal] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [selectedSurah, setSelectedSurah] = useState<string>('Al-Fatihah');
+  const [selectedSurah, setSelectedSurah] = useState<string>(() => getInitialSurah(student));
+  const [surahSearch, setSurahSearch] = useState<string>(selectedSurah);
+  const [isSurahDropdownOpen, setIsSurahDropdownOpen] = useState<boolean>(false);
+
+  // Keep search input in sync with selected surah when selectedSurah changes
+  useEffect(() => {
+    setSurahSearch(selectedSurah);
+  }, [selectedSurah]);
+
+  // Set initial surah when the modal opens or student changes
+  useEffect(() => {
+    if (isOpen && !editingId && !showForm) {
+      const initial = getInitialSurah(student);
+      setSelectedSurah(initial);
+      setSurahSearch(initial);
+    }
+  }, [isOpen, student.id]);
   const [ayatDari, setAyatDari] = useState<number>(1);
   const [ayatSampai, setAyatSampai] = useState<number>(1);
   const [status, setStatus] = useState<'Tuntas' | 'Belum Tuntas'>('Tuntas');
@@ -81,7 +143,7 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
   const handleOpenAddForm = () => {
     setEditingId(null);
     setTanggal(new Date().toISOString().split('T')[0]);
-    setSelectedSurah('Al-Fatihah');
+    setSelectedSurah(getInitialSurah(student));
     setAyatDari(1);
     setAyatSampai(1);
     setStatus('Tuntas');
@@ -247,22 +309,83 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
                   />
                 </div>
 
-                {/* Surah */}
-                <div className="space-y-1.5">
+                {/* Surah (Searchable Combobox) */}
+                <div className="space-y-1.5 relative" id="surah-autocomplete-container">
                   <label className="text-xs font-bold text-gray-700 flex items-center gap-1">
                     <BookOpen size={14} className="text-gray-400" /> Surah
                   </label>
-                  <select
-                    value={selectedSurah}
-                    onChange={(e) => setSelectedSurah(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#0ea5e9] outline-none bg-white"
-                  >
-                    {QURAN_MAPPING.map((q) => (
-                      <option key={q.surah} value={q.surah}>
-                        {q.surah} ({q.end} Ayat)
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <input 
+                      type="text"
+                      value={surahSearch}
+                      onChange={(e) => {
+                        setSurahSearch(e.target.value);
+                        setIsSurahDropdownOpen(true);
+                      }}
+                      onFocus={() => {
+                        setIsSurahDropdownOpen(true);
+                      }}
+                      onBlur={() => {
+                        setTimeout(() => {
+                          setIsSurahDropdownOpen(false);
+                          // Revert if not exact match or find the closest match
+                          const match = QURAN_MAPPING.find(q => q.surah.toLowerCase() === surahSearch.trim().toLowerCase());
+                          if (match) {
+                            setSelectedSurah(match.surah);
+                            setSurahSearch(match.surah);
+                          } else {
+                            // Reset to previous selected
+                            setSurahSearch(selectedSurah);
+                          }
+                        }, 200);
+                      }}
+                      placeholder="Ketik nama surah..."
+                      className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#0ea5e9] outline-none bg-white pr-8 font-semibold text-gray-800"
+                    />
+                    <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                      <Search size={14} />
+                    </div>
+                  </div>
+
+                  {isSurahDropdownOpen && (
+                    <div className="absolute z-50 left-0 right-0 mt-1 max-h-56 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-xl divide-y divide-gray-50">
+                      {(() => {
+                        const normalizedSearch = surahSearch.toLowerCase().replace(/[^a-z0-9]/g, '');
+                        const filtered = normalizedSearch === '' 
+                          ? QURAN_MAPPING 
+                          : QURAN_MAPPING.filter(q => {
+                              const normalizedSurah = q.surah.toLowerCase().replace(/[^a-z0-9]/g, '');
+                              return normalizedSurah.includes(normalizedSearch);
+                            });
+
+                        if (filtered.length > 0) {
+                          return filtered.map((q) => (
+                            <button
+                              key={q.surah}
+                              type="button"
+                              onMouseDown={() => {
+                                setSelectedSurah(q.surah);
+                                setSurahSearch(q.surah);
+                                setIsSurahDropdownOpen(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 text-xs font-semibold hover:bg-sky-50 transition-colors flex justify-between items-center ${
+                                selectedSurah === q.surah ? 'bg-sky-50 text-sky-700 font-bold' : 'text-gray-700'
+                              }`}
+                            >
+                              <span>{q.surah}</span>
+                              <span className="text-[10px] text-gray-400 font-medium">{q.end} Ayat</span>
+                            </button>
+                          ));
+                        } else {
+                          return (
+                            <div className="px-3 py-3 text-xs text-gray-400 italic text-center">
+                              Surah tidak ditemukan
+                            </div>
+                          );
+                        }
+                      })()}
+                    </div>
+                  )}
                 </div>
 
                 {/* Ayat Range & Status */}
