@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { User, Report, HalaqahEvaluation } from '../../../types';
 import { getAllTeachers, subscribeToReportsByTeacher, saveHalaqahEvaluation, getHalaqahEvaluation } from '../../../services/firestoreService';
 import { generateEvaluasiAI } from '../../../services/geminiService';
@@ -13,6 +13,12 @@ export default function CoordinatorEvaluationsPage() {
   const [selectedPeriod, setSelectedPeriod] = useState('Desember');
   const [academicYear, setAcademicYear] = useState('2026/2027');
   const [allTeacherReports, setAllTeacherReports] = useState<Report[]>([]);
+  const [showNonactive, setShowNonactive] = useState(false);
+
+  // Filter teachers based on active/inactive status
+  const filteredTeachers = useMemo(() => {
+    return teachers.filter(t => showNonactive || t.status !== 'Nonaktif' || t.id === selectedTeacherId);
+  }, [teachers, showNonactive, selectedTeacherId]);
 
   const getCalendarYear = (month: string, acadYear: string) => {
     const parts = acadYear.split('/');
@@ -162,9 +168,22 @@ export default function CoordinatorEvaluationsPage() {
             <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-500" size={16} />
             <select value={selectedTeacherId} onChange={e => setSelectedTeacherId(e.target.value)} className="w-full pl-10 pr-4 py-3 border-2 border-gray-50 rounded-2xl bg-gray-50 text-sm font-bold focus:border-primary-500 focus:bg-white outline-none transition-all">
               <option value="">-- Pilih Guru --</option>
-              {teachers.map(t => <option key={t.id} value={t.id}>{t.nickname || t.name}</option>)}
+              {filteredTeachers.map(t => (
+                <option key={t.id} value={t.id}>
+                  {t.nickname || t.name} {t.status === 'Nonaktif' ? '(Nonaktif)' : ''}
+                </option>
+              ))}
             </select>
           </div>
+          <label className="flex items-center gap-1.5 mt-1.5 ml-1 cursor-pointer select-none">
+            <input 
+              type="checkbox" 
+              checked={showNonactive} 
+              onChange={(e) => setShowNonactive(e.target.checked)}
+              className="w-3.5 h-3.5 rounded text-primary-600 focus:ring-primary-500 border-gray-200 cursor-pointer"
+            />
+            <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider">Tampilkan Guru Nonaktif</span>
+          </label>
         </div>
 
         <div className="space-y-2">

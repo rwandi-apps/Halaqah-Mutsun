@@ -207,7 +207,7 @@ const CoordinatorKelasPage: React.FC = () => {
                 >
                   <option value="">-- Pilih Guru Baru --</option>
                   {teachers
-                    .filter(t => t.id !== selectedHalaqah.teacherId)
+                    .filter(t => t.id !== selectedHalaqah.teacherId && t.status !== 'Nonaktif')
                     .map(t => (
                       <option key={t.id} value={t.id}>{t.nickname || t.name}</option>
                     ))

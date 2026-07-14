@@ -1,10 +1,11 @@
 
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Student, Report } from '../../../types';
 import { getStudentsByTeacher, getReportsByTeacher } from '../../../services/firestoreService';
 import { QURAN_MAPPING } from '../../../services/quranMapping';
 import { Button } from '../../../components/Button';
-import { Search, MoreVertical, BookOpen } from 'lucide-react';
+import { Search, MoreVertical, BookOpen, Plus } from 'lucide-react';
 
 interface GuruHalaqahPageProps {
   teacherId?: string;
@@ -19,6 +20,7 @@ interface StudentWithStats extends Student {
 }
 
 export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProps) {
+  const navigate = useNavigate();
   const [students, setStudents] = useState<StudentWithStats[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<StudentWithStats[]>([]);
   const [search, setSearch] = useState('');
@@ -137,7 +139,9 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
           <p className="text-gray-500 mt-1">Daftar siswa dalam bimbingan halaqah Anda.</p>
         </div>
         <div className="flex gap-2">
-           <Button>+ Input Setoran Hafalan</Button>
+           <Button onClick={() => navigate('/guru/laporan')}>
+             <Plus size={16} className="mr-1.5" /> Input Setoran Hafalan
+           </Button>
         </div>
       </div>
 
@@ -220,6 +224,19 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
                    <span className="text-gray-900 font-medium text-right truncate max-w-[150px]" title={student.tilawahDisplay}>
                      {student.tilawahDisplay}
                    </span>
+                </div>
+
+                <div className="h-px bg-gray-50"></div>
+
+                <div className="pt-2">
+                   <Button 
+                     variant="outline" 
+                     className="w-full text-xs font-bold border-dashed border-[#0ea5e9] text-[#0ea5e9] hover:bg-sky-50 py-2 h-auto flex items-center justify-center gap-1.5"
+                     onClick={() => navigate('/guru/laporan', { state: { studentId: student.id } })}
+                   >
+                     <BookOpen size={14} />
+                     Input Setoran
+                   </Button>
                 </div>
               </div>
             </div>

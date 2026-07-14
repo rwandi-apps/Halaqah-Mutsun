@@ -117,7 +117,7 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
 
   // 3. Handle Navigation State (Mode Edit dari Luar)
   useEffect(() => {
-    const state = location.state as { editReportId?: string, reportData?: Report };
+    const state = location.state as { editReportId?: string, reportData?: Report, studentId?: string };
     if (state?.reportData) {
       const r = state.reportData;
       setStudentId(r.studentId);
@@ -139,6 +139,8 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
 
       setIsEditMode(true);
       setExistingReportId(r.id);
+    } else if (state?.studentId) {
+      setStudentId(state.studentId);
     }
   }, [location.state]);
 

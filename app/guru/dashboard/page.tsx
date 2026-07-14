@@ -21,32 +21,55 @@ interface StudentWithProgress extends Student {
 }
 
 /**
- * 3D Pixar-style Circular Progress Component
+ * Creative Infographic Magenta-style Circular Progress Component (as requested in the image)
  */
 const PixarCircularGauge = ({ percentage }: { percentage: number }) => {
-  const radius = 26;
+  const radius = 24;
   const circumference = 2 * Math.PI * radius;
   const safePercentage = Math.min(Math.max(percentage, 0), 100);
   const offset = circumference - (safePercentage / 100) * circumference;
 
-  const gradientId = percentage >= 100 ? "grad-success" : percentage >= 80 ? "grad-primary" : percentage >= 50 ? "grad-warn" : "grad-danger";
-
   return (
     <div className="relative w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center shrink-0 drop-shadow-md">
-      <div className="absolute inset-0 rounded-full bg-white shadow-[inset_0_2px_6px_rgba(0,0,0,0.15)] border-4 border-gray-50"></div>
+      {/* Outer 3D Shadow Plate */}
+      <div className="absolute inset-0 rounded-full bg-gradient-to-b from-gray-100 to-white shadow-[0_4px_10px_rgba(0,0,0,0.08),_inset_0_2px_4px_rgba(255,255,255,1)] border border-gray-100"></div>
+      
       <svg className="w-16 h-16 sm:w-20 sm:h-20 transform -rotate-90 relative z-10">
         <defs>
-          <linearGradient id="grad-success" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#34d399" /><stop offset="100%" stopColor="#059669" /></linearGradient>
-          <linearGradient id="grad-primary" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#60a5fa" /><stop offset="100%" stopColor="#2563eb" /></linearGradient>
-          <linearGradient id="grad-warn" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#fbbf24" /><stop offset="100%" stopColor="#d97706" /></linearGradient>
-          <linearGradient id="grad-danger" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#f87171" /><stop offset="100%" stopColor="#dc2626" /></linearGradient>
+          <linearGradient id="magenta-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#f472b6" />
+            <stop offset="30%" stopColor="#ec4899" />
+            <stop offset="70%" stopColor="#d946ef" />
+            <stop offset="100%" stopColor="#a21caf" />
+          </linearGradient>
+          {/* Subtle drop shadow filter for active progress arc to look 3D */}
+          <filter id="shadow-filter" x="-10%" y="-10%" width="120%" height="120%">
+            <feDropShadow dx="0" dy="1.5" stdDeviation="1" floodColor="#86198f" floodOpacity="0.4" />
+          </filter>
         </defs>
-        <circle cx="50%" cy="50%" r={radius} stroke="#f3f4f6" strokeWidth="7" fill="transparent" />
-        <circle cx="50%" cy="50%" r={radius} stroke={`url(#${gradientId})`} strokeWidth="7" fill="transparent" strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" className="transition-all duration-1000 ease-out" />
+        {/* Track circle (semi-transparent pale fuchsia) */}
+        <circle cx="50%" cy="50%" r={radius} stroke="#fae8ff" strokeWidth="8" fill="transparent" opacity="0.5" />
+        
+        {/* Active progress circle (beautiful fuchsia gradient with 3D drop shadow) */}
+        <circle 
+          cx="50%" 
+          cy="50%" 
+          r={radius} 
+          stroke="url(#magenta-grad)" 
+          strokeWidth="8" 
+          fill="transparent" 
+          strokeDasharray={circumference} 
+          strokeDashoffset={offset} 
+          strokeLinecap="round" 
+          filter="url(#shadow-filter)"
+          className="transition-all duration-1000 ease-out" 
+        />
       </svg>
-      <div className="absolute inset-[10px] rounded-full bg-gradient-to-b from-white to-gray-50 flex flex-col items-center justify-center z-20 shadow-[0_2px_4px_rgba(0,0,0,0.1)] border border-white">
-        <span className="text-[14px] sm:text-[16px] font-black text-gray-800 leading-none">
-          {safePercentage}<span className="text-[8px] sm:text-[9px] text-gray-400">%</span>
+      
+      {/* Inner Central White badge with glossy gradient & pink drop shadow */}
+      <div className="absolute inset-[11px] rounded-full bg-gradient-to-b from-white to-[#fdf2f8] flex flex-col items-center justify-center z-20 shadow-[0_4px_10px_rgba(217,70,239,0.15),_inset_0_2px_4px_rgba(255,255,255,0.9)] border border-pink-100/50">
+        <span className="text-[14px] sm:text-[16px] font-black text-[#86198f] tracking-tighter leading-none flex items-baseline">
+          {safePercentage}<span className="text-[8px] sm:text-[9px] text-[#db2777] font-extrabold ml-0.5">%</span>
         </span>
       </div>
     </div>

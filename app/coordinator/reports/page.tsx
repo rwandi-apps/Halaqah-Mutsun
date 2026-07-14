@@ -69,6 +69,7 @@ export default function CoordinatorReportsPage() {
   const [filterType, setFilterType] = useState('Laporan Bulanan');
   const [filterPeriod, setFilterPeriod] = useState('Desember');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showNonactive, setShowNonactive] = useState(false);
 
   // 1. Initial Load
   useEffect(() => {
@@ -77,6 +78,11 @@ export default function CoordinatorReportsPage() {
       setTeachers(onlyTeachers);
     });
   }, []);
+
+  // Filter teachers based on active/inactive status
+  const filteredTeachers = useMemo(() => {
+    return teachers.filter(t => showNonactive || t.status !== 'Nonaktif' || t.id === selectedTeacherId);
+  }, [teachers, showNonactive, selectedTeacherId]);
 
   // 2. Subscription
   useEffect(() => {
@@ -125,9 +131,22 @@ export default function CoordinatorReportsPage() {
             <Users className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-500" size={16} />
             <select value={selectedTeacherId} onChange={(e) => setSelectedTeacherId(e.target.value)} className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl bg-gray-50 text-xs font-bold focus:ring-2 focus:ring-primary-500 outline-none">
               <option value="">-- Pilih Guru --</option>
-              {teachers.map(t => <option key={t.id} value={t.id}>{t.nickname || t.name}</option>)}
+              {filteredTeachers.map(t => (
+                <option key={t.id} value={t.id}>
+                  {t.nickname || t.name} {t.status === 'Nonaktif' ? '(Nonaktif)' : ''}
+                </option>
+              ))}
             </select>
           </div>
+          <label className="flex items-center gap-1.5 mt-1 ml-1 cursor-pointer select-none">
+            <input 
+              type="checkbox" 
+              checked={showNonactive} 
+              onChange={(e) => setShowNonactive(e.target.checked)}
+              className="w-3.5 h-3.5 rounded text-primary-600 focus:ring-primary-500 border-gray-200 cursor-pointer"
+            />
+            <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider">Tampilkan Guru Nonaktif</span>
+          </label>
         </div>
 
         <div className="space-y-1.5">

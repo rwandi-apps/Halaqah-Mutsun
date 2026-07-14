@@ -77,12 +77,15 @@ export default function CoordinatorDashboard() {
         ]);
         
         // Calculate basic stats
-        const totalTeachers = teachers.filter(u => u.role === 'GURU').length;
-        const totalStudents = students.length;
-        const totalHalaqah = teachers.filter(u => u.role === 'GURU').length;
+        const activeTeachers = teachers.filter(u => u.role === 'GURU' && u.status !== 'Nonaktif');
+        const activeStudents = students.filter(s => s.className !== "Lulus / Alumni");
+
+        const totalTeachers = activeTeachers.length;
+        const totalStudents = activeStudents.length;
+        const totalHalaqah = activeTeachers.length;
         
-        const averageAttendance = students.length > 0 
-          ? Math.round(students.reduce((acc, s) => acc + (s.attendance || 0), 0) / students.length)
+        const averageAttendance = activeStudents.length > 0 
+          ? Math.round(activeStudents.reduce((acc, s) => acc + (s.attendance || 0), 0) / activeStudents.length)
           : 0;
 
         setStats({
@@ -164,59 +167,27 @@ export default function CoordinatorDashboard() {
       </div>
 
       {/* Bottom Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="font-bold text-gray-800 mb-6">Performa Rata-rata Per Halaqah</h3>
-          <div className="h-64 flex items-center justify-center text-gray-400">
-             {isLoading ? (
-               <Loader2 size={32} className="animate-spin text-primary-500" />
-             ) : performanceData.length > 0 ? (
-               <div className="flex items-end gap-4 w-full h-full px-8 pb-4">
-                 {performanceData.map((data, i) => (
-                   <div key={i} className="flex-1 bg-primary-100 rounded-t-lg relative group transition-all hover:bg-primary-300" style={{ height: `${data.value}%` }}>
-                      <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold text-gray-600">{data.value}%</span>
-                      <div className="absolute bottom-2 left-0 right-0 text-center text-[10px] text-primary-700 font-bold truncate px-1">
-                        {data.label}
-                      </div>
-                   </div>
-                 ))}
-               </div>
-             ) : (
-               <div className="text-center">
-                 <p className="text-sm">Belum ada data performa dari rapor semester.</p>
-               </div>
-             )}
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="font-bold text-gray-800 mb-6">Aktivitas Guru Terbaru</h3>
-          <div className="space-y-6">
-            {isLoading ? (
-              <div className="flex justify-center py-10">
-                <Loader2 size={24} className="animate-spin text-primary-500" />
-              </div>
-            ) : activities.length > 0 ? (
-              activities.map((act) => (
-                <div key={act.id} className="flex gap-4 animate-in fade-in slide-in-from-right-2 duration-300">
-                  <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center text-primary-600 font-bold shrink-0 border border-primary-100">
-                    {act.initials}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-gray-900 truncate">{act.teacherName}</p>
-                    <p className="text-xs text-gray-500 mt-1 leading-relaxed">{act.actionDescription}</p>
-                    <p className="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
-                      <Clock size={10} /> {act.time} WIB
-                    </p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-10 text-gray-400">
-                <p className="text-sm">Belum ada aktivitas guru tercatat.</p>
-              </div>
-            )}
-          </div>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 className="font-bold text-gray-800 mb-6">Performa Rata-rata Per Halaqah</h3>
+        <div className="h-64 flex items-center justify-center text-gray-400">
+           {isLoading ? (
+             <Loader2 size={32} className="animate-spin text-primary-500" />
+           ) : performanceData.length > 0 ? (
+             <div className="flex items-end gap-4 w-full h-full px-8 pb-4">
+               {performanceData.map((data, i) => (
+                 <div key={i} className="flex-1 bg-primary-100 rounded-t-lg relative group transition-all hover:bg-primary-300" style={{ height: `${data.value}%` }}>
+                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold text-gray-600">{data.value}%</span>
+                    <div className="absolute bottom-2 left-0 right-0 text-center text-[10px] text-primary-700 font-bold truncate px-1">
+                      {data.label}
+                    </div>
+                 </div>
+               ))}
+             </div>
+           ) : (
+             <div className="text-center">
+               <p className="text-sm">Belum ada data performa dari rapor semester.</p>
+             </div>
+           )}
         </div>
       </div>
     </div>
