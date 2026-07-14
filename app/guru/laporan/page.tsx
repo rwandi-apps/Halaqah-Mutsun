@@ -6,7 +6,8 @@ import { getStudentsByTeacher, saveSDQReport, subscribeToReportsByTeacher } from
 import { SURAH_LIST } from '../../../services/mockBackend';
 import { SDQQuranEngine } from '../../../services/tahfizh/engine';
 import { Button } from '../../../components/Button';
-import { BookOpen, Book, Plus, Minus, UserCheck, Loader2, Users, Star, Heart, AlertTriangle, Edit3 } from 'lucide-react';
+import { BookOpen, Book, Plus, Minus, UserCheck, Loader2, Users, Star, Heart, AlertTriangle, Edit3, Search, ChevronDown } from 'lucide-react';
+import { QURAN_SURAHS } from '../../../services/surahData';
 
 interface GuruLaporanPageProps {
   teacherId?: string;
@@ -30,14 +31,117 @@ const CounterInput = ({ label, value, onChange, min = 0 }: { label?: string, val
   );
 };
 
-const SourceSelect = ({ value, onChange, method, placeholder = 'Pilih...' }: { value: string, onChange: (v: string) => void, method: 'Al-Quran' | 'Iqra', placeholder?: string }) => (
-  <div className="flex-1">
-    <select value={value} onChange={(e) => onChange(e.target.value)} className="w-full h-9 sm:h-10 px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none bg-white text-xs sm:text-sm truncate shadow-sm">
-      <option value="">{placeholder}</option>
-      {method === 'Al-Quran' ? SURAH_LIST.map((s, i) => <option key={s} value={s}>{i + 1}. {s}</option>) : IQRA_VOLUMES.map((v) => <option key={v} value={v}>{v}</option>)}
-    </select>
-  </div>
-);
+const SourceSelect = ({ 
+  value, 
+  onChange, 
+  method, 
+  placeholder = 'Pilih...' 
+}: { 
+  value: string; 
+  onChange: (v: string) => void; 
+  method: 'Al-Quran' | 'Iqra'; 
+  placeholder?: string; 
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
+
+  // Clear search on open/close
+  useEffect(() => {
+    if (!isOpen) {
+      setSearch('');
+    }
+  }, [isOpen]);
+
+  const options = useMemo(() => {
+    if (method === 'Al-Quran') {
+      return QURAN_SURAHS.map(s => ({
+        value: s.nama,
+        label: `${s.nomor}. ${s.nama} (${s.jumlahAyat} Ayat)`,
+        searchField: `${s.nomor} ${s.nama}`.toLowerCase()
+      }));
+    } else {
+      return IQRA_VOLUMES.map(v => ({
+        value: v,
+        label: v,
+        searchField: v.toLowerCase()
+      }));
+    }
+  }, [method]);
+
+  const filteredOptions = useMemo(() => {
+    if (!search) return options;
+    const q = search.toLowerCase();
+    return options.filter(opt => opt.searchField.includes(q));
+  }, [options, search]);
+
+  const selectedOption = options.find(opt => opt.value === value);
+
+  return (
+    <div className="relative flex-1" ref={containerRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full h-9 sm:h-10 px-3 py-1 border border-gray-300 rounded-lg bg-white text-left text-xs sm:text-sm flex items-center justify-between shadow-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all duration-200"
+      >
+        <span className="truncate text-gray-700 font-medium">
+          {selectedOption ? selectedOption.label : placeholder}
+        </span>
+        <ChevronDown size={14} className={`text-gray-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-50 mt-1 w-full max-h-60 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden flex flex-col animate-in fade-in slide-in-from-top-1 duration-100 min-w-[200px]">
+          <div className="p-2 border-b border-gray-100 bg-gray-50 flex items-center gap-1.5">
+            <Search size={12} className="text-gray-400 shrink-0" />
+            <input
+              type="text"
+              autoFocus
+              placeholder="Cari..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full px-2 py-1 text-xs border border-gray-200 rounded-md focus:ring-1 focus:ring-primary-500 outline-none bg-white text-gray-700 font-medium"
+            />
+          </div>
+          <div className="overflow-y-auto flex-1 max-h-48 divide-y divide-gray-50 scrollbar-thin">
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => {
+                    onChange(opt.value);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 text-xs sm:text-sm hover:bg-emerald-50 hover:text-emerald-900 transition-colors ${
+                    value === opt.value ? 'bg-emerald-50 font-bold text-emerald-700' : 'text-gray-700'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))
+            ) : (
+              <div className="px-3 py-4 text-xs text-gray-400 text-center">
+                Tidak ada hasil
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const InputRow = ({ label, children, badge }: { label: string, children?: React.ReactNode, badge?: string }) => (
   <div className="space-y-1.5 sm:space-y-2">
@@ -48,6 +152,30 @@ const InputRow = ({ label, children, badge }: { label: string, children?: React.
     <div className="flex flex-row items-center gap-2">{children}</div>
   </div>
 );
+
+const getSurahFromProgress = (progress: string | undefined): string => {
+  if (!progress || progress === 'Belum Ada' || progress === '-') return '';
+  const cleanProgress = progress.trim().toLowerCase();
+  
+  // Try to find an exact match first
+  let found = QURAN_SURAHS.find(s => s.nama.toLowerCase() === cleanProgress);
+  if (found) return found.nama;
+
+  // Try to match if progress contains the surah name
+  found = QURAN_SURAHS.find(s => cleanProgress.includes(s.nama.toLowerCase()));
+  if (found) return found.nama;
+
+  // Try if the surah name contains progress (fuzzy/shorthand match, e.g. "Naba" -> "An-Naba'")
+  const stripSpecial = (str: string) => str.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+  const cleanProgressAlpha = stripSpecial(cleanProgress);
+  
+  found = QURAN_SURAHS.find(s => {
+    const sAlpha = stripSpecial(s.nama);
+    return sAlpha.includes(cleanProgressAlpha) || cleanProgressAlpha.includes(sAlpha);
+  });
+  
+  return found ? found.nama : '';
+};
 
 const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) => {
   const location = useLocation();
@@ -90,6 +218,40 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
     });
     return () => unsub();
   }, [teacherId]);
+
+  // 1b. Auto-populate default values when student is selected
+  useEffect(() => {
+    if (!studentId || isEditMode) return;
+    const selectedStudent = students.find(s => s.id === studentId);
+    if (selectedStudent) {
+      // Auto-set baseline/accumulation hafalan
+      if (selectedStudent.totalHafalan) {
+        setBaselineJuz(selectedStudent.totalHafalan.juz || 0);
+        setBaselinePages(selectedStudent.totalHafalan.pages || 0);
+        setBaselineLines(selectedStudent.totalHafalan.lines || 0);
+      } else {
+        setBaselineJuz(0);
+        setBaselinePages(0);
+        setBaselineLines(0);
+      }
+
+      // Auto-set tahfizhIndiv Surah based on Sedang Menghafal (currentProgress)
+      const progressSurah = getSurahFromProgress(selectedStudent.currentProgress);
+      if (progressSurah) {
+        setTahfizhIndiv(prev => ({
+          ...prev,
+          fs: progressSurah,
+          ts: progressSurah,
+        }));
+      } else {
+        setTahfizhIndiv(prev => ({
+          ...prev,
+          fs: '',
+          ts: '',
+        }));
+      }
+    }
+  }, [studentId, students, isEditMode]);
 
   // 2. Helper untuk Memecah String Hafalan ("Surah: 1 - Surah: 5")
   const decomposeRange = (range: string | undefined) => {

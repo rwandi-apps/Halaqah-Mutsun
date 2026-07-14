@@ -7,7 +7,7 @@ import { SDQQuranEngine } from '../../../services/tahfizh/engine';
 import { Search, Edit2, Trash2, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 const ACADEMIC_YEARS = ["2024/2025", "2025/2026", "2026/2027"];
-const MONTHS = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+const MONTHS = ["Juli", "Agustus", "September", "Oktober", "November", "Desember", "Januari", "Februari", "Maret", "April", "Mei", "Juni"];
 
 const formatRangeDisplay = (raw: string | undefined): string => {
   if (!raw || typeof raw !== 'string' || raw === '-') return "-";
@@ -73,7 +73,7 @@ const GuruViewReportPage: React.FC<{ teacherId?: string }> = ({ teacherId = '1' 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterYear, setFilterYear] = useState('2025/2026');
   const [filterType, setFilterType] = useState('Laporan Bulanan');
-  const [filterPeriod, setFilterPeriod] = useState('Desember');
+  const [filterPeriod, setFilterPeriod] = useState('Juli');
 
   useEffect(() => {
     if (!teacherId) return;
@@ -85,6 +85,12 @@ const GuruViewReportPage: React.FC<{ teacherId?: string }> = ({ teacherId = '1' 
   useEffect(() => {
     let result = reports.filter(r => r.type === filterType);
     if (searchTerm.trim() !== '') result = result.filter(r => r.studentName.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    // Filter by academic year (Tahun Ajaran)
+    if (filterYear) {
+      result = result.filter(r => r.academicYear === filterYear);
+    }
+
     if (filterType === 'Laporan Bulanan') result = result.filter(r => r.month === filterPeriod);
     else result = result.filter(r => r.month === filterPeriod);
     setFilteredReports(result);
@@ -96,7 +102,7 @@ const GuruViewReportPage: React.FC<{ teacherId?: string }> = ({ teacherId = '1' 
       <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="relative group"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} /><input type="text" placeholder="Cari Siswa..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl bg-gray-50 text-sm font-bold outline-none focus:ring-2 focus:ring-primary-500 transition-all"/></div>
         <select value={filterYear} onChange={e => setFilterYear(e.target.value)} className="p-2.5 border border-gray-200 rounded-xl bg-gray-50 text-sm font-bold outline-none">{ACADEMIC_YEARS.map(y => <option key={y} value={y}>{y}</option>)}</select>
-        <select value={filterType} onChange={e => { setFilterType(e.target.value); setFilterPeriod(e.target.value === 'Laporan Semester' ? 'Ganjil' : 'Desember'); }} className="p-2.5 border border-gray-200 rounded-xl bg-gray-50 text-sm font-bold outline-none"><option value="Laporan Bulanan">Laporan Bulanan</option><option value="Laporan Semester">Laporan Semester</option></select>
+        <select value={filterType} onChange={e => { setFilterType(e.target.value); setFilterPeriod(e.target.value === 'Laporan Semester' ? 'Ganjil' : 'Juli'); }} className="p-2.5 border border-gray-200 rounded-xl bg-gray-50 text-sm font-bold outline-none"><option value="Laporan Bulanan">Laporan Bulanan</option><option value="Laporan Semester">Laporan Semester</option></select>
         <select value={filterPeriod} onChange={e => setFilterPeriod(e.target.value)} className="p-2.5 border border-gray-200 rounded-xl bg-gray-50 text-sm font-bold outline-none">
           {filterType === 'Laporan Semester' ? ["Ganjil", "Genap"].map(s => <option key={s} value={s}>{s}</option>) : MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
         </select>

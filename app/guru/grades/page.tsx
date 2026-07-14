@@ -229,7 +229,6 @@ const GuruGradesPage: React.FC<GuruGradesProps> = ({ teacherId }) => {
                              <option value="A">A (Mumtaz)</option>
                              <option value="B">B (Jayyid Jiddan)</option>
                              <option value="C">C (Jayyid)</option>
-                             <option value="D">D (Maqbul)</option>
                           </select>
                        </div>
                      ))}

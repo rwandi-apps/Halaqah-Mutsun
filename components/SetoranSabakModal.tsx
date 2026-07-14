@@ -295,43 +295,17 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
 
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                
-                {/* Status */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-700">Status</label>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setStatus('Tuntas')}
-                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold border transition-colors flex items-center justify-center gap-1.5 ${status === 'Tuntas' ? 'bg-emerald-50 border-emerald-500 text-emerald-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}
-                    >
-                      <Check size={14} /> Tuntas
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setStatus('Belum Tuntas')}
-                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold border transition-colors flex items-center justify-center gap-1.5 ${status === 'Belum Tuntas' ? 'bg-amber-50 border-amber-500 text-amber-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}
-                    >
-                      <AlertCircle size={14} /> Belum Tuntas
-                    </button>
-                  </div>
-                </div>
-
-                {/* Catatan */}
-                <div className="md:col-span-2 space-y-1.5">
-                  <label className="text-xs font-bold text-gray-700 flex items-center gap-1">
-                    <FileText size={14} className="text-gray-400" /> Catatan Tambahan (Opsional)
-                  </label>
-                  <input 
-                    type="text" 
-                    placeholder="Contoh: Lancar, tajwid perlu ditingkatkan, dll."
-                    value={catatan}
-                    onChange={(e) => setCatatan(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#0ea5e9] outline-none bg-white"
-                  />
-                </div>
-
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-700 flex items-center gap-1">
+                  <FileText size={14} className="text-gray-400" /> Catatan Tambahan (Opsional)
+                </label>
+                <input 
+                  type="text" 
+                  placeholder="Contoh: Lancar, tajwid perlu ditingkatkan, dll."
+                  value={catatan}
+                  onChange={(e) => setCatatan(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#0ea5e9] outline-none bg-white"
+                />
               </div>
 
               <div className="flex justify-end gap-2 pt-2 border-t border-sky-100">

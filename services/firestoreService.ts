@@ -839,3 +839,32 @@ export const deleteSetoranSabak = async (id: string): Promise<void> => {
   await deleteDoc(docRef);
 };
 
+export const subscribeToAllStudents = (onUpdate: (students: Student[]) => void): Unsubscribe => {
+  if (!db) return () => {};
+  const q = query(collection(db, 'siswa'));
+  return onSnapshot(q, (snapshot) => {
+    const students = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() } as Student))
+      .filter(student => student.className !== "Lulus / Alumni");
+    onUpdate(students);
+  });
+};
+
+export const subscribeToAllSetoranSabak = (onUpdate: (data: SetoranSabak[]) => void): Unsubscribe => {
+  if (!db) return () => {};
+  const q = query(collection(db, 'setoran_sabak'));
+  return onSnapshot(q, (snapshot) => {
+    const records = snapshot.docs.map(doc => ({ 
+      id: doc.id, 
+      ...doc.data() 
+    } as SetoranSabak));
+    records.sort((a, b) => {
+      const dateA = new Date(a.tanggal).getTime();
+      const dateB = new Date(b.tanggal).getTime();
+      if (dateA !== dateB) return dateB - dateA;
+      return (b.id || '').localeCompare(a.id || '');
+    });
+    onUpdate(records);
+  });
+};
+

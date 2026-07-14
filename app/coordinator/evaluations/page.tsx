@@ -10,7 +10,7 @@ export default function CoordinatorEvaluationsPage() {
   const [teachers, setTeachers] = useState<User[]>([]);
   const [selectedTeacherId, setSelectedTeacherId] = useState('');
   const [reportType, setReportType] = useState('Laporan Bulanan');
-  const [selectedPeriod, setSelectedPeriod] = useState('Desember');
+  const [selectedPeriod, setSelectedPeriod] = useState('Juli');
   const [academicYear, setAcademicYear] = useState('2026/2027');
   const [allTeacherReports, setAllTeacherReports] = useState<Report[]>([]);
   const [showNonactive, setShowNonactive] = useState(false);
@@ -215,7 +215,7 @@ export default function CoordinatorEvaluationsPage() {
             <select value={selectedPeriod} onChange={e => setSelectedPeriod(e.target.value)} className="w-full pl-10 pr-4 py-3 border-2 border-gray-50 rounded-2xl bg-gray-50 text-sm font-bold focus:border-primary-500 focus:bg-white outline-none transition-all">
               {reportType === 'Laporan Semester' 
                 ? ["Ganjil", "Genap"].map(s => <option key={s} value={s}>Semester {s}</option>)
-                : ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"].map(m => <option key={m} value={m}>{m} {getCalendarYear(m, academicYear)}</option>)
+                : ["Juli", "Agustus", "September", "Oktober", "November", "Desember", "Januari", "Februari", "Maret", "April", "Mei", "Juni"].map(m => <option key={m} value={m}>{m} {getCalendarYear(m, academicYear)}</option>)
               }
             </select>
           </div>

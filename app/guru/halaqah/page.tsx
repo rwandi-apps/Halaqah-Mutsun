@@ -148,11 +148,6 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
           <h2 className="text-2xl font-bold text-gray-900">Halaqah Saya</h2>
           <p className="text-gray-500 mt-1">Daftar siswa dalam bimbingan halaqah Anda.</p>
         </div>
-        <div className="flex gap-2">
-           <Button onClick={() => navigate('/guru/laporan')}>
-             <Plus size={16} className="mr-1.5" /> Input Setoran Hafalan
-           </Button>
-        </div>
       </div>
 
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row gap-4">
