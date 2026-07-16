@@ -606,7 +606,11 @@ export const getStudentsByTeacher = async (teacherId: string): Promise<Student[]
   const snapshot = await getDocs(q);
   return snapshot.docs
     .map(doc => ({ id: doc.id, ...doc.data() } as Student))
-    .filter(student => student.className !== "Lulus / Alumni");
+    .filter(student => 
+      student.className !== "Lulus / Alumni" && 
+      student.status !== 'Mutasi/Keluar' && 
+      student.status !== 'Alumni/Lulus'
+    );
 };
 
 export const getHalaqahMonthlyReport = async (teacherId: string, period: string): Promise<HalaqahMonthlyReport | null> => {
@@ -652,11 +656,12 @@ export const addStudent = async (student: Omit<Student, 'id' | 'attendance' | 'b
     classLevel: level, 
     attendance: 0, 
     behaviorScore: 0, 
+    status: student.status || 'Aktif',
     totalHafalan: { juz: 0, pages: 0, lines: 0 },
     currentProgress: 'Belum Ada',
     createdAt: serverTimestamp() 
   });
-  return { id: docRef.id, ...student, classLevel: level, attendance: 0, behaviorScore: 0, createdAt: new Date().toISOString() } as Student;
+  return { id: docRef.id, ...student, classLevel: level, attendance: 0, behaviorScore: 0, status: student.status || 'Aktif', createdAt: new Date().toISOString() } as Student;
 };
 
 export const updateStudent = async (id: string, data: Partial<Student>): Promise<void> => {
@@ -711,7 +716,11 @@ export const subscribeToStudentsByTeacher = (teacherId: string, onUpdate: (stude
   return onSnapshot(q, (snapshot) => {
     const students = snapshot.docs
       .map(doc => ({ id: doc.id, ...doc.data() } as Student))
-      .filter(student => student.className !== "Lulus / Alumni");
+      .filter(student => 
+        student.className !== "Lulus / Alumni" && 
+        student.status !== 'Mutasi/Keluar' && 
+        student.status !== 'Alumni/Lulus'
+      );
     onUpdate(students);
   });
 };

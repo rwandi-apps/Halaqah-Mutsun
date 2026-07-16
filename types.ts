@@ -35,6 +35,7 @@ export interface Student {
   attendance: number;
   behaviorScore: number;
   progress: number;
+  status?: 'Aktif' | 'Mutasi/Keluar' | 'Alumni/Lulus';
 }
 
 // Collection: halaqah_teacher_history

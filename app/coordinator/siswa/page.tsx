@@ -5,7 +5,7 @@ import { Student, User } from '../../../types';
 import { getAllStudents, getAllTeachers, addStudent, updateStudent } from '../../../services/firestoreService';
 import { CLASS_LIST } from '../../../services/mockBackend';
 import { Button } from '../../../components/Button';
-import { Search, Filter, Download, Plus, X, Upload, RefreshCw } from 'lucide-react';
+import { Search, Filter, Download, Plus, X, Upload, RefreshCw, Info } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 export default function CoordinatorSiswaPage() {
@@ -15,6 +15,7 @@ export default function CoordinatorSiswaPage() {
   const [teachers, setTeachers] = useState<User[]>([]);
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<'Semua' | 'Aktif' | 'Mutasi/Keluar' | 'Alumni/Lulus'>('Aktif');
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -33,7 +34,8 @@ export default function CoordinatorSiswaPage() {
     className: '',
     teacherId: '',
     memorizationTarget: 'Juz 30',
-    currentProgress: 'Belum Ada'
+    currentProgress: 'Belum Ada',
+    status: 'Aktif' as 'Aktif' | 'Mutasi/Keluar' | 'Alumni/Lulus'
   });
 
   // Helper map for teacher names
@@ -63,14 +65,20 @@ export default function CoordinatorSiswaPage() {
 
   useEffect(() => {
     const lowerSearch = search.toLowerCase();
-    const filtered = students.filter(s => 
-      s.name.toLowerCase().includes(lowerSearch) || 
-      (s.className && s.className.toLowerCase().includes(lowerSearch)) ||
-      (s.nis && s.nis.includes(lowerSearch)) ||
-      (s.nisn && s.nisn.includes(lowerSearch))
-    );
+    const filtered = students.filter(s => {
+      const matchesSearch = 
+        s.name.toLowerCase().includes(lowerSearch) || 
+        (s.className && s.className.toLowerCase().includes(lowerSearch)) ||
+        (s.nis && s.nis.includes(lowerSearch)) ||
+        (s.nisn && s.nisn.includes(lowerSearch));
+        
+      const sStatus = s.status || 'Aktif';
+      const matchesStatus = statusFilter === 'Semua' || sStatus === statusFilter;
+      
+      return matchesSearch && matchesStatus;
+    });
     setFilteredStudents(filtered);
-  }, [search, students]);
+  }, [search, students, statusFilter]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -86,7 +94,8 @@ export default function CoordinatorSiswaPage() {
       className: '',
       teacherId: '',
       memorizationTarget: 'Juz 30',
-      currentProgress: 'Belum Ada'
+      currentProgress: 'Belum Ada',
+      status: 'Aktif'
     });
     setIsModalOpen(true);
   };
@@ -100,7 +109,8 @@ export default function CoordinatorSiswaPage() {
       className: student.className,
       teacherId: student.teacherId,
       memorizationTarget: student.memorizationTarget,
-      currentProgress: student.currentProgress
+      currentProgress: student.currentProgress,
+      status: student.status || 'Aktif'
     });
     setIsModalOpen(true);
   };
@@ -199,7 +209,8 @@ export default function CoordinatorSiswaPage() {
           memorizationTarget: String(target),
           currentProgress: 'Belum Ada',
           classId: '',
-          progress: 0
+          progress: 0,
+          status: 'Aktif'
         });
         
         successCount++;
@@ -254,20 +265,47 @@ export default function CoordinatorSiswaPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-          <input 
-            type="text" 
-            placeholder="Cari nama, NIS, atau kelas..." 
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
-          />
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col gap-4">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            <input 
+              type="text" 
+              placeholder="Cari nama, NIS, atau kelas..." 
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+            />
+          </div>
+          
+          <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl self-start md:self-auto overflow-x-auto max-w-full">
+            {(['Semua', 'Aktif', 'Mutasi/Keluar', 'Alumni/Lulus'] as const).map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setStatusFilter(tab)}
+                className={`px-4 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                  statusFilter === tab 
+                    ? 'bg-white text-gray-900 shadow-sm font-black' 
+                    : 'text-gray-500 hover:text-gray-900'
+                }`}
+              >
+                {tab === 'Semua' ? 'Semua Status' : tab}
+              </button>
+            ))}
+          </div>
         </div>
-        <Button variant="secondary" className="md:w-auto">
-          <Filter size={18} className="mr-2" /> Filter Lanjutan
-        </Button>
+
+        {/* Info Banner Solusi Murid Keluar */}
+        <div className="bg-amber-50/70 border border-amber-200/50 rounded-xl p-3.5 text-xs text-amber-800 flex items-start gap-3">
+          <Info size={16} className="mt-0.5 text-amber-600 shrink-0" />
+          <div>
+            <p className="font-bold text-amber-950 mb-0.5">💡 Solusi Terkait Murid Keluar / Mutasi</p>
+            <p className="leading-relaxed text-amber-800 font-medium">
+              Siswa yang keluar di tengah tahun ajaran <strong>tidak disarankan untuk dihapus permanen</strong> dari sistem agar seluruh arsip setoran sabak, jurnal bulanan, dan rapor semester terdahulu mereka tidak ikut hilang. Cukup ganti Status Keaktifannya menjadi <strong>"Mutasi / Keluar"</strong>. Mereka otomatis disembunyikan dari daftar bimbingan harian guru agar tidak membingungkan, namun riwayat akademisnya tetap aman tersimpan di basis data sekolah.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Table */}
@@ -280,6 +318,7 @@ export default function CoordinatorSiswaPage() {
                 <th className="px-6 py-4">NIS</th>
                 <th className="px-6 py-4">NISN</th>
                 <th className="px-6 py-4">Kelas</th>
+                <th className="px-6 py-4">Status</th>
                 <th className="px-6 py-4">Guru Pembimbing</th>
                 <th className="px-6 py-4">Target</th>
                 <th className="px-6 py-4 text-gray-700">Progres</th>
@@ -288,7 +327,7 @@ export default function CoordinatorSiswaPage() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
-                <tr><td colSpan={8} className="px-6 py-8 text-center text-gray-500">Memuat data dari database...</td></tr>
+                <tr><td colSpan={9} className="px-6 py-8 text-center text-gray-500">Memuat data dari database...</td></tr>
               ) : filteredStudents.length > 0 ? (
                 filteredStudents.map((student) => (
                   <tr key={student.id} className="hover:bg-gray-50/50 transition-colors">
@@ -299,6 +338,21 @@ export default function CoordinatorSiswaPage() {
                       <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-semibold">
                         {student.className}
                       </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      {student.status === 'Mutasi/Keluar' ? (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 uppercase tracking-wider">
+                          Mutasi
+                        </span>
+                      ) : student.status === 'Alumni/Lulus' || student.className === 'Lulus / Alumni' ? (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 uppercase tracking-wider">
+                          Alumni
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase tracking-wider">
+                          Aktif
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-gray-700">
                       {teacherMap[student.teacherId] || 'Tidak Diketahui'}
@@ -321,7 +375,7 @@ export default function CoordinatorSiswaPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-gray-400">
+                  <td colSpan={9} className="px-6 py-12 text-center text-gray-400">
                     Tidak ada data siswa ditemukan.
                   </td>
                 </tr>
@@ -382,13 +436,13 @@ export default function CoordinatorSiswaPage() {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
                   />
                 </div>
-                <div className="col-span-2">
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Kelas</label>
                   <select 
                     name="className"
                     value={formData.className}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none bg-white"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none bg-white text-sm"
                     required
                   >
                     <option value="">Pilih Kelas...</option>
@@ -396,6 +450,20 @@ export default function CoordinatorSiswaPage() {
                       <option key={cls} value={cls}>{cls}</option>
                     ))}
                     <option value="Lulus / Alumni">Lulus / Alumni (Keluar)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status Keaktifan</label>
+                  <select 
+                    name="status"
+                    value={formData.status}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none bg-white text-sm font-bold text-gray-700"
+                    required
+                  >
+                    <option value="Aktif">Aktif</option>
+                    <option value="Mutasi/Keluar">Mutasi / Keluar</option>
+                    <option value="Alumni/Lulus">Alumni / Lulus</option>
                   </select>
                 </div>
                 <div className="col-span-2">
