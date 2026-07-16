@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Student, SemesterReport } from '../../../types';
 import { getStudentsByTeacher, saveSemesterReport, getSemesterReport } from '../../../services/firestoreService';
 import { improveReportRedaction, improveTeacherNotes } from '../../../services/geminiService';
-import { extractClassLevel } from '../../../services/sdqTargets';
+import { extractClassLevel, getDefaultTargetHafalan } from '../../../services/sdqTargets';
 import { Button } from '../../../components/Button';
 import { Save, BookOpen, ClipboardCheck, GraduationCap, User, FileText, Info, Sparkles, Loader2, MessageSquare } from 'lucide-react';
 
@@ -51,6 +51,44 @@ const GuruGradesPage: React.FC<GuruGradesProps> = ({ teacherId }) => {
     }
   }, [teacherId, location]);
 
+  const fetchReportForStudent = async (studentId: string, year: string, sem: 'Ganjil' | 'Genap', currentStudentObj?: Student) => {
+    setIsLoading(true);
+    try {
+      const existing = await getSemesterReport(studentId, year, sem);
+      const studentObj = currentStudentObj || selectedStudent || students.find(s => s.id === studentId);
+      
+      if (existing) {
+        setReport(existing);
+      } else {
+        const level = studentObj ? extractClassLevel(studentObj.className) : 0;
+        const computedTarget = getDefaultTargetHafalan(level, sem);
+        setReport({
+          studentId,
+          teacherId: teacherId || '',
+          academicYear: year,
+          semester: sem,
+          targetHafalan: computedTarget,
+          dateStr: '',
+          dateHijri: '',
+          assessments: { adab: 'B', murojaah: 'B', tajwid: 'B', makharij: 'A', pencapaianTarget: 85 },
+          exams: { uts: 80, uas: 80 },
+          statusHafalan: {
+            dimiliki: { jumlah: '', rincian: '', status: 'Cukup Baik' },
+            mutqin: { jumlah: '', rincian: '', status: 'Cukup Baik' },
+            semesterIni: { jumlah: '', rincian: '', status: 'Baik' }
+          },
+          narrativeTahfizh: '',
+          narrativeTilawah: '',
+          notes: `Tingkatkan kembali semangat Ananda ${studentObj?.name || ''} dalam menghafal serta memuroja'ah hafalan. Semoga Allah selalu memberikan kemudahan.`
+        });
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleStudentChange = async (id: string, currentStudents?: Student[]) => {
     if (!id) {
       setSelectedStudent(null);
@@ -59,22 +97,7 @@ const GuruGradesPage: React.FC<GuruGradesProps> = ({ teacherId }) => {
     
     const student = (currentStudents || students).find(s => s.id === id);
     setSelectedStudent(student || null);
-    
-    setIsLoading(true);
-    const existing = await getSemesterReport(id, report.academicYear, report.semester);
-    if (existing) {
-      setReport(existing);
-    } else {
-      setReport(prev => ({
-        ...prev,
-        studentId: id,
-        teacherId: teacherId || '',
-        narrativeTahfizh: '',
-        narrativeTilawah: '',
-        notes: `Tingkatkan kembali semangat Ananda ${student?.name || ''} dalam menghafal serta memuroja'ah hafalan. Semoga Allah selalu memberikan kemudahan.`
-      }));
-    }
-    setIsLoading(false);
+    await fetchReportForStudent(id, report.academicYear, report.semester, student);
   };
 
   const handleRefineLanguage = async (field: 'narrativeTahfizh' | 'narrativeTilawah' | 'notes') => {
@@ -139,7 +162,13 @@ const GuruGradesPage: React.FC<GuruGradesProps> = ({ teacherId }) => {
             <label className="block text-xs font-bold text-gray-400 uppercase mb-1 ml-1">Tahun Ajaran</label>
             <select 
               value={report.academicYear} 
-              onChange={e => setReport({...report, academicYear: e.target.value})} 
+              onChange={async (e) => {
+                const newYear = e.target.value;
+                setReport(prev => ({ ...prev, academicYear: newYear }));
+                if (selectedStudent) {
+                  await fetchReportForStudent(selectedStudent.id, newYear, report.semester);
+                }
+              }} 
               className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-white"
             >
               <option value="2024 / 2025">2024 / 2025</option>
@@ -149,7 +178,17 @@ const GuruGradesPage: React.FC<GuruGradesProps> = ({ teacherId }) => {
           </div>
           <div>
             <label className="block text-xs font-bold text-gray-400 uppercase mb-1 ml-1">Semester</label>
-            <select value={report.semester} onChange={e => setReport({...report, semester: e.target.value as any})} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-white">
+            <select 
+              value={report.semester} 
+              onChange={async (e) => {
+                const newSem = e.target.value as 'Ganjil' | 'Genap';
+                setReport(prev => ({ ...prev, semester: newSem }));
+                if (selectedStudent) {
+                  await fetchReportForStudent(selectedStudent.id, report.academicYear, newSem);
+                }
+              }} 
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-white"
+            >
               <option value="Ganjil">Ganjil</option>
               <option value="Genap">Genap</option>
             </select>
@@ -157,9 +196,25 @@ const GuruGradesPage: React.FC<GuruGradesProps> = ({ teacherId }) => {
         </div>
 
         {selectedStudent && (
-          <div className="mt-4 p-3 bg-blue-50 rounded-xl border border-blue-100 flex items-center gap-3 text-blue-700 text-xs font-bold">
-            <Info size={16} />
-            Siswa Kelas {classLevel}. Menggunakan format: {isDescriptionFormat ? 'RAPOR DESKRIPSI' : 'RAPOR TABEL'}
+          <div className="mt-4 space-y-3">
+            <div className="p-3 bg-blue-50 rounded-xl border border-blue-100 flex items-center gap-3 text-blue-700 text-xs font-bold">
+              <Info size={16} />
+              Siswa Kelas {classLevel}. Menggunakan format: {isDescriptionFormat ? 'RAPOR DESKRIPSI' : 'RAPOR TABEL'}
+            </div>
+            
+            <div className="p-4 bg-amber-50/50 rounded-xl border border-amber-200/60">
+              <label className="block text-xs font-bold text-amber-800 uppercase mb-1.5 ml-1">Target Hafalan Semester Ini</label>
+              <input 
+                type="text" 
+                value={report.targetHafalan || ''} 
+                onChange={e => setReport({ ...report, targetHafalan: e.target.value })} 
+                className="w-full px-4 py-2.5 border border-amber-200 rounded-xl text-sm bg-white font-bold text-amber-900 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none shadow-sm"
+                placeholder="Masukkan target hafalan, contoh: Juz 30"
+              />
+              <p className="text-[10px] text-amber-700 mt-1.5 ml-1 font-medium">
+                *Target diisi secara otomatis berdasarkan kurikulum kelas & semester, namun Anda tetap dapat menyesuaikannya secara manual jika diperlukan.
+              </p>
+            </div>
           </div>
         )}
       </div>

@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <!-- Gradients -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" /> <!-- Emerald 500 -->
+      <stop offset="100%" stop-color="#047857" /> <!-- Emerald 700 -->
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" /> <!-- Amber 400 -->
+      <stop offset="100%" stop-color="#d97706" /> <!-- Amber 600 -->
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-color="#022c22" flood-opacity="0.3" />
+    </filter>
+  </defs>
+
+  <!-- Background Octagram (Rub el Hizb) -->
+  <g filter="url(#shadow)">
+    <!-- Main Octagram -->
+    <path d="M 64 6 L 81.3 23.3 L 104.7 23.3 L 104.7 46.7 L 122 64 L 104.7 81.3 L 104.7 104.7 L 81.3 104.7 L 64 122 L 46.7 104.7 L 23.3 104.7 L 23.3 81.3 L 6 64 L 23.3 46.7 L 23.3 23.3 L 46.7 23.3 Z" 
+          fill="url(#bgGrad)" stroke="url(#goldGrad)" stroke-width="4" stroke-linejoin="round" />
+          
+    <!-- Inner Octagram Accent Line -->
+    <path d="M 64 14 L 78 28 L 98 28 L 98 48 L 112 64 L 98 80 L 98 100 L 78 100 L 64 114 L 50 100 L 30 100 L 30 80 L 16 64 L 30 48 L 30 28 L 50 28 Z" 
+          fill="none" stroke="#ffffff" stroke-width="1" stroke-opacity="0.4" stroke-linejoin="round" />
+  </g>
+
+  <!-- Quran Book Stand (Rehal) and Open Book -->
+  <g transform="translate(64, 66) scale(0.85)">
+    <!-- Rehal (Book stand) -->
+    <path d="M -24 16 L -8 32 L 8 32 L 24 16 L 36 28 L 24 40 L -24 40 L -36 28 Z" fill="url(#goldGrad)" opacity="0.9" />
+    <path d="M -16 24 L 0 40 L 16 24" stroke="#ffffff" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.7" />
+
+    <!-- Open Quran Pages Left -->
+    <path d="M 0 10 C -12 -5, -28 -5, -38 4 C -38 4, -38 18, -38 18 C -28 9, -12 9, 0 22 Z" fill="#ffffff" filter="drop-shadow(0px 2px 2px rgba(0,0,0,0.15))" />
+    <!-- Open Quran Pages Right -->
+    <path d="M 0 10 C 12 -5, 28 -5, 38 4 C 38 4, 38 18, 38 18 C 28 9, 12 9, 0 22 Z" fill="#fcfbf7" filter="drop-shadow(0px 2px 2px rgba(0,0,0,0.15))" />
+
+    <!-- Book Lines/Text Left (Decorative) -->
+    <path d="M -32 5 L -10 5 M -32 9 L -10 9 M -30 13 L -12 13" stroke="#b1a897" stroke-width="1.5" stroke-linecap="round" />
+    <!-- Book Lines/Text Right (Decorative) -->
+    <path d="M 10 5 L 32 5 M 10 9 L 32 9 M 12 13 L 30 13" stroke="#b1a897" stroke-width="1.5" stroke-linecap="round" />
+
+    <!-- Elegant Crescent & Star above Quran -->
+    <g transform="translate(0, -22) scale(0.7)">
+      <!-- Crescent -->
+      <path d="M -2 -14 A 12 12 0 1 0 14 6 A 10 10 0 1 1 -2 -14 Z" fill="url(#goldGrad)" />
+      <!-- Star -->
+      <path d="M 12 -4 L 13.5 -1 L 16.5 -1 L 14 1 L 15 4 L 12 2 L 9 4 L 10 1 L 7.5 -1 L 10.5 -1 Z" fill="#ffffff" />
+    </g>
+  </g>
+</svg>

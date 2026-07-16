@@ -29,10 +29,42 @@ const TARGET_SCORE_KELAS_1 = 186;
 const SDQ_TARGETS: Record<number, number> = {
   1: TARGET_SCORE_KELAS_1, 
   2: 1, 
-  3: 3, 
+  3: 2, 
   4: 4, 
   5: 5, 
   6: 5  
+};
+
+export const getDefaultTargetHafalan = (classLevel: number, semester: 'Ganjil' | 'Genap'): string => {
+  if (classLevel === 1) {
+    return semester === 'Ganjil' 
+      ? 'Selesai Iqra 6' 
+      : 'Perbaikan Bacaan / Tilawah Al-Quran';
+  }
+  if (classLevel === 2) {
+    return semester === 'Ganjil'
+      ? '0.5 Juz (Setengah Juz 30)'
+      : '1 Juz (Juz 30)';
+  }
+  if (classLevel === 3) {
+    return semester === 'Ganjil'
+      ? '1 Juz (Juz 30)'
+      : '2 Juz (Juz 30 dan 29)';
+  }
+  if (classLevel === 4) {
+    return semester === 'Ganjil'
+      ? '2 Juz (Juz 30 dan 29)'
+      : '4 Juz (Juz 30, 29, 28, dan 27)';
+  }
+  if (classLevel === 5) {
+    return semester === 'Ganjil'
+      ? '2.5 Juz (Juz 30, 29, dan setengah Juz 28)'
+      : '5 Juz (Juz 30, 29, 28, 27, dan 26)';
+  }
+  if (classLevel === 6) {
+    return '5 Juz (Muroja\'ah Juz 30, 29, 28, 27, dan 26)';
+  }
+  return '10 Halaman';
 };
 
 export const extractClassLevel = (input: any): number => {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LogoSDQ, Button } from '../components/UIComponents';
+import { Button } from '../components/UIComponents';
 import { login } from '../services/mockBackend';
 import { User, Role } from '../types';
 
@@ -31,13 +31,10 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 font-sans">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
-        <div className="flex justify-center mb-8">
-          <LogoSDQ className="scale-125" />
-        </div>
+      <div className="w-full max-w-md p-6 md:p-8">
         
-        <h2 className="text-2xl font-bold text-center text-gray-900 mb-2">Selamat Datang</h2>
-        <p className="text-center text-gray-500 mb-8">Silakan masuk untuk melanjutkan akses halaqah.</p>
+        <h2 className="text-3xl font-black text-center text-gray-900 tracking-tight uppercase mb-2">Selamat Datang</h2>
+        <p className="text-center text-gray-500 text-sm mb-8">Silakan masuk untuk melanjutkan akses halaqah.</p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
