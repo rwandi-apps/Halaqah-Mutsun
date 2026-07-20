@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Role } from '../../../types';
 import { getAllTeachers, addTeacher, updateTeacher } from '../../../services/firestoreService';
-import { Users, ChevronRight, Mail, Plus, X, ShieldCheck, Edit2 } from 'lucide-react';
+import { Users, ChevronRight, Mail, Plus, X, ShieldCheck, Edit2, Search } from 'lucide-react';
 import { Button } from '../../../components/Button';
 
 const CoordinatorGuruPage: React.FC = () => {
@@ -11,6 +11,7 @@ const CoordinatorGuruPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Form State
   const [newName, setNewName] = useState('');
@@ -85,6 +86,22 @@ const CoordinatorGuruPage: React.FC = () => {
     }
   };
 
+  const filteredAndSortedTeachers = teachers
+    .filter(teacher => {
+      if (!teacher) return false;
+      const name = (teacher.name || '').toLowerCase();
+      const nickname = (teacher.nickname || '').toLowerCase();
+      const email = (teacher.email || '').toLowerCase();
+      const q = searchQuery.toLowerCase();
+      return name.includes(q) || nickname.includes(q) || email.includes(q);
+    })
+    .sort((a, b) => {
+      // Guru Nonaktif ditaruh di paling bawah
+      const aNon = a.status === 'Nonaktif' ? 1 : 0;
+      const bNon = b.status === 'Nonaktif' ? 1 : 0;
+      return aNon - bNon;
+    });
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       <div className="flex justify-between items-center">
@@ -97,13 +114,27 @@ const CoordinatorGuruPage: React.FC = () => {
         </Button>
       </div>
 
-      {!teachers || teachers.length === 0 ? (
+      {/* Kolom Pencarian Guru */}
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+          <input 
+            type="text" 
+            placeholder="Cari nama guru, nama panggilan, atau email..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none text-sm font-medium"
+          />
+        </div>
+      </div>
+
+      {filteredAndSortedTeachers.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-xl border border-dashed border-gray-300">
-           <p className="text-gray-500">Belum ada data guru.</p>
+           <p className="text-gray-500">Guru tidak ditemukan atau belum ada data guru.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {teachers.map((teacher, index) => {
+          {filteredAndSortedTeachers.map((teacher, index) => {
             if (!teacher) return null;
 
             const name = typeof teacher.name === 'string' ? teacher.name : "Tanpa Nama";
