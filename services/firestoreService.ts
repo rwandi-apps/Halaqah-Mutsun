@@ -884,6 +884,12 @@ export const getAllReports = async (): Promise<Report[]> => {
   return snapshot.docs.map(doc => normalizeReportData(doc.id, doc.data()));
 };
 
+export const deleteStudent = async (id: string): Promise<void> => {
+  if (!db) throw new Error("Firestore not initialized");
+  const docRef = doc(db, 'siswa', id);
+  await deleteDoc(docRef);
+};
+
 export const subscribeToAllReports = (onUpdate: (reports: Report[]) => void): Unsubscribe => {
   if (!db) return () => {};
   const q = query(collection(db, 'laporan'));

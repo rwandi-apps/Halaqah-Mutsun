@@ -97,11 +97,18 @@ const getIqraScore = (progressStr: string): number => {
   const parts = lower.split('-');
   const lastPart = parts[parts.length - 1].trim(); 
 
+  // Normalisasi teks untuk membandingkan tanpa spasi, tanda hubung, atau tanda petik tunggal
+  const normalizeText = (text: string) => {
+    return text.toLowerCase().replace(/[^a-z0-9]/g, '');
+  };
+
+  const normalizedLower = normalizeText(progressStr);
+
   // 1. Cek apakah ini level Al-Qur'an (Surah)
   // Jika progres mengandung nama Surah, berarti sudah lulus Iqra
   const isQuranLevel = SURAH_LIST.some(surah => 
-    lower.includes(surah.toLowerCase())
-  );
+    normalizedLower.includes(normalizeText(surah))
+  ) || normalizedLower.includes('quran') || normalizedLower.includes('alquran') || normalizedLower.includes('surah') || normalizedLower.includes('surat');
 
   if (isQuranLevel) {
     return TARGET_SCORE_KELAS_1;
