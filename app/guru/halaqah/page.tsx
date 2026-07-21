@@ -59,74 +59,74 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
     return `Juz ${Math.ceil(p / 20)}`;
   };
 
+  const loadData = async () => {
+    if (!teacherId) return;
+    setIsLoading(true);
+    try {
+      const [studentsData, reportsData] = await Promise.all([
+        getStudentsByTeacher(teacherId),
+        getReportsByTeacher(teacherId)
+      ]);
+
+      const studentsWithStats = studentsData.map(student => {
+        const studentReports = reportsData.filter(r => r.studentId === student.id);
+        studentReports.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+        const latest = studentReports[0];
+
+        // LOGIKA BARU: Tampilan Hafalan Adaptif (Juz + Halaman)
+        let hafalanDisplay = "0 Juz";
+        if (latest && latest.totalHafalan) {
+           const j = Number(latest.totalHafalan.juz || 0);
+           const p = Number(latest.totalHafalan.pages || 0);
+           
+           const parts = [];
+           if (j > 0) parts.push(`${j} Juz`);
+           if (p > 0) parts.push(`${p} Halaman`);
+           
+           hafalanDisplay = parts.length > 0 ? parts.join(' ') : "0 Juz";
+        } else if (student.totalHafalan) {
+           const j = Number(student.totalHafalan.juz || 0);
+           const p = Number(student.totalHafalan.pages || 0);
+           
+           const parts = [];
+           if (j > 0) parts.push(`${j} Juz`);
+           if (p > 0) parts.push(`${p} Halaman`);
+           
+           hafalanDisplay = parts.length > 0 ? parts.join(' ') : "0 Juz";
+        }
+
+        // Prioritas: gunakan student.currentProgress jika ada, fallback ke laporan bulanan terbaru
+        let sabaqDisplay = (student.currentProgress && student.currentProgress !== 'Belum Ada' && student.currentProgress !== '-')
+          ? student.currentProgress
+          : getEndPart(latest?.tahfizh?.individual);
+
+        const tilawahRaw = latest?.tilawah?.individual;
+        const tilawahDisplay = getEndPart(tilawahRaw);
+
+        const currentJuzDisplay = (sabaqDisplay !== '-') 
+          ? getJuzFromString(sabaqDisplay)
+          : (student.currentProgress || "-");
+
+        return {
+          ...student,
+          latestReport: latest,
+          totalHafalanDisplay: hafalanDisplay,
+          sabaqDisplay,
+          tilawahDisplay,
+          currentJuzDisplay
+        };
+      });
+
+      setStudents(studentsWithStats);
+      setFilteredStudents(studentsWithStats);
+    } catch (error) {
+      console.error("Error loading halaqah data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadData = async () => {
-      if (!teacherId) return;
-      setIsLoading(true);
-      try {
-        const [studentsData, reportsData] = await Promise.all([
-          getStudentsByTeacher(teacherId),
-          getReportsByTeacher(teacherId)
-        ]);
-
-        const studentsWithStats = studentsData.map(student => {
-          const studentReports = reportsData.filter(r => r.studentId === student.id);
-          studentReports.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-          const latest = studentReports[0];
-
-          // LOGIKA BARU: Tampilan Hafalan Adaptif (Juz + Halaman)
-          let hafalanDisplay = "0 Juz";
-          if (latest && latest.totalHafalan) {
-             const j = Number(latest.totalHafalan.juz || 0);
-             const p = Number(latest.totalHafalan.pages || 0);
-             
-             const parts = [];
-             if (j > 0) parts.push(`${j} Juz`);
-             if (p > 0) parts.push(`${p} Halaman`);
-             
-             hafalanDisplay = parts.length > 0 ? parts.join(' ') : "0 Juz";
-          } else if (student.totalHafalan) {
-             const j = Number(student.totalHafalan.juz || 0);
-             const p = Number(student.totalHafalan.pages || 0);
-             
-             const parts = [];
-             if (j > 0) parts.push(`${j} Juz`);
-             if (p > 0) parts.push(`${p} Halaman`);
-             
-             hafalanDisplay = parts.length > 0 ? parts.join(' ') : "0 Juz";
-          }
-
-          const sabaqRaw = latest?.tahfizh?.individual;
-          let sabaqDisplay = getEndPart(sabaqRaw);
-          if (sabaqDisplay === '-' && student.currentProgress && student.currentProgress !== 'Belum Ada') {
-             sabaqDisplay = getEndPart(student.currentProgress);
-          }
-
-          const tilawahRaw = latest?.tilawah?.individual;
-          const tilawahDisplay = getEndPart(tilawahRaw);
-
-          const currentJuzDisplay = (sabaqDisplay !== '-') 
-            ? getJuzFromString(sabaqDisplay)
-            : (student.currentProgress || "-");
-
-          return {
-            ...student,
-            latestReport: latest,
-            totalHafalanDisplay: hafalanDisplay,
-            sabaqDisplay,
-            tilawahDisplay,
-            currentJuzDisplay
-          };
-        });
-
-        setStudents(studentsWithStats);
-        setFilteredStudents(studentsWithStats);
-      } catch (error) {
-        console.error("Error loading halaqah data:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
     loadData();
   }, [teacherId]);
 
@@ -265,6 +265,7 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
           }}
           student={selectedStudent}
           currentUser={currentUser}
+          onSaveSuccess={loadData}
         />
       )}
     </div>

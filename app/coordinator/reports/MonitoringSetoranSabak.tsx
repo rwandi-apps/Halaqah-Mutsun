@@ -112,6 +112,7 @@ const isDateInWeek = (dateStr: string, startDate: Date, endDate: Date): boolean 
 const getDefaultWeek = (weeks: WeekOption[]): WeekOption | null => {
   if (weeks.length === 0) return null;
   const today = new Date();
+  today.setHours(12, 0, 0, 0); // avoid timezone boundary shifts
   const t = today.getTime();
   const found = weeks.find(w => t >= w.startDate.getTime() && t <= w.endDate.getTime());
   if (found) return found;

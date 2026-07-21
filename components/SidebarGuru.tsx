@@ -13,7 +13,6 @@ export const SidebarGuru: React.FC<SidebarProps> = ({ onLogout, onCloseMobile })
     { type: 'section', label: 'UTAMA' },
     { to: "/guru/dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { to: "/guru/halaqah", icon: Users, label: "Halaqah" },
-    { to: "/guru/setoran-guru", icon: ClipboardList, label: "Setoran Guru" },
     
     { type: 'section', label: 'LAPORAN' },
     { to: "/guru/laporan", icon: FileText, label: "Input Laporan" },

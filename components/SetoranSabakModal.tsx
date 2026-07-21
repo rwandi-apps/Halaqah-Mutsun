@@ -6,7 +6,8 @@ import {
   subscribeToSetoranSabakByStudent, 
   addSetoranSabak, 
   updateSetoranSabak, 
-  deleteSetoranSabak 
+  deleteSetoranSabak,
+  updateStudent
 } from '../services/firestoreService';
 import { Button } from './Button';
 
@@ -61,13 +62,15 @@ interface SetoranSabakModalProps {
   onClose: () => void;
   student: Student & { totalHafalanDisplay?: string; currentJuzDisplay?: string };
   currentUser: User | null;
+  onSaveSuccess?: () => void;
 }
 
 export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
   isOpen,
   onClose,
   student,
-  currentUser
+  currentUser,
+  onSaveSuccess
 }) => {
   const [history, setHistory] = useState<SetoranSabak[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
@@ -110,18 +113,8 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
     const quranEntry = QURAN_MAPPING.find(q => q.surah.toLowerCase() === selectedSurah.toLowerCase());
     if (quranEntry) {
       setMaxAyah(quranEntry.end);
-      // Adjust ayat values if they exceed new max
-      if (ayatDari > quranEntry.end) setAyatDari(quranEntry.end);
-      if (ayatSampai > quranEntry.end) setAyatSampai(quranEntry.end);
     }
   }, [selectedSurah]);
-
-  // Adjust ayatSampai if ayatDari is greater
-  useEffect(() => {
-    if (ayatDari > ayatSampai) {
-      setAyatSampai(ayatDari);
-    }
-  }, [ayatDari]);
 
   // Subscribe to real-time setoran sabak history
   useEffect(() => {
@@ -174,6 +167,30 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
       return;
     }
 
+    const dari = Number(ayatDari);
+    const sampai = Number(ayatSampai);
+
+    if (isNaN(dari) || dari <= 0) {
+      alert("Ayat Dari harus diisi dengan angka positif.");
+      return;
+    }
+    if (isNaN(sampai) || sampai <= 0) {
+      alert("Ayat Sampai harus diisi dengan angka positif.");
+      return;
+    }
+    if (dari > sampai) {
+      alert("Ayat Dari tidak boleh lebih besar dari Ayat Sampai.");
+      return;
+    }
+    if (dari > maxAyah) {
+      alert(`Ayat Dari tidak boleh melebihi jumlah ayat di surah ${selectedSurah} (${maxAyah} ayat).`);
+      return;
+    }
+    if (sampai > maxAyah) {
+      alert(`Ayat Sampai tidak boleh melebihi jumlah ayat di surah ${selectedSurah} (${maxAyah} ayat).`);
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const guruNama = currentUser.nickname || currentUser.name || "Guru";
@@ -186,8 +203,8 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
         siswaId: student.id,
         namaSiswa: student.name,
         surah: selectedSurah,
-        ayatDari: Number(ayatDari),
-        ayatSampai: Number(ayatSampai),
+        ayatDari: dari,
+        ayatSampai: sampai,
         status,
         catatan: catatan.trim()
       };
@@ -198,13 +215,22 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
         await addSetoranSabak(payload);
       }
 
+      // Update student's sabaq terakhir in Firestore
+      await updateStudent(student.id, {
+        currentProgress: `${selectedSurah} ${dari}-${sampai}`
+      });
+
+      // Call callback to notify parent component to refresh data
+      if (onSaveSuccess) {
+        onSaveSuccess();
+      }
+
       // Reset form states but keep date and surah for rapid data input if desired
-      setAyatDari(Number(ayatSampai) + 1 > maxAyah ? maxAyah : Number(ayatSampai) + 1);
-      setAyatSampai(Number(ayatSampai) + 1 > maxAyah ? maxAyah : Number(ayatSampai) + 1);
+      setAyatDari(sampai + 1 > maxAyah ? maxAyah : sampai + 1);
+      setAyatSampai(sampai + 1 > maxAyah ? maxAyah : sampai + 1);
       setCatatan('');
       
       // Auto-focus back to form or toggle form visibility if user wants to close it
-      // Let's keep the form open so they can insert consecutive rows
       if (editingId) {
         // If it was an edit, close the form
         setShowForm(false);
@@ -397,8 +423,8 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
                       required
                       min={1}
                       max={maxAyah}
-                      value={ayatDari}
-                      onChange={(e) => setAyatDari(Math.min(maxAyah, Math.max(1, Number(e.target.value))))}
+                      value={ayatDari === 0 ? '' : ayatDari}
+                      onChange={(e) => setAyatDari(e.target.value === '' ? 0 : Number(e.target.value))}
                       className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#0ea5e9] outline-none bg-white"
                     />
                   </div>
@@ -407,15 +433,14 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
                     <input 
                       type="number" 
                       required
-                      min={ayatDari}
+                      min={1}
                       max={maxAyah}
-                      value={ayatSampai}
-                      onChange={(e) => setAyatSampai(Math.min(maxAyah, Math.max(ayatDari, Number(e.target.value))))}
+                      value={ayatSampai === 0 ? '' : ayatSampai}
+                      onChange={(e) => setAyatSampai(e.target.value === '' ? 0 : Number(e.target.value))}
                       className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#0ea5e9] outline-none bg-white"
                     />
                   </div>
                 </div>
-
               </div>
 
               <div className="space-y-1.5">

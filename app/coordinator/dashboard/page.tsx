@@ -446,50 +446,85 @@ export default function CoordinatorDashboard() {
 
   // Motivation Alert box message and layout helper
   const motivationText = useMemo(() => {
+    const veryHighAlerts = [
+      "Masya Allah! Prestasi yang luar biasa membanggakan, hampir seluruh siswa telah tuntas target! Teruslah bersinar dan menginspirasi.",
+      "Allahu Akbar! Hasil gemilang ini adalah bukti keikhlasan, kesabaran, dan keistiqomahan para santri serta pembimbing halaqah.",
+      "Luar biasa! Tingkat kelulusan target yang sangat memuaskan. Semoga Allah mencatat setiap bait hafalan mereka sebagai pemberi syafaat.",
+      "Subhanallah! Di atas 90% target tercapai sempurna. Mari pertahankan konsistensi spiritual dan kemutqinan hafalan mulia ini.",
+      "Masya Allah, capaian yang sangat berkah! Terus dampingi siswa untuk melakukan murajaah agar hafalan tertanam kokoh di dalam dada.",
+      "Prestasi istimewa! Dedikasi tanpa batas dari para guru dan santri telah membuahkan hasil yang indah. Terus pertahankan!",
+      "Alhamdulillah! Kebahagiaan luar biasa melihat para santri begitu antusias dan sukses melampaui target yang ditetapkan.",
+      "Membanggakan! Semoga mahkota kemuliaan di akhirat kelak menjadi hadiah terindah bagi para santri yang berjuang tulus ini.",
+      "Masya Allah, ikhtiar yang maksimal melahirkan hasil yang optimal! Semoga Allah senantiasa menjaga kebersihan niat kita semua.",
+      "Allahu Akbar, hasil yang sangat mengagumkan! Terus tingkatkan motivasi agar tak ada satu pun siswa yang tertinggal."
+    ];
+
     const highAlerts = [
-      "Masya Allah! Prestasi yang luar biasa membanggakan. Pertahankan semangat dan jadilah teladan bagi seluruh halaqah.",
-      "Allahu Akbar! Pencapaian target yang sangat tinggi ini adalah buah manis dari kesabaran dan keistiqomahan para santri dan pembimbing. Teruslah bersinar!",
-      "Luar biasa! Mayoritas siswa telah mencapai target dengan sangat baik. Semoga Allah memberkahi setiap langkah bimbingan dan hafalan mereka.",
-      "Subhanallah! Hasil yang sangat istimewa di atas 85%. Mari kita pertahankan konsistensi spiritual dan kedisiplinan ini hingga akhir tahun ajaran.",
-      "Masya Allah, capaian yang sangat gemilang! Terus dampingi siswa untuk memperkuat (mutqin) hafalan yang sudah diraih agar tidak mudah lupa."
+      "Alhamdulillah, bimbingan berjalan dengan sangat lancar. Sedikit dorongan lagi untuk mencapai ketuntasan 100%!",
+      "Barakallahu fiikum! Sebagian besar siswa sudah berada di jalur emas keberhasilan. Tetap semangat mengawal sisa target!",
+      "Progres yang sangat positif dan menggembirakan. Mari apresiasi siswa yang tuntas untuk menginspirasi rekan halaqahnya.",
+      "Sangat baik! Kedisiplinan santri terus tumbuh dengan stabil. Terus jalin komunikasi hangat dengan wali murid di rumah.",
+      "Alhamdulillah, capaian yang membahagiakan. Dampingi santri yang hampir mencapai garis finish dengan perhatian ekstra.",
+      "Langkah yang luar biasa! Mari berikan sedikit suntikan semangat di pekan ini agar target bulanan tersapu bersih.",
+      "Alhamdulillah, usaha keras para santri mulai terlihat nyata. Terus jaga ritme setoran agar tetap konsisten.",
+      "Barakallah! Mayoritas santri menunjukkan kemajuan pesat. Jangan lupa berikan reward sederhana untuk memicu semangat mereka.",
+      "Satu langkah lagi menuju kesempurnaan target. Mari doakan dan bimbing santri kita dengan penuh kasih sayang.",
+      "Progres yang mantap! Kolaborasi guru dan santri terbukti sangat solid. Terus pertahankan energi positif ini!"
     ];
 
-    const mediumHighAlerts = [
-      "Alhamdulillah, bimbingan berjalan dengan sangat baik. Terus tingkatkan pendampingan intensif agar seluruh target tercapai sepenuhnya.",
-      "Barakallahu fiikum! Sebagian besar siswa sudah berada di jalur yang tepat. Sedikit dorongan lagi untuk mencapai hasil yang maksimal.",
-      "Alhamdulillah, progres yang sangat positif. Mari berikan apresiasi kepada siswa yang telah mencapai target untuk memotivasi teman-temannya.",
-      "Sangat baik! Progres tumbuh dengan stabil. Terus dorong kolaborasi dan komunikasi yang erat antara guru halaqah dan wali murid.",
-      "Alhamdulillah, capaian yang membahagiakan. Mari dampingi siswa-siswa yang hampir mencapai garis finish dengan perhatian ekstra."
-    ];
-
-    const mediumLowAlerts = [
-      "Kerja bagus! Progres sudah melampaui setengah jalan. Mari rapatkan barisan untuk membantu siswa yang masih tertinggal di belakang.",
-      "Alhamdulillah, langkah demi langkah terus menunjukkan kemajuan. Yuk, lebih intensifkan evaluasi mingguan di setiap kelompok halaqah.",
-      "Pencapaian yang cukup baik di kisaran 50-69%. Mari berikan semangat tambahan bagi siswa agar mereka semakin termotivasi mengejar target semester.",
-      "Lebih dari separuh target telah terlampaui. Sedikit lagi usaha bersama, kita pasti bisa mengantarkan seluruh siswa mencapai impiannya.",
-      "Semangat berbenah! Progres yang berjalan sudah cukup bagus, mari fokus pada pendampingan personal bagi siswa yang butuh perhatian lebih."
+    const mediumAlerts = [
+      "Kerja bagus! Progres sudah melampaui setengah jalan. Mari rapatkan barisan untuk merangkul santri yang masih tertinggal.",
+      "Alhamdulillah, langkah demi langkah terus menunjukkan perbaikan. Yuk, lebih intensifkan evaluasi mingguan di setiap halaqah.",
+      "Pencapaian yang cukup baik. Mari berikan apresiasi atas setiap lembar hafalan yang telah disetorkan dengan susah payah.",
+      "Lebih dari separuh santri telah tuntas. Sedikit lagi usaha bersama, kita pasti bisa mengantarkan semua siswa mencapai targetnya.",
+      "Semangat berbenah! Progres berjalan cukup stabil, mari fokus memberikan pendampingan personal bagi siswa yang butuh perhatian khusus.",
+      "Alhamdulillah atas progres saat ini. Mari identifikasi kendala santri yang belum tuntas dan carikan solusi bersama.",
+      "Kemajuan yang nyata! Mari ajak para santri untuk saling menyemangati (fastabiqul khairat) di dalam halaqah.",
+      "Capaian yang patut disyukuri. Dengan sedikit tambahan waktu murajaah, insya Allah persentase ini akan melesat naik.",
+      "Perjuangan para santri sangat berharga. Mari kuatkan sinergi dengan orang tua agar santri tetap menyetor di rumah.",
+      "Terus maju! Hasil pertengahan ini menunjukkan potensi besar. Mari dorong santri untuk melangkah lebih mantap lagi."
     ];
 
     const lowAlerts = [
-      "Mari rapatkan barisan bimbingan, berikan perhatian lebih dan bimbingan khusus bagi siswa yang memerlukan dorongan ekstra.",
-      "Jangan berkecil hati! Setiap huruf hafalan adalah pahala yang mulia. Mari evaluasi metode belajar dan berikan bimbingan yang lebih personal.",
-      "Tantangan adalah peluang untuk menjadi lebih baik. Mari kita pererat koordinasi dengan guru halaqah dan orang tua untuk menyemangati siswa.",
-      "Yuk, kita berikan perhatian ekstra dan metode pendekatan yang lebih hangat agar anak-anak kembali bergairah mengejar ketertinggalan.",
-      "Ayo bersama-sama kita bangun suasana halaqah yang lebih ceria dan memotivasi agar progres hafalan meningkat di pekan-pekan mendatang."
+      "Mari rapatkan barisan bimbingan. Berikan perhatian lebih dan bimbingan khusus bagi siswa yang memerlukan dorongan ekstra.",
+      "Jangan berkecil hati! Setiap huruf yang dibaca adalah pahala melimpah. Mari evaluasi berkala metode belajar santri.",
+      "Tantangan adalah peluang peningkatan. Mari pererat koordinasi dengan guru halaqah untuk menyalakan kembali gairah belajar.",
+      "Yuk, kita berikan pendekatan bimbingan yang lebih hangat agar anak-anak kembali bersemangat mengejar ketertinggalan.",
+      "Ayo bersama-sama kita bangun suasana halaqah yang ceria, interaktif, dan penuh motivasi agar progres hafalan meningkat.",
+      "Setiap anak memiliki kecepatan belajar yang unik. Sabar dan konsisten adalah kunci utama mengantarkan mereka menuju target.",
+      "Mari jadwalkan sesi motivasi singkat sebelum memulai halaqah guna membakar kembali semangat juang para santri.",
+      "Mari kita dampingi santri dengan sabar. Sedikit demi sedikit lama-lama menjadi bukit hafalan yang mulia.",
+      "Yuk, komunikasikan perkembangan santri secara berkala kepada wali murid agar terjalin kerja sama bimbingan yang harmonis.",
+      "Jangan patah arang! Keberhasilan besar berawal dari konsistensi kecil yang dikawal secara terus-menerus."
     ];
 
-    // Combine current date (day) and percentage value to select a stable yet varied text
-    const day = new Date().getDate();
-    const hash = (Math.floor(targetAchievementPercentage) + day) % 5;
+    const veryLowAlerts = [
+      "Fokus utama saat ini: berikan pendampingan emosional dan bimbingan privat satu-per-satu untuk memulihkan semangat santri.",
+      "Mari petakan kendala utama santri secara detail. Satu langkah kecil yang konsisten lebih berharga daripada diam di tempat.",
+      "Allah melihat proses dan kesungguhan kita, bukan hanya hasil akhir. Mari kuatkan niat dan dampingi anak-anak dengan sabar.",
+      "Ayo buat program pendampingan khusus (klinik tahfizh/tilawah) untuk membantu santri yang mengalami kesulitan mendasar.",
+      "Waktunya saling merangkul dan menguatkan. Berikan apresiasi setinggi-tingginya walau santri hanya menambah beberapa ayat saja.",
+      "Mari selidiki hambatan belajar santri dengan komunikasi yang penuh kasih sayang dari hati ke hati.",
+      "Yuk, kita segarkan suasana kelas halaqah dengan ice breaking atau kisah-kisah inspiratif para penghafal Al-Quran terdahulu.",
+      "Bimbingan intensif dan suasana yang suportif adalah obat terbaik untuk membangkitkan gairah belajar yang sedang padam.",
+      "Mari bersama-sama memohon kemudahan dari Allah SWT agar dilancarkan dalam membimbing para calon penjaga Al-Quran.",
+      "Setiap kesulitan pasti ada kemudahan. Mari optimis dan lakukan perbaikan metode mengajar secara berkala."
+    ];
 
-    if (targetAchievementPercentage >= 85) {
+    // Combine current date (day) and percentage value to select a stable yet highly varied text
+    const day = new Date().getDate();
+    const hash = (Math.floor(targetAchievementPercentage * 7) + day) % 10;
+
+    if (targetAchievementPercentage >= 90) {
+      return veryHighAlerts[hash];
+    } else if (targetAchievementPercentage >= 75) {
       return highAlerts[hash];
-    } else if (targetAchievementPercentage >= 70) {
-      return mediumHighAlerts[hash];
     } else if (targetAchievementPercentage >= 50) {
-      return mediumLowAlerts[hash];
-    } else {
+      return mediumAlerts[hash];
+    } else if (targetAchievementPercentage >= 30) {
       return lowAlerts[hash];
+    } else {
+      return veryLowAlerts[hash];
     }
   }, [targetAchievementPercentage]);
 
@@ -838,7 +873,11 @@ export default function CoordinatorDashboard() {
                 {highestProgressStudent ? highestProgressStudent.name : '-'}
               </h3>
               <p className="text-[10px] text-purple-100 font-bold truncate opacity-90">
-                {highestProgressStudent ? highestProgressStudent.progressStats.label : 'Belum Ada'}
+                {highestProgressStudent ? (
+                  highestProgressStudent.progressStats.classLevel === 1 
+                    ? highestProgressStudent.progressStats.label 
+                    : `${highestProgressStudent.totalHafalan?.juz || 0} Juz ${highestProgressStudent.totalHafalan?.pages || 0} Hal`
+                ) : 'Belum Ada'}
               </p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white shrink-0 shadow-inner ml-3">
