@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-import LogoSDQ from '../../../components/LogoSDQ';
 import { User } from '../../../types';
 import { simpleLogin } from '../../../services/simpleAuth';
 import { AlertCircle, Mail, Lock } from 'lucide-react';
@@ -52,11 +51,6 @@ export default function LoginPage({ onLogin }: LoginProps) {
       {/* Main Content */}
       <div className="relative z-10 w-full max-w-[400px] px-6 flex flex-col items-center">
         
-        {/* Logo Area */}
-        <div className="mb-10 bg-white/95 backdrop-blur-sm px-6 py-4 rounded-3xl shadow-2xl">
-          <LogoSDQ />
-        </div>
-
         {/* Title */}
         <div className="text-center mb-10">
           <h2 className="text-white text-2xl font-bold tracking-tight">Halaqah SDQ Mutiara Sunnah</h2>

@@ -32,6 +32,8 @@ import {
   Sparkles,
   Info,
   ChevronRight,
+  ChevronDown,
+  Check,
   TrendingDown,
   Trash2,
   Edit,
@@ -119,6 +121,7 @@ export default function CoordinatorDashboard() {
   const [gender, setGender] = useState('Semua');
   const [selectedClass, setSelectedClass] = useState('Semua');
   const [selectedProgram, setSelectedProgram] = useState('Semua');
+  const [isProgramDropdownOpen, setIsProgramDropdownOpen] = useState(false);
   const [targetType, setTargetType] = useState<'Kurikulum' | 'Kustom'>('Kurikulum');
   const [targetVal, setTargetVal] = useState<number>(1);
 
@@ -275,7 +278,20 @@ export default function CoordinatorDashboard() {
       // Program filter
       if (selectedProgram !== 'Semua') {
         if (selectedProgram === 'Hafalan' && level <= 1) return false;
-        if (selectedProgram === 'Iqra\'' && level !== 1) return false;
+        if (selectedProgram === 'Iqra\'' || selectedProgram === 'Al-Qur\'an') {
+          if (level !== 1) return false;
+          const progressStr = student.currentProgress || "";
+          const normalizeText = (text: string) => text.toLowerCase().replace(/[^a-z0-9]/g, '');
+          const normalizedLower = normalizeText(progressStr);
+          const isQuran = normalizedLower.includes('quran') || 
+                          normalizedLower.includes('alquran') || 
+                          normalizedLower.includes('surah') || 
+                          normalizedLower.includes('surat') ||
+                          (progressStr !== '-' && progressStr !== 'Belum Ada' && !normalizedLower.includes('iqra') && !normalizedLower.includes('jilid'));
+          
+          if (selectedProgram === 'Iqra\'' && isQuran) return false;
+          if (selectedProgram === 'Al-Qur\'an' && !isQuran) return false;
+        }
       }
 
       return true;
@@ -481,7 +497,20 @@ export default function CoordinatorDashboard() {
         if (selectedProgram !== 'Semua') {
           const level = extractClassLevel(studentProfile.className);
           if (selectedProgram === 'Hafalan' && level <= 1) return false;
-          if (selectedProgram === 'Iqra\'' && level !== 1) return false;
+          if (selectedProgram === 'Iqra\'' || selectedProgram === 'Al-Qur\'an') {
+            if (level !== 1) return false;
+            const progressStr = r.tilawah?.individual || studentProfile.currentProgress || "";
+            const normalizeText = (text: string) => text.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const normalizedLower = normalizeText(progressStr);
+            const isQuran = normalizedLower.includes('quran') || 
+                            normalizedLower.includes('alquran') || 
+                            normalizedLower.includes('surah') || 
+                            normalizedLower.includes('surat') ||
+                            (progressStr !== '-' && progressStr !== 'Belum Ada' && !normalizedLower.includes('iqra') && !normalizedLower.includes('jilid'));
+            
+            if (selectedProgram === 'Iqra\'' && isQuran) return false;
+            if (selectedProgram === 'Al-Qur\'an' && !isQuran) return false;
+          }
         }
 
         return true;
@@ -656,17 +685,53 @@ export default function CoordinatorDashboard() {
           </div>
 
           {/* 5. Program */}
-          <div>
+          <div className="relative">
             <label className="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1.5">Program</label>
-            <select 
-              value={selectedProgram}
-              onChange={(e) => setSelectedProgram(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white rounded-xl text-xs font-bold text-gray-700 outline-none focus:ring-2 focus:ring-primary-500 transition-all"
+            <button 
+              type="button"
+              onClick={() => setIsProgramDropdownOpen(!isProgramDropdownOpen)}
+              className="w-full px-3 py-2 border border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white rounded-xl text-xs font-bold text-gray-700 outline-none focus:ring-2 focus:ring-primary-500 transition-all flex items-center justify-between cursor-pointer h-[38px]"
             >
-              <option value="Semua">Semua</option>
-              <option value="Hafalan">Hafalan (Tahfizh)</option>
-              <option value="Iqra'">Iqra' (Tilawah)</option>
-            </select>
+              <span>{selectedProgram}</span>
+              <ChevronDown size={14} className="text-gray-400 transition-transform duration-200" />
+            </button>
+
+            {isProgramDropdownOpen && (
+              <>
+                {/* Backdrop to close when clicking outside */}
+                <div 
+                  className="fixed inset-0 z-30" 
+                  onClick={() => setIsProgramDropdownOpen(false)} 
+                />
+                
+                {/* Popover list */}
+                <div className="absolute left-0 mt-1.5 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 p-1.5 z-40 animate-in fade-in slide-in-from-top-1 duration-100">
+                  {['Semua', 'Hafalan', 'Iqra\'', 'Al-Qur\'an'].map((option) => {
+                    const isSelected = selectedProgram === option;
+                    return (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() => {
+                          setSelectedProgram(option);
+                          setIsProgramDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
+                          isSelected 
+                            ? 'bg-[#0da595] text-white shadow-sm' 
+                            : 'text-gray-750 hover:bg-slate-50'
+                        }`}
+                      >
+                        <span className="w-4 flex items-center justify-center shrink-0">
+                          {isSelected && <Check size={14} className="stroke-[3]" />}
+                        </span>
+                        <span>{option}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </div>
 
           {/* 6. Target */}
@@ -981,7 +1046,15 @@ export default function CoordinatorDashboard() {
                 paginatedStudents.map((student, index) => {
                   const displayIndex = (currentPage - 1) * itemsPerPage + index + 1;
                   const isQuranLevel = extractClassLevel(student.className) === 1;
-                  const programText = isQuranLevel ? "Iqra'" : "Hafalan";
+                  const progressStr = student.currentProgress || "";
+                  const normalizeText = (text: string) => text.toLowerCase().replace(/[^a-z0-9]/g, '');
+                  const normalizedLower = normalizeText(progressStr);
+                  const isActuallyQuran = normalizedLower.includes('quran') || 
+                                          normalizedLower.includes('alquran') || 
+                                          normalizedLower.includes('surah') || 
+                                          normalizedLower.includes('surat') ||
+                                          (progressStr !== '-' && progressStr !== 'Belum Ada' && !normalizedLower.includes('iqra') && !normalizedLower.includes('jilid'));
+                  const programText = isQuranLevel ? (isActuallyQuran ? "Al-Qur'an" : "Iqra'") : "Hafalan";
 
                   // Status badge renderer inside render block
                   const percentage = student.progressStats?.percentage ?? 0;
