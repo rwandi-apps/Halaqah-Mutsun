@@ -197,6 +197,12 @@ export default function CoordinatorDashboard() {
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingStudent) return;
+
+    if (editForm.totalHafalan && Number(editForm.totalHafalan.juz || 0) > 30) {
+      alert("Koordinator/Guru salah input: Juz dalam Al-Quran hanya ada 30 Juz. Silakan periksa kembali.");
+      return;
+    }
+
     setIsSaving(true);
     try {
       await updateStudent(editingStudent.id, {
@@ -1034,8 +1040,26 @@ export default function CoordinatorDashboard() {
                         </div>
                       </td>
                       <td className="py-4 px-4">
-                        <span className="text-xs font-bold text-gray-650 block">
-                          {student.currentProgress || 'Belum Ada'}
+                        <span className="text-xs font-bold text-gray-750 block">
+                          {isQuranLevel ? (
+                            student.currentProgress || 'Belum Ada'
+                          ) : (
+                            (() => {
+                              const total = student.totalHafalan;
+                              if (!total) return "0 Juz";
+                              let juz = Number(total.juz || 0);
+                              let pages = Number(total.pages || 0);
+                              let lines = Number(total.lines || 0);
+                              
+                              if (juz >= 30) return "30 Juz (Khatam)";
+                              
+                              const parts = [];
+                              if (juz > 0) parts.push(`${juz} Juz`);
+                              if (pages > 0) parts.push(`${pages} Hal`);
+                              if (lines > 0) parts.push(`${lines} Baris`);
+                              return parts.length > 0 ? parts.join(' ') : "0 Juz";
+                            })()
+                          )}
                         </span>
                       </td>
                       <td className="py-4 px-4">

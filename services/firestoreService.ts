@@ -175,9 +175,15 @@ export const recalculateTotalHafalan = async (studentId: string): Promise<void> 
     }
 
     // 5. Update Master Data Siswa
+    let finalJuz = Math.floor(totalPagesAccumulated / 20);
+    let finalPages = totalPagesAccumulated % 20;
+    if (finalJuz >= 30) {
+      finalJuz = 30;
+      finalPages = 0;
+    }
     const finalHafalan = {
-      juz: Math.floor(totalPagesAccumulated / 20),
-      pages: totalPagesAccumulated % 20,
+      juz: finalJuz,
+      pages: finalPages,
       lines: 0
     };
 
@@ -670,6 +676,13 @@ export const updateStudent = async (id: string, data: Partial<Student>): Promise
   const updateData = { ...data };
   if (data.className) {
     (updateData as any).classLevel = extractClassLevel(data.className);
+  }
+  if (updateData.totalHafalan) {
+    if (Number(updateData.totalHafalan.juz || 0) > 30) {
+      updateData.totalHafalan.juz = 30;
+      updateData.totalHafalan.pages = 0;
+      updateData.totalHafalan.lines = 0;
+    }
   }
   await updateDoc(docRef, updateData);
 };

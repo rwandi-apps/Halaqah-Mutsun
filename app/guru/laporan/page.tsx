@@ -342,6 +342,12 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
     if (!studentId) return alert("Pilih siswa.");
     const selectedStudent = students.find(s => s.id === studentId);
     if (!selectedStudent) return;
+
+    if (safeNum(baselineJuz) > 30) {
+      alert("Guru salah input: Juz dalam Al-Quran hanya ada 30 Juz. Silakan periksa kembali.");
+      return;
+    }
+
     setIsSaving(true);
     try {
       const tfRes = getResultText(tahfizhIndiv, 'Al-Quran', 'tahfizh');
