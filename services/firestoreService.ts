@@ -18,7 +18,7 @@ import {
   writeBatch
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { User, Student, Report, Role, SemesterReport, HalaqahEvaluation, HalaqahMonthlyReport, HalaqahTeacherHistory, SetoranSabak } from '../types';
+import { User, Student, Report, Role, SemesterReport, HalaqahEvaluation, HalaqahMonthlyReport, HalaqahTeacherHistory, SetoranSabak, SetoranGuru } from '../types';
 import { extractClassLevel } from './sdqTargets';
 import { calculateFromRangeString } from './quranMapping';
 
@@ -910,5 +910,71 @@ export const subscribeToAllReports = (onUpdate: (reports: Report[]) => void): Un
     const reports = snapshot.docs.map(doc => normalizeReportData(doc.id, doc.data()));
     onUpdate(reports);
   });
+};
+
+// --- SETORAN GURU SERVICES ---
+
+export const subscribeToSetoranGuruByTeacher = (teacherId: string, onUpdate: (data: SetoranGuru[]) => void): Unsubscribe => {
+  if (!db) return () => {};
+  const q = query(
+    collection(db, 'setoran_guru'), 
+    where('guruId', '==', teacherId)
+  );
+  return onSnapshot(q, (snapshot) => {
+    const records = snapshot.docs.map(doc => ({ 
+      id: doc.id, 
+      ...doc.data() 
+    } as SetoranGuru));
+    records.sort((a, b) => {
+      const dateA = new Date(a.tanggal).getTime();
+      const dateB = new Date(b.tanggal).getTime();
+      if (dateA !== dateB) return dateB - dateA;
+      return (b.id || '').localeCompare(a.id || '');
+    });
+    onUpdate(records);
+  });
+};
+
+export const subscribeToAllSetoranGuru = (onUpdate: (data: SetoranGuru[]) => void): Unsubscribe => {
+  if (!db) return () => {};
+  const q = query(collection(db, 'setoran_guru'));
+  return onSnapshot(q, (snapshot) => {
+    const records = snapshot.docs.map(doc => ({ 
+      id: doc.id, 
+      ...doc.data() 
+    } as SetoranGuru));
+    records.sort((a, b) => {
+      const dateA = new Date(a.tanggal).getTime();
+      const dateB = new Date(b.tanggal).getTime();
+      if (dateA !== dateB) return dateB - dateA;
+      return (b.id || '').localeCompare(a.id || '');
+    });
+    onUpdate(records);
+  });
+};
+
+export const addSetoranGuru = async (data: Omit<SetoranGuru, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
+  if (!db) throw new Error("Firestore not initialized");
+  const docRef = await addDoc(collection(db, 'setoran_guru'), {
+    ...data,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  });
+  return docRef.id;
+};
+
+export const updateSetoranGuru = async (id: string, data: Partial<SetoranGuru>): Promise<void> => {
+  if (!db) throw new Error("Firestore not initialized");
+  const docRef = doc(db, 'setoran_guru', id);
+  await updateDoc(docRef, {
+    ...data,
+    updatedAt: serverTimestamp()
+  });
+};
+
+export const deleteSetoranGuru = async (id: string): Promise<void> => {
+  if (!db) throw new Error("Firestore not initialized");
+  const docRef = doc(db, 'setoran_guru', id);
+  await deleteDoc(docRef);
 };
 

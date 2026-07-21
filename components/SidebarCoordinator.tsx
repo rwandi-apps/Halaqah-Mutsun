@@ -21,14 +21,15 @@ export const SidebarCoordinator: React.FC<SidebarProps> = ({ onLogout, onCloseMo
     
     { type: 'section', label: 'SUPERVISI' },
     { to: "/coordinator/reports", icon: FileText, label: "Pantau Laporan" },
+    { to: "/coordinator/setoran-guru", icon: ClipboardList, label: "Setoran Guru" },
     { to: "/coordinator/rapor", icon: FileCheck, label: "Pantau Rapor" },
     { to: "/coordinator/evaluations", icon: Sparkles, label: "Input Evaluasi AI" },
   ];
 
   return (
     <aside className="fixed inset-y-0 left-0 z-30 w-64 bg-primary-700 text-white flex flex-col h-screen overflow-hidden">
-      <div className="h-20 flex items-center px-6 shrink-0 border-b border-primary-600/50">
-        <h1 className="text-lg font-bold tracking-wide uppercase">SDQ Mutiara Sunnah</h1>
+      <div className="h-20 flex items-center justify-center px-6 shrink-0 border-b border-primary-600/50">
+        <h1 className="text-lg font-bold tracking-wide uppercase text-center w-full">SDQ Mutiara Sunnah</h1>
       </div>
       <div className="px-4 py-2 flex-1 overflow-hidden">
         <nav className="space-y-1">

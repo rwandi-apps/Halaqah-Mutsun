@@ -13,6 +13,7 @@ export const SidebarGuru: React.FC<SidebarProps> = ({ onLogout, onCloseMobile })
     { type: 'section', label: 'UTAMA' },
     { to: "/guru/dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { to: "/guru/halaqah", icon: Users, label: "Halaqah" },
+    { to: "/guru/setoran-guru", icon: ClipboardList, label: "Setoran Guru" },
     
     { type: 'section', label: 'LAPORAN' },
     { to: "/guru/laporan", icon: FileText, label: "Input Laporan" },
@@ -26,8 +27,8 @@ export const SidebarGuru: React.FC<SidebarProps> = ({ onLogout, onCloseMobile })
 
   return (
     <aside className="fixed inset-y-0 left-0 z-30 w-64 bg-[#0f4c75] text-white flex flex-col h-screen overflow-hidden">
-      <div className="h-20 flex items-center px-6 shrink-0">
-        <h1 className="text-xl font-bold tracking-wide uppercase">HALAQAH SDQ</h1>
+      <div className="h-20 flex items-center justify-center px-6 shrink-0 border-b border-white/10">
+        <h1 className="text-lg font-bold tracking-wide uppercase text-center w-full">SDQ Mutiara Sunnah</h1>
       </div>
       <div className="px-4 py-2 flex-1 overflow-hidden">
         <nav className="space-y-1">

@@ -11,6 +11,7 @@ import CoordinatorReportsPage from './app/coordinator/reports/page';
 import CoordinatorRaporPage from './app/coordinator/rapor/page';
 import CoordinatorEvaluationsPage from './app/coordinator/evaluations/page';
 import CoordinatorTransitionPage from './app/coordinator/transition/page';
+import { CoordinatorSetoranGuruPage } from './app/coordinator/setoran-guru/page';
 import GuruDashboard from './app/guru/dashboard/page';
 import GuruHalaqahPage from './app/guru/halaqah/page';
 import GuruLaporanPage from './app/guru/laporan/page';
@@ -18,6 +19,7 @@ import GuruViewReportPage from './app/guru/view-report/page';
 import GuruEvaluationPage from './app/guru/evaluation/page';
 import GuruGradesPage from './app/guru/grades/page';
 import GuruRaporPage from './app/guru/rapor/page';
+import { GuruSetoranPage } from './app/guru/setoran-guru/page';
 import { getStoredUser, simpleLogout } from './services/simpleAuth';
 import { User } from './types';
 
@@ -62,6 +64,7 @@ function App() {
                 <Route path="/coordinator/rapor" element={<CoordinatorRaporPage />} />
                 <Route path="/coordinator/evaluations" element={<CoordinatorEvaluationsPage />} />
                 <Route path="/coordinator/transition" element={<CoordinatorTransitionPage />} />
+                <Route path="/coordinator/setoran-guru" element={<CoordinatorSetoranGuruPage />} />
                 
                 <Route path="/guru/dashboard" element={<GuruDashboard teacherId={user?.id} />} />
                 <Route path="/guru/halaqah" element={<GuruHalaqahPage teacherId={user?.id} />} />
@@ -70,6 +73,7 @@ function App() {
                 <Route path="/guru/evaluation" element={<GuruEvaluationPage teacherId={user?.id} />} />
                 <Route path="/guru/grades" element={<GuruGradesPage teacherId={user?.id} />} />
                 <Route path="/guru/rapor" element={<GuruRaporPage teacherId={user?.id} teacherName={user?.name} />} />
+                <Route path="/guru/setoran-guru" element={<GuruSetoranPage teacherId={user?.id} />} />
 
                 <Route path="*" element={<Navigate to="/" replace />} />
              </Routes>

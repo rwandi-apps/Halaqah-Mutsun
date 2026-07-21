@@ -183,3 +183,19 @@ export interface SetoranSabak {
   updatedAt?: any;
 }
 
+// Collection: setoran_guru
+export interface SetoranGuru {
+  id?: string;
+  tanggal: string; // YYYY-MM-DD
+  guruId: string;
+  guruNama: string;
+  surah: string;
+  ayatDari: number;
+  ayatSampai: number;
+  jenisSetoran: 'Ziyadah' | 'Murojaah' | 'Sabaq' | 'Sabki' | 'Manzil';
+  status: 'Tuntas' | 'Belum Tuntas' | 'Menunggu Verifikasi';
+  catatan?: string;
+  createdAt?: any;
+  updatedAt?: any;
+}
+
