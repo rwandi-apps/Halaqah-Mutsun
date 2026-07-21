@@ -11,7 +11,8 @@ import {
 } from '../../../services/firestoreService';
 import { 
   calculateSDQProgress, 
-  extractClassLevel 
+  extractClassLevel,
+  getStudentGender
 } from '../../../services/sdqTargets';
 import { CLASS_LIST } from '../../../services/mockBackend';
 import { 
@@ -263,15 +264,16 @@ export default function CoordinatorDashboard() {
       }
       
       const level = extractClassLevel(student.className);
+      const studentGender = getStudentGender(student);
 
       // Gender filter
       if (gender !== 'Semua') {
-        if (gender === 'Laki-laki' && student.gender !== 'L') return false;
-        if (gender === 'Perempuan' && student.gender !== 'P') return false;
+        if (gender === 'Laki-laki' && studentGender !== 'L') return false;
+        if (gender === 'Perempuan' && studentGender !== 'P') return false;
       }
 
       // Class filter
-      if (selectedClass !== 'Semua' && student.className !== selectedClass) {
+      if (selectedClass !== 'Semua' && String(level) !== selectedClass) {
         return false;
       }
 
@@ -475,14 +477,16 @@ export default function CoordinatorDashboard() {
           return false;
         }
 
+        const studentGender = getStudentGender(studentProfile);
+
         // Gender filter
         if (gender !== 'Semua') {
-          if (gender === 'Laki-laki' && studentProfile.gender !== 'L') return false;
-          if (gender === 'Perempuan' && studentProfile.gender !== 'P') return false;
+          if (gender === 'Laki-laki' && studentGender !== 'L') return false;
+          if (gender === 'Perempuan' && studentGender !== 'P') return false;
         }
 
         // Class filter
-        if (selectedClass !== 'Semua' && studentProfile.className !== selectedClass) {
+        if (selectedClass !== 'Semua' && String(extractClassLevel(studentProfile.className)) !== selectedClass) {
           return false;
         }
 
@@ -669,8 +673,8 @@ export default function CoordinatorDashboard() {
               className="w-full px-3 py-2 border border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white rounded-xl text-xs font-bold text-gray-700 outline-none focus:ring-2 focus:ring-primary-500 transition-all truncate"
             >
               <option value="Semua">Semua</option>
-              {CLASS_LIST.map((cls) => (
-                <option key={cls} value={cls}>{cls}</option>
+              {['1', '2', '3', '4', '5', '6'].map((num) => (
+                <option key={num} value={num}>{num}</option>
               ))}
             </select>
           </div>
@@ -1077,7 +1081,7 @@ export default function CoordinatorDashboard() {
                       </td>
                       <td className="py-4 px-4">
                         <div className="flex justify-center">
-                          {student.gender === 'L' ? (
+                          {getStudentGender(student) === 'L' ? (
                             <div className="w-7 h-7 rounded-full bg-slate-900 text-white flex items-center justify-center font-black text-xs shadow-sm">
                               L
                             </div>

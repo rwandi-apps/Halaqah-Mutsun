@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Student, SetoranSabak, User } from '../../../types';
+import { getStudentGender } from '../../../services/sdqTargets';
 import { 
   getAllTeachers, 
   subscribeToAllStudents, 
@@ -190,8 +191,8 @@ export const MonitoringSetoranSabak: React.FC = () => {
     return students.filter(student => {
       const matchesYear = student.className !== "Lulus / Alumni"; // we already subscribe to active students, but verify
       const matchesGender = selectedGender === 'Semua' || 
-        (selectedGender === 'Ikhwan' && student.gender === 'L') || 
-        (selectedGender === 'Akhwat' && student.gender === 'P');
+        (selectedGender === 'Ikhwan' && getStudentGender(student) === 'L') || 
+        (selectedGender === 'Akhwat' && getStudentGender(student) === 'P');
       const matchesClass = selectedClass === 'Semua' || student.className === selectedClass;
       const matchesTeacher = selectedTeacher === 'Semua' || student.teacherId === selectedTeacher;
       const matchesSearch = searchTerm === '' || student.name.toLowerCase().includes(searchTerm.toLowerCase());

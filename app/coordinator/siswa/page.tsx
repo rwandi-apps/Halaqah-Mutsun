@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Student, User } from '../../../types';
 import { getAllStudents, getAllTeachers, addStudent, updateStudent } from '../../../services/firestoreService';
 import { CLASS_LIST } from '../../../services/mockBackend';
+import { getStudentGender, getAutomaticTargetLabel, extractClassLevel } from '../../../services/sdqTargets';
 import { Button } from '../../../components/Button';
 import { Search, Filter, Download, Plus, X, Upload, RefreshCw, Info } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -32,6 +33,7 @@ export default function CoordinatorSiswaPage() {
     nis: '',
     nisn: '',
     className: '',
+    gender: 'L' as 'L' | 'P',
     teacherId: '',
     memorizationTarget: 'Juz 30',
     currentProgress: 'Belum Ada',
@@ -82,7 +84,15 @@ export default function CoordinatorSiswaPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => {
+      const next = { ...prev, [name]: value };
+      if (name === 'className') {
+        next.gender = getStudentGender({ className: value });
+        const level = extractClassLevel(value);
+        next.memorizationTarget = getAutomaticTargetLabel(level);
+      }
+      return next;
+    });
   };
 
   const handleOpenAddModal = () => {
@@ -92,8 +102,9 @@ export default function CoordinatorSiswaPage() {
       nis: '',
       nisn: '',
       className: '',
+      gender: 'L',
       teacherId: '',
-      memorizationTarget: 'Juz 30',
+      memorizationTarget: 'Target Iqra 1-6',
       currentProgress: 'Belum Ada',
       status: 'Aktif'
     });
@@ -102,13 +113,15 @@ export default function CoordinatorSiswaPage() {
 
   const handleOpenEditModal = (student: Student) => {
     setEditingId(student.id);
+    const level = extractClassLevel(student.className);
     setFormData({
       name: student.name,
       nis: student.nis || '',
       nisn: student.nisn || '',
       className: student.className,
+      gender: student.gender || getStudentGender(student),
       teacherId: student.teacherId,
-      memorizationTarget: student.memorizationTarget,
+      memorizationTarget: getAutomaticTargetLabel(level),
       currentProgress: student.currentProgress,
       status: student.status || 'Aktif'
     });
@@ -124,15 +137,20 @@ export default function CoordinatorSiswaPage() {
 
     setIsSubmitting(true);
     try {
+      const level = extractClassLevel(formData.className);
+      const finalTarget = getAutomaticTargetLabel(level);
+      const dataToSave = {
+        ...formData,
+        memorizationTarget: finalTarget
+      };
+
       if (editingId) {
         // Update existing student
-        await updateStudent(editingId, {
-          ...formData
-        });
+        await updateStudent(editingId, dataToSave);
       } else {
         // Add new student
         await addStudent({
-          ...formData,
+          ...dataToSave,
           classId: '',
           progress: 0
         });
@@ -359,7 +377,7 @@ export default function CoordinatorSiswaPage() {
                     </td>
                     <td className="px-6 py-4">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
-                        {student.memorizationTarget}
+                        {getAutomaticTargetLabel(extractClassLevel(student.className))}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-gray-700">{student.currentProgress}</td>
@@ -453,6 +471,19 @@ export default function CoordinatorSiswaPage() {
                   </select>
                 </div>
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Jenis Kelamin</label>
+                  <select 
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none bg-white text-sm font-bold text-gray-700"
+                    required
+                  >
+                    <option value="L">Laki-laki (L)</option>
+                    <option value="P">Perempuan (P)</option>
+                  </select>
+                </div>
+                <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Status Keaktifan</label>
                   <select 
                     name="status"
@@ -472,9 +503,10 @@ export default function CoordinatorSiswaPage() {
                     type="text" 
                     name="memorizationTarget"
                     value={formData.memorizationTarget}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                    readOnly
+                    className="w-full px-4 py-2 border border-gray-200 bg-gray-50 rounded-lg text-gray-500 cursor-not-allowed outline-none font-medium text-sm"
                   />
+                  <p className="text-[10px] text-gray-400 mt-1 font-medium">Otomatis ditentukan berdasarkan tingkatan kelas</p>
                 </div>
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Guru Pembimbing (Halaqah)</label>

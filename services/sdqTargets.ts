@@ -86,6 +86,46 @@ export const extractClassLevel = (input: any): number => {
   return 0;
 };
 
+export const getAutomaticTargetLabel = (classLevel: number): string => {
+  if (classLevel === 1) {
+    return 'Target Iqra 1-6';
+  }
+  if (classLevel === 2) {
+    return '1 Juz (Juz 30)';
+  }
+  if (classLevel === 3) {
+    return '2 Juz (Juz 30 & 29)';
+  }
+  if (classLevel === 4) {
+    return '4 Juz (Juz 30-27)';
+  }
+  if (classLevel === 5 || classLevel === 6) {
+    return '5 Juz (Juz 30-26)';
+  }
+  return 'Juz 30'; // fallback
+};
+
+export const getStudentGender = (student: any): 'L' | 'P' => {
+  if (student && (student.gender === 'L' || student.gender === 'P')) {
+    return student.gender;
+  }
+  
+  const className = (student && student.className) || '';
+  const maleClassKeywords = ['abdullah', 'zaid', 'ubay', 'abu musa', 'muadz', 'ibnu abbas', 'ikhwan', 'laki'];
+  const normalizedClass = className.toLowerCase();
+  
+  if (maleClassKeywords.some(keyword => normalizedClass.includes(keyword))) {
+    return 'L';
+  }
+  
+  const femaleClassKeywords = ['hafshah', 'asma', 'khadijah', 'shafiyyah', 'saudah', 'aisyah', 'akhwat', 'perempuan'];
+  if (femaleClassKeywords.some(keyword => normalizedClass.includes(keyword))) {
+    return 'P';
+  }
+  
+  return 'L'; 
+};
+
 /**
  * Menghitung skor absolut untuk Iqra.
  * Jika siswa Kelas 1 sudah masuk Surah Al-Quran, otomatis dianggap tuntas target Iqra (100%).
