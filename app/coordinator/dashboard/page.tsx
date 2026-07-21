@@ -122,8 +122,8 @@ export default function CoordinatorDashboard() {
   const [selectedClass, setSelectedClass] = useState('Semua');
   const [selectedProgram, setSelectedProgram] = useState('Semua');
   const [isProgramDropdownOpen, setIsProgramDropdownOpen] = useState(false);
-  const [targetType, setTargetType] = useState<'Kurikulum' | 'Kustom'>('Kurikulum');
-  const [targetVal, setTargetVal] = useState<number>(1);
+  const [targetJuz, setTargetJuz] = useState<number>(1);
+  const [targetIqra, setTargetIqra] = useState<number>(1);
 
   // Chart Tab State
   const [activeChartTab, setActiveChartTab] = useState<'% Penyelesaian' | 'Capaian Aktual' | 'Naik Level' | 'Siswa Aktif'>('% Penyelesaian');
@@ -182,7 +182,7 @@ export default function CoordinatorDashboard() {
   // Reset page to 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, gender, selectedClass, selectedProgram, targetType, targetVal, academicYear, selectedMonth]);
+  }, [searchQuery, gender, selectedClass, selectedProgram, targetJuz, targetIqra, academicYear, selectedMonth]);
 
   // Student Actions Handler
   const handleEditClick = (student: any) => {
@@ -324,57 +324,50 @@ export default function CoordinatorDashboard() {
 
       const baseProgress = calculateSDQProgress(effectiveStudent);
 
-      // Apply target override ONLY when targetType is 'Kustom' and targetVal > 0
-      if (targetType === 'Kustom' && targetVal > 0) {
-        const customTarget = baseProgress.classLevel === 1 ? targetVal * 31 : targetVal;
-        const currentScore = baseProgress.current;
-        const percentage = customTarget > 0 ? Math.min(Math.round((currentScore / customTarget) * 100), 100) : 0;
+      // Apply custom target override from filter inputs
+      const customTarget = baseProgress.classLevel === 1 ? targetIqra * 31 : targetJuz;
+      const currentScore = baseProgress.current;
+      const percentage = customTarget > 0 ? Math.min(Math.round((currentScore / customTarget) * 100), 100) : 0;
 
-        let colorClass = "bg-rose-500";
-        let badgeBg = "bg-rose-100";
-        let badgeText = "text-rose-700";
-        let statusText = "Perlu Perhatian";
+      let colorClass = "bg-rose-500";
+      let badgeBg = "bg-rose-100";
+      let badgeText = "text-rose-700";
+      let statusText = "Perlu Perhatian";
 
-        if (percentage >= 100) {
-          colorClass = "bg-emerald-500";
-          badgeBg = "bg-emerald-100";
-          badgeText = "text-emerald-700";
-          statusText = "Target Tercapai";
-        } else if (percentage >= 80) {
-          colorClass = "bg-blue-500";
-          badgeBg = "bg-blue-100";
-          badgeText = "text-blue-700";
-          statusText = "Hampir Tercapai";
-        } else if (percentage >= 50) {
-          colorClass = "bg-amber-500";
-          badgeBg = "bg-amber-100";
-          badgeText = "text-amber-700";
-          statusText = "Perlu Dorongan";
-        }
-
-        return {
-          ...student,
-          progressStats: {
-            ...baseProgress,
-            target: customTarget,
-            percentage,
-            colorClass,
-            badgeBg,
-            badgeText,
-            statusText,
-            label: baseProgress.classLevel === 1
-              ? (currentScore >= customTarget ? "Tuntas Target" : `Iqra ${Math.floor(currentScore / 31) + 1} Hal ${currentScore % 31 || 1}`)
-              : `${currentScore} dari ${customTarget} Juz`
-          }
-        };
+      if (percentage >= 100) {
+        colorClass = "bg-emerald-500";
+        badgeBg = "bg-emerald-100";
+        badgeText = "text-emerald-700";
+        statusText = "Target Tercapai";
+      } else if (percentage >= 80) {
+        colorClass = "bg-blue-500";
+        badgeBg = "bg-blue-100";
+        badgeText = "text-blue-700";
+        statusText = "Hampir Tercapai";
+      } else if (percentage >= 50) {
+        colorClass = "bg-amber-500";
+        badgeBg = "bg-amber-100";
+        badgeText = "text-amber-700";
+        statusText = "Perlu Dorongan";
       }
 
       return {
         ...student,
-        progressStats: baseProgress
+        progressStats: {
+          ...baseProgress,
+          target: customTarget,
+          percentage,
+          colorClass,
+          badgeBg,
+          badgeText,
+          statusText,
+          label: baseProgress.classLevel === 1
+            ? (currentScore >= customTarget ? "Tuntas Target" : `Iqra ${Math.floor(currentScore / 31) + 1} Hal ${currentScore % 31 || 1}`)
+            : `${currentScore} dari ${customTarget} Juz`
+        }
       };
     });
-  }, [filteredStudents, reports, academicYear, selectedMonth, targetType, targetVal]);
+  }, [filteredStudents, reports, academicYear, selectedMonth, targetJuz, targetIqra]);
 
   // Sort by target achievement (percentage) descending
   const sortedStudents = useMemo(() => {
@@ -539,9 +532,7 @@ export default function CoordinatorDashboard() {
         });
 
         // Target override
-        const customTarget = (targetType === 'Kustom' && targetVal > 0)
-          ? (baseProgress.classLevel === 1 ? targetVal * 31 : targetVal)
-          : baseProgress.target;
+        const customTarget = baseProgress.classLevel === 1 ? targetIqra * 31 : targetJuz;
 
         const currentScore = baseProgress.current;
         const percent = customTarget > 0 ? Math.min(Math.round((currentScore / customTarget) * 100), 100) : 0;
@@ -606,7 +597,7 @@ export default function CoordinatorDashboard() {
     }
 
     return points;
-  }, [reports, students, academicYear, gender, selectedClass, selectedProgram, targetType, targetVal, totalStudentsCount]);
+  }, [reports, students, academicYear, gender, selectedClass, selectedProgram, targetJuz, targetIqra, totalStudentsCount]);
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-12">
@@ -736,29 +727,24 @@ export default function CoordinatorDashboard() {
 
           {/* 6. Target */}
           <div>
-            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1.5">Acuan Target</label>
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1.5">Target</label>
             <div className="flex gap-2">
-              <select
-                value={targetType}
-                onChange={(e) => setTargetType(e.target.value as 'Kurikulum' | 'Kustom')}
-                className="w-full px-3 py-2 border border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white rounded-xl text-xs font-bold text-gray-700 outline-none focus:ring-2 focus:ring-primary-500 transition-all truncate"
-              >
-                <option value="Kurikulum">Kurikulum Sekolah</option>
-                <option value="Kustom">Kustom</option>
-              </select>
-              {targetType === 'Kustom' && (
-                <div className="relative w-24 shrink-0">
-                  <input 
-                    type="number"
-                    min="1"
-                    max="30"
-                    value={targetVal}
-                    onChange={(e) => setTargetVal(Number(e.target.value))}
-                    className="w-full px-2 py-2 border border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white rounded-xl text-xs font-black text-gray-700 outline-none focus:ring-2 focus:ring-primary-500 transition-all pl-7"
-                  />
-                  <Target size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
-                </div>
-              )}
+              <input 
+                type="number"
+                min="1"
+                max="30"
+                value={targetJuz}
+                onChange={(e) => setTargetJuz(Number(e.target.value))}
+                className="w-16 h-[38px] px-2 py-2 border border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white rounded-xl text-xs font-bold text-gray-700 outline-none focus:ring-2 focus:ring-[#0da595] transition-all text-center cursor-pointer"
+              />
+              <input 
+                type="number"
+                min="1"
+                max="30"
+                value={targetIqra}
+                onChange={(e) => setTargetIqra(Number(e.target.value))}
+                className="w-16 h-[38px] px-2 py-2 border border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white rounded-xl text-xs font-bold text-gray-700 outline-none focus:ring-2 focus:ring-[#0da595] transition-all text-center cursor-pointer"
+              />
             </div>
           </div>
         </div>
@@ -834,10 +820,7 @@ export default function CoordinatorDashboard() {
               <div>
                 <h4 className="font-black text-gray-800 text-sm uppercase tracking-tight">Pencapaian Target</h4>
                 <p className="text-[10px] text-gray-400 font-bold uppercase mt-0.5 tracking-wider">
-                  {targetType === 'Kurikulum' 
-                    ? "Target: Standar Kurikulum Sekolah"
-                    : `Target Kustom: Hafalan: ${targetVal} Juz | Iqra': Jilid ${targetVal}`
-                  }
+                  Target Kustom: Hafalan: {targetJuz} Juz | Iqra': Jilid {targetIqra}
                 </p>
               </div>
             </div>
