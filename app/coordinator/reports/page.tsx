@@ -6,7 +6,22 @@ import { SDQQuranEngine } from '../../../services/tahfizh/engine';
 import { Search, Loader2, AlertCircle, CheckCircle2, Filter, Calendar, Users, BookOpen, Heart, Star } from 'lucide-react';
 import { MonitoringSetoranSabak } from './MonitoringSetoranSabak';
 
+const getCurrentAcademicYear = (): string => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth(); // 0-11
+  if (month >= 6) { // July or later
+    return `${year}/${year + 1}`;
+  } else {
+    return `${year - 1}/${year}`;
+  }
+};
+
+const INITIAL_AY = getCurrentAcademicYear();
 const ACADEMIC_YEARS = ["2024/2025", "2025/2026", "2026/2027"];
+if (!ACADEMIC_YEARS.includes(INITIAL_AY)) {
+  ACADEMIC_YEARS.push(INITIAL_AY);
+}
 const MONTHS = ["Juli", "Agustus", "September", "Oktober", "November", "Desember", "Januari", "Februari", "Maret", "April", "Mei", "Juni"];
 const SEMESTERS = ["Ganjil", "Genap"];
 
@@ -67,7 +82,7 @@ export default function CoordinatorReportsPage() {
 
   // Filters State
   const [selectedTeacherId, setSelectedTeacherId] = useState<string>('');
-  const [filterYear, setFilterYear] = useState('2025/2026');
+  const [filterYear, setFilterYear] = useState(INITIAL_AY);
   const [filterType, setFilterType] = useState('Laporan Bulanan');
   const [filterPeriod, setFilterPeriod] = useState('Juli');
   const [searchTerm, setSearchTerm] = useState('');

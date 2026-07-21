@@ -6,7 +6,22 @@ import { subscribeToReportsByTeacher, deleteReport } from '../../../services/fir
 import { SDQQuranEngine } from '../../../services/tahfizh/engine';
 import { Search, Edit2, Trash2, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 
+const getCurrentAcademicYear = (): string => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth(); // 0-11
+  if (month >= 6) { // July or later
+    return `${year}/${year + 1}`;
+  } else {
+    return `${year - 1}/${year}`;
+  }
+};
+
+const INITIAL_AY = getCurrentAcademicYear();
 const ACADEMIC_YEARS = ["2024/2025", "2025/2026", "2026/2027"];
+if (!ACADEMIC_YEARS.includes(INITIAL_AY)) {
+  ACADEMIC_YEARS.push(INITIAL_AY);
+}
 const MONTHS = ["Juli", "Agustus", "September", "Oktober", "November", "Desember", "Januari", "Februari", "Maret", "April", "Mei", "Juni"];
 
 const formatRangeDisplay = (raw: string | undefined): string => {
@@ -71,7 +86,7 @@ const GuruViewReportPage: React.FC<{ teacherId?: string }> = ({ teacherId = '1' 
   const [filteredReports, setFilteredReports] = useState<Report[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterYear, setFilterYear] = useState('2025/2026');
+  const [filterYear, setFilterYear] = useState(INITIAL_AY);
   const [filterType, setFilterType] = useState('Laporan Bulanan');
   const [filterPeriod, setFilterPeriod] = useState('Juli');
 

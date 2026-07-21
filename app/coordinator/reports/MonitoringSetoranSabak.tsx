@@ -23,7 +23,22 @@ import {
   Filter
 } from 'lucide-react';
 
+const getCurrentAcademicYear = (): string => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth(); // 0-11
+  if (month >= 6) { // July or later
+    return `${year}/${year + 1}`;
+  } else {
+    return `${year - 1}/${year}`;
+  }
+};
+
+const INITIAL_AY = getCurrentAcademicYear();
 const ACADEMIC_YEARS = ["2024/2025", "2025/2026", "2026/2027"];
+if (!ACADEMIC_YEARS.includes(INITIAL_AY)) {
+  ACADEMIC_YEARS.push(INITIAL_AY);
+}
 
 // --- WEEK RANGE HELPERS ---
 
@@ -115,7 +130,7 @@ export const MonitoringSetoranSabak: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   // Filters state
-  const [selectedYear, setSelectedYear] = useState('2025/2026');
+  const [selectedYear, setSelectedYear] = useState(INITIAL_AY);
   const [selectedWeek, setSelectedWeek] = useState<WeekOption | null>(null);
   const [selectedGender, setSelectedGender] = useState('Semua');
   const [selectedClass, setSelectedClass] = useState('Semua');

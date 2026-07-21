@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { User, Student } from '../../../../types';
 import { getTeacherById, getStudentsByTeacher } from '../../../../services/firestoreService';
+import { extractClassLevel } from '../../../../services/sdqTargets';
 import { Button } from '../../../../components/Button';
 import { StatCard } from '../../../../components/StatCard';
 import { ArrowLeft, Users, Star, BookOpen, UserCheck, BadgeCheck } from 'lucide-react';
@@ -114,7 +115,20 @@ const CoordinatorTeacherDetail: React.FC = () => {
                         {student.memorizationTarget}
                       </span>
                     </td>
-                    <td className="px-6 py-3 text-gray-700">{student.currentProgress}</td>
+                     <td className="px-6 py-3 text-gray-700">
+                      {extractClassLevel(student.className) >= 2 ? (
+                        (() => {
+                          const total = student.totalHafalan;
+                          if (!total) return "0 Juz";
+                          const parts = [];
+                          if (Number(total.juz || 0) > 0) parts.push(`${total.juz} Juz`);
+                          if (Number(total.pages || 0) > 0) parts.push(`${total.pages} Hal`);
+                          return parts.length > 0 ? parts.join(' ') : "0 Juz";
+                        })()
+                      ) : (
+                        student.currentProgress || 'Belum Ada'
+                      )}
+                    </td>
                     <td className="px-6 py-3">
                       <div className="flex items-center gap-2">
                         <span className={`font-medium ${(student.attendance || 0) < 80 ? 'text-red-600' : 'text-green-600'}`}>
