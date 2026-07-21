@@ -446,12 +446,50 @@ export default function CoordinatorDashboard() {
 
   // Motivation Alert box message and layout helper
   const motivationText = useMemo(() => {
-    if (targetAchievementPercentage >= 90) {
-      return "Masya Allah! Prestasi yang luar biasa. Pertahankan semangat dan jadilah teladan bagi yang lain.";
+    const highAlerts = [
+      "Masya Allah! Prestasi yang luar biasa membanggakan. Pertahankan semangat dan jadilah teladan bagi seluruh halaqah.",
+      "Allahu Akbar! Pencapaian target yang sangat tinggi ini adalah buah manis dari kesabaran dan keistiqomahan para santri dan pembimbing. Teruslah bersinar!",
+      "Luar biasa! Mayoritas siswa telah mencapai target dengan sangat baik. Semoga Allah memberkahi setiap langkah bimbingan dan hafalan mereka.",
+      "Subhanallah! Hasil yang sangat istimewa di atas 85%. Mari kita pertahankan konsistensi spiritual dan kedisiplinan ini hingga akhir tahun ajaran.",
+      "Masya Allah, capaian yang sangat gemilang! Terus dampingi siswa untuk memperkuat (mutqin) hafalan yang sudah diraih agar tidak mudah lupa."
+    ];
+
+    const mediumHighAlerts = [
+      "Alhamdulillah, bimbingan berjalan dengan sangat baik. Terus tingkatkan pendampingan intensif agar seluruh target tercapai sepenuhnya.",
+      "Barakallahu fiikum! Sebagian besar siswa sudah berada di jalur yang tepat. Sedikit dorongan lagi untuk mencapai hasil yang maksimal.",
+      "Alhamdulillah, progres yang sangat positif. Mari berikan apresiasi kepada siswa yang telah mencapai target untuk memotivasi teman-temannya.",
+      "Sangat baik! Progres tumbuh dengan stabil. Terus dorong kolaborasi dan komunikasi yang erat antara guru halaqah dan wali murid.",
+      "Alhamdulillah, capaian yang membahagiakan. Mari dampingi siswa-siswa yang hampir mencapai garis finish dengan perhatian ekstra."
+    ];
+
+    const mediumLowAlerts = [
+      "Kerja bagus! Progres sudah melampaui setengah jalan. Mari rapatkan barisan untuk membantu siswa yang masih tertinggal di belakang.",
+      "Alhamdulillah, langkah demi langkah terus menunjukkan kemajuan. Yuk, lebih intensifkan evaluasi mingguan di setiap kelompok halaqah.",
+      "Pencapaian yang cukup baik di kisaran 50-69%. Mari berikan semangat tambahan bagi siswa agar mereka semakin termotivasi mengejar target semester.",
+      "Lebih dari separuh target telah terlampaui. Sedikit lagi usaha bersama, kita pasti bisa mengantarkan seluruh siswa mencapai impiannya.",
+      "Semangat berbenah! Progres yang berjalan sudah cukup bagus, mari fokus pada pendampingan personal bagi siswa yang butuh perhatian lebih."
+    ];
+
+    const lowAlerts = [
+      "Mari rapatkan barisan bimbingan, berikan perhatian lebih dan bimbingan khusus bagi siswa yang memerlukan dorongan ekstra.",
+      "Jangan berkecil hati! Setiap huruf hafalan adalah pahala yang mulia. Mari evaluasi metode belajar dan berikan bimbingan yang lebih personal.",
+      "Tantangan adalah peluang untuk menjadi lebih baik. Mari kita pererat koordinasi dengan guru halaqah dan orang tua untuk menyemangati siswa.",
+      "Yuk, kita berikan perhatian ekstra dan metode pendekatan yang lebih hangat agar anak-anak kembali bergairah mengejar ketertinggalan.",
+      "Ayo bersama-sama kita bangun suasana halaqah yang lebih ceria dan memotivasi agar progres hafalan meningkat di pekan-pekan mendatang."
+    ];
+
+    // Combine current date (day) and percentage value to select a stable yet varied text
+    const day = new Date().getDate();
+    const hash = (Math.floor(targetAchievementPercentage) + day) % 5;
+
+    if (targetAchievementPercentage >= 85) {
+      return highAlerts[hash];
     } else if (targetAchievementPercentage >= 70) {
-      return "Alhamdulillah, bimbingan berjalan dengan sangat baik. Terus tingkatkan pendampingan intensif.";
+      return mediumHighAlerts[hash];
+    } else if (targetAchievementPercentage >= 50) {
+      return mediumLowAlerts[hash];
     } else {
-      return "Mari rapatkan barisan bimbingan, berikan perhatian lebih bagi siswa yang memerlukan dorongan khusus.";
+      return lowAlerts[hash];
     }
   }, [targetAchievementPercentage]);
 
