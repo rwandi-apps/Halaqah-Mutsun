@@ -877,3 +877,19 @@ export const subscribeToAllSetoranSabak = (onUpdate: (data: SetoranSabak[]) => v
   });
 };
 
+export const getAllReports = async (): Promise<Report[]> => {
+  if (!db) return [];
+  const q = query(collection(db, 'laporan'));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => normalizeReportData(doc.id, doc.data()));
+};
+
+export const subscribeToAllReports = (onUpdate: (reports: Report[]) => void): Unsubscribe => {
+  if (!db) return () => {};
+  const q = query(collection(db, 'laporan'));
+  return onSnapshot(q, (snapshot) => {
+    const reports = snapshot.docs.map(doc => normalizeReportData(doc.id, doc.data()));
+    onUpdate(reports);
+  });
+};
+
