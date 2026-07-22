@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getClassHalaqahSummary, ClassSummary, getAllTeachers, reassignHalaqahTeacher } from '../../../services/firestoreService';
-import { User } from '../../../types';
+import { getClassHalaqahSummary, ClassSummary, getAllTeachers, getAllStudents, reassignHalaqahTeacher } from '../../../services/firestoreService';
+import { User, Student } from '../../../types';
 import { getStoredUser } from '../../../services/simpleAuth';
 import { Button } from '../../../components/Button';
-import { Building2, ArrowRight, User as UserIcon, Loader2, Edit, X } from 'lucide-react';
+import { Building2, ArrowRight, User as UserIcon, Loader2, Edit, X, GraduationCap, CheckCircle2 } from 'lucide-react';
 
 const CoordinatorKelasPage: React.FC = () => {
   const navigate = useNavigate();
   const [classes, setClasses] = useState<ClassSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [teachers, setTeachers] = useState<User[]>([]);
+  const [alumniCount, setAlumniCount] = useState<number>(0);
   
   // State Modal Ganti Guru
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -29,12 +30,19 @@ const CoordinatorKelasPage: React.FC = () => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [summary, allTeachers] = await Promise.all([
+      const [summary, allTeachers, allStudents] = await Promise.all([
         getClassHalaqahSummary(),
-        getAllTeachers()
+        getAllTeachers(),
+        getAllStudents()
       ]);
       setClasses(summary);
       setTeachers(allTeachers.filter(t => t.role === 'GURU'));
+
+      // Count alumni students
+      const alumni = allStudents.filter(s => 
+        s.status === 'Alumni/Lulus' || s.className === 'Lulus / Alumni'
+      );
+      setAlumniCount(alumni.length);
     } catch (error) {
       console.error("Gagal memuat data kelas:", error);
     } finally {
@@ -165,6 +173,40 @@ const CoordinatorKelasPage: React.FC = () => {
           <p className="text-gray-500">Belum ada data kelas yang tercatat di sistem.</p>
         </div>
       )}
+
+      {/* Info Card Arsip Alumni / Lulus */}
+      <div className="bg-slate-900 text-white rounded-2xl p-6 shadow-md border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center shrink-0">
+            <GraduationCap size={26} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-base font-bold text-white">Arsip Siswa Lulus / Alumni</h3>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                Status Alumni
+              </span>
+            </div>
+            <p className="text-slate-300 text-xs mt-1 max-w-2xl leading-relaxed">
+              Siswa dengan status Lulus / Alumni tidak terdaftar pada halaqah aktif maupun guru pembimbing halaqah. Data histori hapalan dan rapor siswa tetap tersimpan aman dalam arsip.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 shrink-0 self-end md:self-center">
+          <div className="text-right">
+            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Alumni</p>
+            <p className="text-xl font-black text-amber-400">{alumniCount} Siswa</p>
+          </div>
+          <button
+            onClick={() => navigate('/coordinator/siswa')}
+            className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all flex items-center gap-2 shadow-sm"
+          >
+            <span>Lihat Data Siswa</span>
+            <ArrowRight size={14} />
+          </button>
+        </div>
+      </div>
 
       {/* Modal Reassign Teacher */}
       {isModalOpen && selectedHalaqah && (

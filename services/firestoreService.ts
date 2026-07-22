@@ -748,27 +748,39 @@ export const getClassHalaqahSummary = async (): Promise<ClassSummary[]> => {
     const data = d.data() as User;
     teacherMap[d.id] = data.nickname || data.name;
   });
+
+  const activeStudents = allStudents.filter(student => 
+    student.className && 
+    student.className !== "Lulus / Alumni" && 
+    student.status !== 'Mutasi/Keluar' && 
+    student.status !== 'Alumni/Lulus'
+  );
+
   const classGroups: Record<string, {
     className: string;
     totalStudents: number;
     halaqahMap: Record<string, { teacherName: string, teacherId: string, studentCount: number }>;
   }> = {};
-  allStudents.forEach(student => {
+
+  activeStudents.forEach(student => {
     const name = student.className;
     if (!classGroups[name]) {
       classGroups[name] = { className: name, totalStudents: 0, halaqahMap: {} };
     }
     classGroups[name].totalStudents++;
     const tId = student.teacherId;
-    if (!classGroups[name].halaqahMap[tId]) {
-      classGroups[name].halaqahMap[tId] = {
-        teacherName: teacherMap[tId] || 'Guru Tidak Teridentifikasi',
-        teacherId: tId,
-        studentCount: 0
-      };
+    if (tId) {
+      if (!classGroups[name].halaqahMap[tId]) {
+        classGroups[name].halaqahMap[tId] = {
+          teacherName: teacherMap[tId] || 'Guru Tidak Teridentifikasi',
+          teacherId: tId,
+          studentCount: 0
+        };
+      }
+      classGroups[name].halaqahMap[tId].studentCount++;
     }
-    classGroups[name].halaqahMap[tId].studentCount++;
   });
+
   return Object.values(classGroups).map(group => ({
     className: group.className,
     totalStudents: group.totalStudents,
