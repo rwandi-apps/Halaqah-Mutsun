@@ -102,7 +102,7 @@ export const generateEvaluasiAI = async (reportType: string, period: string, con
 };
 
 /**
- * Service Utama: Generate Evaluasi Naratif Personal Santri (Triggered from Dashboard).
+ * Service Utama: Generate Evaluasi Naratif Personal Siswa (Triggered from Dashboard).
  */
 export const generateStudentEvaluation = async (student: Student, teacherNotes?: string): Promise<string> => {
   if (!process.env.API_KEY) {
@@ -180,6 +180,6 @@ TUGAS:
     return response.text?.trim() || "Gagal menghasilkan evaluasi.";
   } catch (error: any) {
     console.error("Gemini Student Eval Error:", error);
-    throw new Error("Gagal membuat evaluasi santri.");
+    throw new Error("Gagal membuat evaluasi siswa.");
   }
 };

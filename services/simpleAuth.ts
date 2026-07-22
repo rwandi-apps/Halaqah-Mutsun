@@ -57,29 +57,46 @@ export const simpleLogin = async (email: string, pass: string): Promise<User> =>
         throw new Error("Email atau password salah.");
       }
 
+      const rawRole = (data.role || '').toUpperCase();
+      let userRole: 'KOORDINATOR' | 'GURU' | 'YAYASAN' = 'GURU';
+      if (rawRole === 'YAYASAN' || cleanEmail.includes('yayasan')) {
+        userRole = 'YAYASAN';
+      } else if (rawRole === 'KOORDINATOR') {
+        userRole = 'KOORDINATOR';
+      }
+
       finalUser = {
         id: authSuccess ? firebaseUser.uid : userDoc.id,
         name: data.name || cleanEmail.split('@')[0],
         email: cleanEmail,
-        role: data.role || 'GURU',
+        role: userRole,
         nickname: data.nickname || data.name || cleanEmail.split('@')[0],
         teacherId: data.teacherId || userDoc.id
       } as User;
-
-      // Jika login via Auth sukses tapi ID dokumen berbeda, kita bisa update atau biarkan
-      // Untuk kemudahan, kita simpan UID Auth ke dalam data jika belum ada
-      if (authSuccess && userDoc.id !== firebaseUser.uid) {
-        // Opsional: Migrasi ID dokumen ke UID Auth agar lebih konsisten
-        // await setDoc(doc(db, 'users', firebaseUser.uid), { ...data, authUid: firebaseUser.uid });
-      }
     } else {
-      // User TIDAK ditemukan di Firestore
-      if (authSuccess) {
+      // Pengecekan Khusus Akun Demo Yayasan jika belum ada di Firestore
+      if (cleanEmail === 'yayasan@sdq.com' && pass === 'sdq123') {
+        const yayasanProfile: User = {
+          id: 'yayasan_demo_id',
+          name: 'Pengurus Yayasan SDQ',
+          email: 'yayasan@sdq.com',
+          role: 'YAYASAN',
+          nickname: 'Yayasan SDQ',
+          teacherId: 'yayasan_demo_id',
+          createdAt: new Date().toISOString()
+        };
+        try {
+          await setDoc(doc(db, 'users', 'yayasan_demo_id'), yayasanProfile);
+        } catch (err) {
+          console.warn("Could not save yayasan demo profile to Firestore:", err);
+        }
+        finalUser = yayasanProfile;
+      } else if (authSuccess) {
         // Jika Auth sukses tapi Firestore kosong, buatkan profil default
         const defaultProfile = {
           name: firebaseUser.displayName || cleanEmail.split('@')[0],
           email: cleanEmail,
-          role: 'GURU', 
+          role: cleanEmail.includes('yayasan') ? 'YAYASAN' : 'GURU', 
           nickname: cleanEmail.split('@')[0],
           teacherId: firebaseUser.uid,
           createdAt: new Date().toISOString()
@@ -93,7 +110,7 @@ export const simpleLogin = async (email: string, pass: string): Promise<User> =>
         } as User;
       } else {
         // Auth gagal dan Firestore juga tidak ada
-        throw new Error("Akun tidak ditemukan. Pastikan email sudah didaftarkan oleh Koordinator.");
+        throw new Error("Akun tidak ditemukan. Pastikan email sudah didaftarkan.");
       }
     }
 

@@ -344,7 +344,7 @@ const GuruRaporPage: React.FC<GuruRaporProps> = ({ teacherId, teacherName }) => 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-2xl font-black text-gray-900 tracking-tight uppercase">Arsip Rapor Semester</h2>
-          <p className="text-gray-500 text-sm mt-1">Pilih periode dan lihat capaian penilaian Al-Quran santri.</p>
+          <p className="text-gray-500 text-sm mt-1">Pilih periode dan lihat capaian penilaian Al-Quran siswa.</p>
         </div>
       </div>
 

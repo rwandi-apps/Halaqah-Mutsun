@@ -1,5 +1,5 @@
 
-export type Role = 'KOORDINATOR' | 'GURU';
+export type Role = 'KOORDINATOR' | 'GURU' | 'YAYASAN' | 'koordinator' | 'guru' | 'yayasan';
 
 // Collection: users
 export interface User {

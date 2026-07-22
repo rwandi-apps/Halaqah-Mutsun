@@ -113,6 +113,8 @@ export default function LoginPage({ onLogin }: LoginProps) {
           </div>
         </form>
 
+
+
         <p className="mt-12 text-white/20 text-[10px] tracking-widest uppercase font-medium">
           Halaqah SDQ Manager &copy; 2024
         </p>

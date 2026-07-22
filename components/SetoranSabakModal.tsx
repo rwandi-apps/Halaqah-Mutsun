@@ -191,6 +191,13 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
       return;
     }
 
+    const isReadOnlyMode = currentUser?.role === 'YAYASAN' || currentUser?.role === 'yayasan';
+
+    if (isReadOnlyMode) {
+      alert("Mode Pratinjau (Read-Only): Akun Yayasan hanya dapat melihat data dan tidak dapat menambah atau mengubah setoran.");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const guruNama = currentUser.nickname || currentUser.name || "Guru";
@@ -245,6 +252,11 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
   };
 
   const handleDelete = async (id: string) => {
+    const isReadOnlyMode = currentUser?.role === 'YAYASAN' || currentUser?.role === 'yayasan';
+    if (isReadOnlyMode) {
+      alert("Mode Pratinjau (Read-Only): Akun Yayasan tidak dapat menghapus data.");
+      return;
+    }
     try {
       await deleteSetoranSabak(id);
       setConfirmDeleteId(null);

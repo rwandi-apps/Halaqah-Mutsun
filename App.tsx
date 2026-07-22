@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './app/layout';
 import LoginPage from './app/(auth)/login/page';
@@ -20,11 +20,35 @@ import GuruEvaluationPage from './app/guru/evaluation/page';
 import GuruGradesPage from './app/guru/grades/page';
 import GuruRaporPage from './app/guru/rapor/page';
 import { GuruSetoranPage } from './app/guru/setoran-guru/page';
+import YayasanDashboard from './app/yayasan/dashboard/page';
+import YayasanLihatGuruPage from './app/yayasan/lihat-guru/page';
 import { getStoredUser, simpleLogout } from './services/simpleAuth';
 import { User } from './types';
 
 function App() {
   const [user, setUser] = useState<User | null>(getStoredUser());
+  const [previewTeacher, setPreviewTeacher] = useState<User | null>(() => {
+    try {
+      const stored = localStorage.getItem('sdq_preview_teacher');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    const handlePreviewChange = () => {
+      try {
+        const stored = localStorage.getItem('sdq_preview_teacher');
+        setPreviewTeacher(stored ? JSON.parse(stored) : null);
+      } catch {
+        setPreviewTeacher(null);
+      }
+    };
+
+    window.addEventListener('sdq_preview_change', handlePreviewChange);
+    return () => window.removeEventListener('sdq_preview_change', handlePreviewChange);
+  }, []);
 
   const handleLogin = (newUser: User) => {
     setUser(newUser);
@@ -32,6 +56,7 @@ function App() {
 
   const handleLogout = async () => {
     try {
+      localStorage.removeItem('sdq_preview_teacher');
       await simpleLogout();
       setUser(null);
     } catch (error) {
@@ -39,6 +64,13 @@ function App() {
       setUser(null);
     }
   };
+
+  const isYayasan = user?.role === 'YAYASAN' || user?.role === 'yayasan';
+  const isCoordinator = user?.role === 'KOORDINATOR' || user?.role === 'koordinator';
+
+  // ID Guru yang digunakan saat merender tampilan Guru (bisa milik guru itu sendiri atau preview teacher dari Yayasan)
+  const effectiveTeacherId = previewTeacher?.id || previewTeacher?.teacherId || user?.teacherId || user?.id;
+  const effectiveTeacherName = previewTeacher?.name || user?.name;
 
   return (
     <HashRouter>
@@ -49,12 +81,19 @@ function App() {
            <Layout user={user} onLogout={handleLogout}>
              <Routes>
                 <Route path="/" element={
-                  user?.role === 'KOORDINATOR' 
-                    ? <Navigate to="/coordinator/dashboard" replace /> 
-                    : <Navigate to="/guru/dashboard" replace />
+                  isYayasan 
+                    ? <Navigate to="/yayasan/dashboard" replace /> 
+                    : isCoordinator 
+                      ? <Navigate to="/coordinator/dashboard" replace /> 
+                      : <Navigate to="/guru/dashboard" replace />
                   } 
                 />
                 
+                {/* Routes Yayasan */}
+                <Route path="/yayasan/dashboard" element={<YayasanDashboard />} />
+                <Route path="/yayasan/lihat-guru" element={<YayasanLihatGuruPage />} />
+
+                {/* Routes Koordinator */}
                 <Route path="/coordinator/dashboard" element={<CoordinatorDashboard />} />
                 <Route path="/coordinator/guru" element={<CoordinatorGuruPage />} />
                 <Route path="/coordinator/guru/:id" element={<CoordinatorTeacherDetail />} />
@@ -66,14 +105,15 @@ function App() {
                 <Route path="/coordinator/transition" element={<CoordinatorTransitionPage />} />
                 <Route path="/coordinator/setoran-guru" element={<CoordinatorSetoranGuruPage />} />
                 
-                <Route path="/guru/dashboard" element={<GuruDashboard teacherId={user?.id} />} />
-                <Route path="/guru/halaqah" element={<GuruHalaqahPage teacherId={user?.id} />} />
-                <Route path="/guru/laporan" element={<GuruLaporanPage teacherId={user?.id} />} />
-                <Route path="/guru/view-report" element={<GuruViewReportPage teacherId={user?.id} />} />
-                <Route path="/guru/evaluation" element={<GuruEvaluationPage teacherId={user?.id} />} />
-                <Route path="/guru/grades" element={<GuruGradesPage teacherId={user?.id} />} />
-                <Route path="/guru/rapor" element={<GuruRaporPage teacherId={user?.id} teacherName={user?.name} />} />
-                <Route path="/guru/setoran-guru" element={<GuruSetoranPage teacherId={user?.id} />} />
+                {/* Routes Guru (Dapat diakses langsung oleh Guru, atau di-preview oleh Yayasan) */}
+                <Route path="/guru/dashboard" element={<GuruDashboard teacherId={effectiveTeacherId} />} />
+                <Route path="/guru/halaqah" element={<GuruHalaqahPage teacherId={effectiveTeacherId} />} />
+                <Route path="/guru/laporan" element={<GuruLaporanPage teacherId={effectiveTeacherId} />} />
+                <Route path="/guru/view-report" element={<GuruViewReportPage teacherId={effectiveTeacherId} />} />
+                <Route path="/guru/evaluation" element={<GuruEvaluationPage teacherId={effectiveTeacherId} />} />
+                <Route path="/guru/grades" element={<GuruGradesPage teacherId={effectiveTeacherId} />} />
+                <Route path="/guru/rapor" element={<GuruRaporPage teacherId={effectiveTeacherId} teacherName={effectiveTeacherName} />} />
+                <Route path="/guru/setoran-guru" element={<GuruSetoranPage teacherId={effectiveTeacherId} />} />
 
                 <Route path="*" element={<Navigate to="/" replace />} />
              </Routes>

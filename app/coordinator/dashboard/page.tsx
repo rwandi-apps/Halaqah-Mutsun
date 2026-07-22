@@ -448,13 +448,13 @@ export default function CoordinatorDashboard() {
   const motivationText = useMemo(() => {
     const veryHighAlerts = [
       "Masya Allah! Prestasi yang luar biasa membanggakan, hampir seluruh siswa telah tuntas target! Teruslah bersinar dan menginspirasi.",
-      "Allahu Akbar! Hasil gemilang ini adalah bukti keikhlasan, kesabaran, dan keistiqomahan para santri serta pembimbing halaqah.",
+      "Allahu Akbar! Hasil gemilang ini adalah bukti keikhlasan, kesabaran, dan keistiqomahan para siswa serta pembimbing halaqah.",
       "Luar biasa! Tingkat kelulusan target yang sangat memuaskan. Semoga Allah mencatat setiap bait hafalan mereka sebagai pemberi syafaat.",
       "Subhanallah! Di atas 90% target tercapai sempurna. Mari pertahankan konsistensi spiritual dan kemutqinan hafalan mulia ini.",
       "Masya Allah, capaian yang sangat berkah! Terus dampingi siswa untuk melakukan murajaah agar hafalan tertanam kokoh di dalam dada.",
-      "Prestasi istimewa! Dedikasi tanpa batas dari para guru dan santri telah membuahkan hasil yang indah. Terus pertahankan!",
-      "Alhamdulillah! Kebahagiaan luar biasa melihat para santri begitu antusias dan sukses melampaui target yang ditetapkan.",
-      "Membanggakan! Semoga mahkota kemuliaan di akhirat kelak menjadi hadiah terindah bagi para santri yang berjuang tulus ini.",
+      "Prestasi istimewa! Dedikasi tanpa batas dari para guru dan siswa telah membuahkan hasil yang indah. Terus pertahankan!",
+      "Alhamdulillah! Kebahagiaan luar biasa melihat para siswa begitu antusias dan sukses melampaui target yang ditetapkan.",
+      "Membanggakan! Semoga mahkota kemuliaan di akhirat kelak menjadi hadiah terindah bagi para siswa yang berjuang tulus ini.",
       "Masya Allah, ikhtiar yang maksimal melahirkan hasil yang optimal! Semoga Allah senantiasa menjaga kebersihan niat kita semua.",
       "Allahu Akbar, hasil yang sangat mengagumkan! Terus tingkatkan motivasi agar tak ada satu pun siswa yang tertinggal."
     ];
@@ -463,48 +463,48 @@ export default function CoordinatorDashboard() {
       "Alhamdulillah, bimbingan berjalan dengan sangat lancar. Sedikit dorongan lagi untuk mencapai ketuntasan 100%!",
       "Barakallahu fiikum! Sebagian besar siswa sudah berada di jalur emas keberhasilan. Tetap semangat mengawal sisa target!",
       "Progres yang sangat positif dan menggembirakan. Mari apresiasi siswa yang tuntas untuk menginspirasi rekan halaqahnya.",
-      "Sangat baik! Kedisiplinan santri terus tumbuh dengan stabil. Terus jalin komunikasi hangat dengan wali murid di rumah.",
-      "Alhamdulillah, capaian yang membahagiakan. Dampingi santri yang hampir mencapai garis finish dengan perhatian ekstra.",
+      "Sangat baik! Kedisiplinan siswa terus tumbuh dengan stabil. Terus jalin komunikasi hangat dengan wali murid di rumah.",
+      "Alhamdulillah, capaian yang membahagiakan. Dampingi siswa yang hampir mencapai garis finish dengan perhatian ekstra.",
       "Langkah yang luar biasa! Mari berikan sedikit suntikan semangat di pekan ini agar target bulanan tersapu bersih.",
-      "Alhamdulillah, usaha keras para santri mulai terlihat nyata. Terus jaga ritme setoran agar tetap konsisten.",
-      "Barakallah! Mayoritas santri menunjukkan kemajuan pesat. Jangan lupa berikan reward sederhana untuk memicu semangat mereka.",
-      "Satu langkah lagi menuju kesempurnaan target. Mari doakan dan bimbing santri kita dengan penuh kasih sayang.",
-      "Progres yang mantap! Kolaborasi guru dan santri terbukti sangat solid. Terus pertahankan energi positif ini!"
+      "Alhamdulillah, usaha keras para siswa mulai terlihat nyata. Terus jaga ritme setoran agar tetap konsisten.",
+      "Barakallah! Mayoritas siswa menunjukkan kemajuan pesat. Jangan lupa berikan reward sederhana untuk memicu semangat mereka.",
+      "Satu langkah lagi menuju kesempurnaan target. Mari doakan dan bimbing siswa kita dengan penuh kasih sayang.",
+      "Progres yang mantap! Kolaborasi guru dan siswa terbukti sangat solid. Terus pertahankan energi positif ini!"
     ];
 
     const mediumAlerts = [
-      "Kerja bagus! Progres sudah melampaui setengah jalan. Mari rapatkan barisan untuk merangkul santri yang masih tertinggal.",
+      "Kerja bagus! Progres sudah melampaui setengah jalan. Mari rapatkan barisan untuk merangkul siswa yang masih tertinggal.",
       "Alhamdulillah, langkah demi langkah terus menunjukkan perbaikan. Yuk, lebih intensifkan evaluasi mingguan di setiap halaqah.",
       "Pencapaian yang cukup baik. Mari berikan apresiasi atas setiap lembar hafalan yang telah disetorkan dengan susah payah.",
-      "Lebih dari separuh santri telah tuntas. Sedikit lagi usaha bersama, kita pasti bisa mengantarkan semua siswa mencapai targetnya.",
+      "Lebih dari separuh siswa telah tuntas. Sedikit lagi usaha bersama, kita pasti bisa mengantarkan semua siswa mencapai targetnya.",
       "Semangat berbenah! Progres berjalan cukup stabil, mari fokus memberikan pendampingan personal bagi siswa yang butuh perhatian khusus.",
-      "Alhamdulillah atas progres saat ini. Mari identifikasi kendala santri yang belum tuntas dan carikan solusi bersama.",
-      "Kemajuan yang nyata! Mari ajak para santri untuk saling menyemangati (fastabiqul khairat) di dalam halaqah.",
+      "Alhamdulillah atas progres saat ini. Mari identifikasi kendala siswa yang belum tuntas dan carikan solusi bersama.",
+      "Kemajuan yang nyata! Mari ajak para siswa untuk saling menyemangati (fastabiqul khairat) di dalam halaqah.",
       "Capaian yang patut disyukuri. Dengan sedikit tambahan waktu murajaah, insya Allah persentase ini akan melesat naik.",
-      "Perjuangan para santri sangat berharga. Mari kuatkan sinergi dengan orang tua agar santri tetap menyetor di rumah.",
-      "Terus maju! Hasil pertengahan ini menunjukkan potensi besar. Mari dorong santri untuk melangkah lebih mantap lagi."
+      "Perjuangan para siswa sangat berharga. Mari kuatkan sinergi dengan orang tua agar siswa tetap menyetor di rumah.",
+      "Terus maju! Hasil pertengahan ini menunjukkan potensi besar. Mari dorong siswa untuk melangkah lebih mantap lagi."
     ];
 
     const lowAlerts = [
       "Mari rapatkan barisan bimbingan. Berikan perhatian lebih dan bimbingan khusus bagi siswa yang memerlukan dorongan ekstra.",
-      "Jangan berkecil hati! Setiap huruf yang dibaca adalah pahala melimpah. Mari evaluasi berkala metode belajar santri.",
+      "Jangan berkecil hati! Setiap huruf yang dibaca adalah pahala melimpah. Mari evaluasi berkala metode belajar siswa.",
       "Tantangan adalah peluang peningkatan. Mari pererat koordinasi dengan guru halaqah untuk menyalakan kembali gairah belajar.",
       "Yuk, kita berikan pendekatan bimbingan yang lebih hangat agar anak-anak kembali bersemangat mengejar ketertinggalan.",
       "Ayo bersama-sama kita bangun suasana halaqah yang ceria, interaktif, dan penuh motivasi agar progres hafalan meningkat.",
       "Setiap anak memiliki kecepatan belajar yang unik. Sabar dan konsisten adalah kunci utama mengantarkan mereka menuju target.",
-      "Mari jadwalkan sesi motivasi singkat sebelum memulai halaqah guna membakar kembali semangat juang para santri.",
-      "Mari kita dampingi santri dengan sabar. Sedikit demi sedikit lama-lama menjadi bukit hafalan yang mulia.",
-      "Yuk, komunikasikan perkembangan santri secara berkala kepada wali murid agar terjalin kerja sama bimbingan yang harmonis.",
+      "Mari jadwalkan sesi motivasi singkat sebelum memulai halaqah guna membakar kembali semangat juang para siswa.",
+      "Mari kita dampingi siswa dengan sabar. Sedikit demi sedikit lama-lama menjadi bukit hafalan yang mulia.",
+      "Yuk, komunikasikan perkembangan siswa secara berkala kepada wali murid agar terjalin kerja sama bimbingan yang harmonis.",
       "Jangan patah arang! Keberhasilan besar berawal dari konsistensi kecil yang dikawal secara terus-menerus."
     ];
 
     const veryLowAlerts = [
-      "Fokus utama saat ini: berikan pendampingan emosional dan bimbingan privat satu-per-satu untuk memulihkan semangat santri.",
-      "Mari petakan kendala utama santri secara detail. Satu langkah kecil yang konsisten lebih berharga daripada diam di tempat.",
+      "Fokus utama saat ini: berikan pendampingan emosional dan bimbingan privat satu-per-satu untuk memulihkan semangat siswa.",
+      "Mari petakan kendala utama siswa secara detail. Satu langkah kecil yang konsisten lebih berharga daripada diam di tempat.",
       "Allah melihat proses dan kesungguhan kita, bukan hanya hasil akhir. Mari kuatkan niat dan dampingi anak-anak dengan sabar.",
-      "Ayo buat program pendampingan khusus (klinik tahfizh/tilawah) untuk membantu santri yang mengalami kesulitan mendasar.",
-      "Waktunya saling merangkul dan menguatkan. Berikan apresiasi setinggi-tingginya walau santri hanya menambah beberapa ayat saja.",
-      "Mari selidiki hambatan belajar santri dengan komunikasi yang penuh kasih sayang dari hati ke hati.",
+      "Ayo buat program pendampingan khusus (klinik tahfizh/tilawah) untuk membantu siswa yang mengalami kesulitan mendasar.",
+      "Waktunya saling merangkul dan menguatkan. Berikan apresiasi setinggi-tingginya walau siswa hanya menambah beberapa ayat saja.",
+      "Mari selidiki hambatan belajar siswa dengan komunikasi yang penuh kasih sayang dari hati ke hati.",
       "Yuk, kita segarkan suasana kelas halaqah dengan ice breaking atau kisah-kisah inspiratif para penghafal Al-Quran terdahulu.",
       "Bimbingan intensif dan suasana yang suportif adalah obat terbaik untuk membangkitkan gairah belajar yang sedang padam.",
       "Mari bersama-sama memohon kemudahan dari Allah SWT agar dilancarkan dalam membimbing para calon penjaga Al-Quran.",

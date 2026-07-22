@@ -168,7 +168,7 @@ export default function CoordinatorTransitionPage() {
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-4">
         <Loader2 size={40} className="animate-spin text-primary-500" />
-        <p className="text-gray-500 font-medium">Memuat data santri dan kelas...</p>
+        <p className="text-gray-500 font-medium">Memuat data siswa dan kelas...</p>
       </div>
     );
   }
@@ -315,7 +315,7 @@ export default function CoordinatorTransitionPage() {
                       Mulai Progres dari Nol
                     </p>
                     <p className="text-xs text-gray-400 mt-0.5">
-                      Reset status capaian santri (progres harian) menjadi 'Belum Ada' untuk memulai modul baru di kelas barunya.
+                      Reset status capaian siswa (progres harian) menjadi 'Belum Ada' untuk memulai modul baru di kelas barunya.
                     </p>
                   </div>
                 </div>
@@ -332,7 +332,7 @@ export default function CoordinatorTransitionPage() {
                       Reset Statistik Kehadiran & Adab
                     </p>
                     <p className="text-xs text-gray-400 mt-0.5">
-                      Atur ulang skor kehadiran bulanan and adab santri ke angka default (0) agar siap dinilai dari awal oleh guru baru.
+                      Atur ulang skor kehadiran bulanan and adab siswa ke angka default (0) agar siap dinilai dari awal oleh guru baru.
                     </p>
                   </div>
                 </div>

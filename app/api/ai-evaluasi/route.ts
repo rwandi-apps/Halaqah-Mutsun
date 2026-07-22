@@ -43,7 +43,7 @@ export async function POST(req: Request) {
       ANALISIS DATA BERIKUT:
       Tipe Laporan: ${reportType}
       Periode: ${period}
-      Data Santri:
+      Data Siswa:
       ${contextData}
     `;
 
