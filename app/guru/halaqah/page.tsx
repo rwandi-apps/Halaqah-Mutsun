@@ -43,12 +43,33 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
     return parts.length > 1 ? parts[1].trim() : parts[0].trim();
   };
 
+  // Helper: Format Sabaq Terakhir menjadi "Surah : Ayat" (misal "Al-Waqiah : 6")
+  const formatSabaqTerakhir = (str: string | undefined): string => {
+    if (!str || str === '-' || str === 'Belum Ada' || str.trim() === '') return '-';
+
+    const trimmed = str.trim();
+    if (trimmed.toLowerCase().startsWith('iqra')) return trimmed;
+
+    // Matches patterns like "Al-Waqiah 1-6", "Al-Waqiah 1 - 6", "Al-Waqiah : 6", "Al-Waqiah:6", "Al-Waqiah 6"
+    const rangeMatch = trimmed.match(/^(.+?)\s*(?:[:\-–]|ayat)?\s*(\d+)(?:\s*[\-–]\s*(\d+))?\s*$/i);
+    if (rangeMatch) {
+      const surah = rangeMatch[1].replace(/[:\-–]$/, '').trim();
+      const lastAyat = rangeMatch[3] || rangeMatch[2];
+      if (surah && lastAyat) {
+        return `${surah} : ${lastAyat}`;
+      }
+    }
+
+    return trimmed;
+  };
+
   // Helper: Tentukan Juz berdasarkan string
   const getJuzFromString = (str: string) => {
     if (!str || str === '-' || str === '') return '-';
     const match = str.match(/^(.*?)[:\d]/);
     const surahName = match ? match[1].trim() : str.trim();
-    const entry = QURAN_MAPPING.find(q => q.surah.toLowerCase() === surahName.toLowerCase());
+    const cleanName = surahName.toLowerCase().replace(/['`’]/g, "'");
+    const entry = QURAN_MAPPING.find(q => q.surah.toLowerCase().replace(/['`’]/g, "'") === cleanName);
     if (!entry) return str;
     const p = entry.page;
     if (p >= 582) return "Juz 30";
@@ -96,9 +117,11 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
         }
 
         // Prioritas: gunakan student.currentProgress jika ada, fallback ke laporan bulanan terbaru
-        let sabaqDisplay = (student.currentProgress && student.currentProgress !== 'Belum Ada' && student.currentProgress !== '-')
+        let rawSabaq = (student.currentProgress && student.currentProgress !== 'Belum Ada' && student.currentProgress !== '-')
           ? student.currentProgress
           : getEndPart(latest?.tahfizh?.individual);
+
+        let sabaqDisplay = formatSabaqTerakhir(rawSabaq);
 
         const tilawahRaw = latest?.tilawah?.individual;
         const tilawahDisplay = getEndPart(tilawahRaw);

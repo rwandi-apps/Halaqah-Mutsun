@@ -217,7 +217,7 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
 
       // Update student's sabaq terakhir in Firestore
       await updateStudent(student.id, {
-        currentProgress: `${selectedSurah} ${dari}-${sampai}`
+        currentProgress: `${selectedSurah} : ${sampai}`
       });
 
       // Call callback to notify parent component to refresh data
