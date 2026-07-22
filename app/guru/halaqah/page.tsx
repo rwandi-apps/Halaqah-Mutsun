@@ -43,21 +43,55 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
     return parts.length > 1 ? parts[1].trim() : parts[0].trim();
   };
 
-  // Helper: Format Sabaq Terakhir menjadi "Surah : Ayat" (misal "Al-Waqiah : 6")
+  // Helper: Format Sabaq Terakhir menjadi "Surah: Ayat" (misal "Al-Baqarah: 204")
   const formatSabaqTerakhir = (str: string | undefined): string => {
     if (!str || str === '-' || str === 'Belum Ada' || str.trim() === '') return '-';
 
-    const trimmed = str.trim();
+    let trimmed = str.trim();
+
+    // 1. Jika mengandung pemisah range ' - ' (contoh "Al-Baqarah: 197 - Al-Baqarah: 204" atau "Al-Baqarah: 197 - 204")
+    if (trimmed.includes(' - ')) {
+      const parts = trimmed.split(' - ').map(p => p.trim());
+      const lastPart = parts[parts.length - 1];
+
+      // Jika bagian akhir sudah ada nama surah (contoh "Al-Baqarah: 204")
+      if (/[a-zA-Z]/.test(lastPart) && !lastPart.toLowerCase().startsWith('ayat')) {
+        trimmed = lastPart;
+      } else {
+        // Bagian akhir hanya angka ayat (contoh "204"), ambil surah dari bagian awal
+        const firstPart = parts[0];
+        const matchSurah = firstPart.match(/^(.+?)\s*[:\-–]?\s*\d+$/);
+        if (matchSurah) {
+          const surah = matchSurah[1].replace(/[:\-–]$/, '').trim();
+          const lastAyat = lastPart.replace(/^ayat\s*/i, '').trim();
+          return `${surah}: ${lastAyat}`;
+        }
+      }
+    }
+
     if (trimmed.toLowerCase().startsWith('iqra')) return trimmed;
 
-    // Matches patterns like "Al-Waqiah 1-6", "Al-Waqiah 1 - 6", "Al-Waqiah : 6", "Al-Waqiah:6", "Al-Waqiah 6"
-    const rangeMatch = trimmed.match(/^(.+?)\s*(?:[:\-–]|ayat)?\s*(\d+)(?:\s*[\-–]\s*(\d+))?\s*$/i);
-    if (rangeMatch) {
-      const surah = rangeMatch[1].replace(/[:\-–]$/, '').trim();
-      const lastAyat = rangeMatch[3] || rangeMatch[2];
-      if (surah && lastAyat) {
-        return `${surah} : ${lastAyat}`;
-      }
+    // 2. Jika berbentuk range "Al-Baqarah 197-204" atau "Al-Baqarah: 197-204"
+    const rangeAtEndMatch = trimmed.match(/^(.+?)\s*[:\-–]?\s*\d+\s*[\-–]\s*(\d+)$/i);
+    if (rangeAtEndMatch) {
+      const surah = rangeAtEndMatch[1].replace(/[:\-–]$/, '').trim();
+      const lastAyat = rangeAtEndMatch[2];
+      return `${surah}: ${lastAyat}`;
+    }
+
+    // 3. Jika berbentuk "Surah: Ayat" atau "Surah Ayat" (contoh "Al-Baqarah: 204" atau "Al-Baqarah 204")
+    const singleMatch = trimmed.match(/^(.+?)\s*[:\-–]\s*(\d+)$/i);
+    if (singleMatch) {
+      const surah = singleMatch[1].trim();
+      const ayat = singleMatch[2];
+      return `${surah}: ${ayat}`;
+    }
+
+    const singleSpaceMatch = trimmed.match(/^(.+?)\s+(\d+)$/i);
+    if (singleSpaceMatch && !singleSpaceMatch[1].toLowerCase().startsWith('juz')) {
+      const surah = singleSpaceMatch[1].trim();
+      const ayat = singleSpaceMatch[2];
+      return `${surah}: ${ayat}`;
     }
 
     return trimmed;
@@ -119,7 +153,7 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
         // Prioritas: gunakan student.currentProgress jika ada, fallback ke laporan bulanan terbaru
         let rawSabaq = (student.currentProgress && student.currentProgress !== 'Belum Ada' && student.currentProgress !== '-')
           ? student.currentProgress
-          : getEndPart(latest?.tahfizh?.individual);
+          : (latest?.tahfizh?.individual || '-');
 
         let sabaqDisplay = formatSabaqTerakhir(rawSabaq);
 
@@ -240,7 +274,7 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
 
                 <div className="flex justify-between items-center text-[12px] leading-[16px]">
                    <span className="text-gray-500">Sabaq Terakhir</span>
-                   <span className="text-gray-900 font-medium text-right truncate max-w-[150px]" title={student.sabaqDisplay}>
+                   <span className="text-gray-900 font-bold text-right truncate max-w-[170px]" title={student.sabaqDisplay}>
                      {student.sabaqDisplay}
                    </span>
                 </div>
