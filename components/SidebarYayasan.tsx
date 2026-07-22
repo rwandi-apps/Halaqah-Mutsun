@@ -11,6 +11,7 @@ export const SidebarYayasan: React.FC<SidebarProps> = ({ onLogout, onCloseMobile
   const navItems = [
     { type: 'section', label: 'EKSEKUTIF' },
     { to: "/yayasan/dashboard", icon: LayoutDashboard, label: "Dashboard Yayasan" },
+    { to: "/coordinator/dashboard", icon: ShieldCheck, label: "Tampilan Koordinator" },
     { to: "/yayasan/lihat-guru", icon: Eye, label: "Lihat sebagai Guru" },
     
     { type: 'section', label: 'MONITORING & DATA' },
@@ -19,9 +20,6 @@ export const SidebarYayasan: React.FC<SidebarProps> = ({ onLogout, onCloseMobile
     { to: "/coordinator/kelas", icon: BookOpen, label: "Data Kelas & Halaqah" },
     { to: "/coordinator/siswa", icon: GraduationCap, label: "Data Siswa" },
     { to: "/coordinator/rapor", icon: FileCheck, label: "Pantau Rapor Siswa" },
-    
-    { type: 'section', label: 'PERSPEKTIF LAIN' },
-    { to: "/coordinator/dashboard", icon: ShieldCheck, label: "Tampilan Koordinator" },
   ];
 
   return (
