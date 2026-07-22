@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '../../../lib/firebase';
 import { 
   Building2, 
   Users, 
@@ -10,14 +8,14 @@ import {
   Eye, 
   BarChart3, 
   FileText, 
-  CheckCircle2, 
-  Clock, 
   Sparkles,
   ArrowRight,
   TrendingUp,
-  ShieldAlert
+  CheckCircle2,
+  XCircle
 } from 'lucide-react';
 import { Student, User } from '../../../types';
+import { getAllTeachers, getAllStudents, getClassHalaqahSummary } from '../../../services/firestoreService';
 
 export default function YayasanDashboard() {
   const navigate = useNavigate();
@@ -25,56 +23,57 @@ export default function YayasanDashboard() {
     totalClasses: 0,
     totalHalaqahs: 0,
     totalTeachers: 0,
-    totalStudents: 0,
-    totalSetoranTuntas: 0,
-    averageAttendance: 0
+    totalStudents: 0
   });
   const [teachersList, setTeachersList] = useState<User[]>([]);
-  const [recentStudents, setRecentStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadYayasanStats();
   }, []);
 
+  const sortTeachers = (teachers: User[]) => {
+    return [...teachers].sort((a, b) => {
+      const statusA = (a.status as string) || 'Aktif';
+      const statusB = (b.status as string) || 'Aktif';
+      const isInactiveA = statusA !== 'Aktif';
+      const isInactiveB = statusB !== 'Aktif';
+
+      if (isInactiveA && !isInactiveB) return 1;
+      if (!isInactiveA && isInactiveB) return -1;
+      return (a.name || '').localeCompare(b.name || '');
+    });
+  };
+
   const loadYayasanStats = async () => {
     setLoading(true);
     try {
-      if (!db) return;
+      const [allUsers, allStudents, classSummaries] = await Promise.all([
+        getAllTeachers(),
+        getAllStudents(),
+        getClassHalaqahSummary()
+      ]);
 
-      // Fetch Students
-      const studentsSnap = await getDocs(collection(db, 'students'));
-      const studentsData: Student[] = studentsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Student));
-      
-      // Fetch Teachers
-      const usersSnap = await getDocs(collection(db, 'users'));
-      const usersData: User[] = usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
-      const teachers = usersData.filter(u => u.role === 'GURU' || u.role === 'guru');
+      const teacherUsers = allUsers.filter(u => u.role === 'GURU' || u.role === 'guru' || u.teacherId);
+      const sortedTeachers = sortTeachers(teacherUsers);
 
-      // Fetch Setoran Sabak
-      const setoranSnap = await getDocs(collection(db, 'setoran_sabak'));
-      const setoranDocs = setoranSnap.docs.map(d => d.data());
-      const tuntasCount = setoranDocs.filter(s => s.status === 'Tuntas').length;
+      const activeStudents = allStudents.filter(s => 
+        s.status !== 'Mutasi/Keluar' && s.status !== 'Alumni/Lulus'
+      );
 
-      // Unique Classes & Halaqahs
-      const uniqueClasses = new Set(studentsData.map(s => s.className).filter(Boolean));
-      const uniqueHalaqahs = new Set(studentsData.map(s => s.teacherId || s.halaqahId).filter(Boolean));
-
-      // Calculate Attendance Average
-      const totalAtt = studentsData.reduce((acc, s) => acc + (s.attendance || 100), 0);
-      const avgAtt = studentsData.length > 0 ? Math.round(totalAtt / studentsData.length) : 100;
+      // Calculate Unique Classes
+      const classSet = new Set(activeStudents.map(s => s.className).filter(Boolean));
+      // Calculate Unique Halaqahs
+      const halaqahSet = new Set(activeStudents.map(s => s.teacherId || s.halaqahId).filter(Boolean));
 
       setStats({
-        totalClasses: uniqueClasses.size || 12,
-        totalHalaqahs: uniqueHalaqahs.size || teachers.length || 8,
-        totalTeachers: teachers.length,
-        totalStudents: studentsData.length,
-        totalSetoranTuntas: tuntasCount,
-        averageAttendance: avgAtt
+        totalClasses: classSet.size || classSummaries.length || 0,
+        totalHalaqahs: halaqahSet.size || teacherUsers.length || 0,
+        totalTeachers: teacherUsers.length,
+        totalStudents: activeStudents.length
       });
 
-      setTeachersList(teachers);
-      setRecentStudents(studentsData.slice(0, 5));
+      setTeachersList(sortedTeachers);
     } catch (err) {
       console.error("Error loading Yayasan Stats:", err);
     } finally {
@@ -231,34 +230,47 @@ export default function YayasanDashboard() {
         </div>
       </div>
 
-      {/* Grid Data Guru & Info Keamanan Mode Read-Only */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-6 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-            <div>
-              <h3 className="font-bold text-gray-900">Daftar Guru / Musyrif Active</h3>
-              <p className="text-xs text-gray-400">Pilih guru untuk melihat aplikasi dari perspektif halaqah mereka.</p>
-            </div>
-            <button 
-              onClick={() => navigate('/yayasan/lihat-guru')}
-              className="text-xs font-bold text-amber-600 hover:text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg transition-colors"
-            >
-              Lihat Semua ({teachersList.length})
-            </button>
+      {/* Grid Data Guru (Guru aktif di atas, guru non-aktif di paling bawah) */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm space-y-4">
+        <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+          <div>
+            <h3 className="font-bold text-gray-900">Daftar Guru / Musyrif</h3>
+            <p className="text-xs text-gray-400">Diurutkan dari guru aktif hingga guru non-aktif di posisi terbawah.</p>
           </div>
+          <button 
+            onClick={() => navigate('/yayasan/lihat-guru')}
+            className="text-xs font-bold text-amber-600 hover:text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            Lihat Semua ({teachersList.length})
+          </button>
+        </div>
 
-          <div className="space-y-3">
-            {teachersList.length === 0 ? (
-              <p className="text-xs text-gray-400 py-6 text-center">Memuat daftar guru...</p>
-            ) : (
-              teachersList.slice(0, 5).map((t) => (
-                <div key={t.id} className="flex items-center justify-between p-3.5 bg-gray-50/70 rounded-xl hover:bg-gray-100/80 transition-all border border-gray-100">
+        <div className="space-y-3">
+          {teachersList.length === 0 ? (
+            <p className="text-xs text-gray-400 py-6 text-center">Memuat daftar guru...</p>
+          ) : (
+            teachersList.map((t) => {
+              const statusVal = (t.status as string) || 'Aktif';
+              const isInactive = statusVal !== 'Aktif';
+              return (
+                <div key={t.id} className={`flex items-center justify-between p-3.5 rounded-xl transition-all border ${isInactive ? 'bg-gray-100/50 border-gray-200 opacity-70' : 'bg-gray-50/70 border-gray-100 hover:bg-gray-100/80'}`}>
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-teal-600 text-white font-bold text-xs flex items-center justify-center">
+                    <div className={`w-9 h-9 rounded-full font-bold text-xs flex items-center justify-center ${isInactive ? 'bg-gray-400 text-white' : 'bg-teal-600 text-white'}`}>
                       {t.name.split(' ').map(n=>n[0]).join('').substring(0,2)}
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-gray-800">{t.name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className={`text-sm font-bold ${isInactive ? 'text-gray-500 line-through' : 'text-gray-800'}`}>{t.name}</p>
+                        {isInactive ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">
+                            <XCircle size={10} /> Non-Aktif
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                            <CheckCircle2 size={10} /> Aktif
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-gray-400">{t.email}</p>
                     </div>
                   </div>
@@ -268,41 +280,14 @@ export default function YayasanDashboard() {
                       window.dispatchEvent(new Event('sdq_preview_change'));
                       navigate('/guru/dashboard');
                     }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold rounded-lg transition-all shadow-sm"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-lg transition-all shadow-sm"
                   >
                     <Eye size={14} /> Lihat Tampilan
                   </button>
                 </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Security & Access Box */}
-        <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl border border-amber-200/70 p-6 space-y-4">
-          <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-700 flex items-center justify-center">
-            <ShieldAlert size={20} />
-          </div>
-          <div className="space-y-1">
-            <h4 className="font-bold text-amber-900 text-sm">Mode Pratinjau Terisolasi</h4>
-            <p className="text-xs text-amber-800/80 leading-relaxed">
-              Ketika Anda menggunakan fitur <strong>"Lihat Sebagai Guru"</strong>, akun Yayasan tidak pernah mengubah password atau sesi autentikasi. Sesi login Yayasan tetap aktif sepenuhnya.
-            </p>
-          </div>
-          <div className="space-y-2 text-xs text-amber-900/90 font-medium border-t border-amber-200/50 pt-3">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
-              <span>Akses View-Only / Read-Only</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
-              <span>Tombol Ubah/Simpan Dinonaktifkan</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
-              <span>Pindah Tampilan Tanpa Relogin</span>
-            </div>
-          </div>
+              );
+            })
+          )}
         </div>
       </div>
     </div>

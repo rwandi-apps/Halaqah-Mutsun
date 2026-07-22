@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../../../lib/firebase';
-import { Users, Eye, Search, GraduationCap, CheckCircle2, ArrowLeft, ShieldAlert } from 'lucide-react';
+import { Users, Eye, Search, GraduationCap, ArrowLeft, CheckCircle2, XCircle } from 'lucide-react';
 import { User, Student } from '../../../types';
+import { getAllTeachers, getAllStudents } from '../../../services/firestoreService';
 
 export default function YayasanLihatGuruPage() {
   const navigate = useNavigate();
@@ -16,20 +15,32 @@ export default function YayasanLihatGuruPage() {
     loadTeachersData();
   }, []);
 
+  const sortTeachers = (teachersList: User[]) => {
+    return [...teachersList].sort((a, b) => {
+      const statusA = (a.status as string) || 'Aktif';
+      const statusB = (b.status as string) || 'Aktif';
+      const isInactiveA = statusA !== 'Aktif';
+      const isInactiveB = statusB !== 'Aktif';
+
+      if (isInactiveA && !isInactiveB) return 1;
+      if (!isInactiveA && isInactiveB) return -1;
+      return (a.name || '').localeCompare(b.name || '');
+    });
+  };
+
   const loadTeachersData = async () => {
     setLoading(true);
     try {
-      if (!db) return;
+      const [allUsers, allStudents] = await Promise.all([
+        getAllTeachers(),
+        getAllStudents()
+      ]);
 
-      const usersSnap = await getDocs(collection(db, 'users'));
-      const usersData: User[] = usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
-      const guruList = usersData.filter(u => u.role === 'GURU' || u.role === 'guru' || u.teacherId);
+      const guruList = allUsers.filter(u => u.role === 'GURU' || u.role === 'guru' || u.teacherId);
+      const sortedGuru = sortTeachers(guruList);
 
-      const studentsSnap = await getDocs(collection(db, 'students'));
-      const studentsData: Student[] = studentsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Student));
-
-      setTeachers(guruList);
-      setStudents(studentsData);
+      setTeachers(sortedGuru);
+      setStudents(allStudents);
     } catch (err) {
       console.error("Error loading teachers:", err);
     } finally {
@@ -64,16 +75,8 @@ export default function YayasanLihatGuruPage() {
             Pilih Guru untuk Pratinjau
           </h1>
           <p className="text-gray-500 text-xs mt-1">
-            Pilih salah satu Ustadz/Ustadzah untuk melihat seluruh halaman dan menu aplikasi dari sudut pandang beliau dalam mode Read-Only.
+            Pilih salah satu Ustadz/Ustadzah untuk melihat seluruh halaman dan menu aplikasi dari sudut pandang beliau.
           </p>
-        </div>
-      </div>
-
-      {/* Mode Preview Info Banner */}
-      <div className="bg-amber-50 border border-amber-200/80 rounded-2xl p-4 flex items-center gap-3 text-amber-900 text-xs shadow-sm">
-        <ShieldAlert size={20} className="text-amber-600 shrink-0" />
-        <div>
-          <span className="font-bold">Mode Pratinjau Terisolasi:</span> Mengakses halaman guru melalui menu ini tidak akan mengeluarkan (logout) akun Yayasan Anda dan tidak memerlukan kata sandi guru.
         </div>
       </div>
 
@@ -102,20 +105,34 @@ export default function YayasanLihatGuruPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredTeachers.map((t) => {
             const teacherStudents = students.filter(s => s.teacherId === t.id || s.teacherId === t.teacherId);
-            
+            const statusVal = (t.status as string) || 'Aktif';
+            const isInactive = statusVal !== 'Aktif';
+
             return (
-              <div key={t.id} className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-5">
+              <div key={t.id} className={`bg-white rounded-2xl border p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-5 ${isInactive ? 'border-gray-200 bg-gray-50/50 opacity-80' : 'border-gray-100'}`}>
                 <div className="space-y-4">
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-teal-600 text-white font-black text-base flex items-center justify-center shrink-0 shadow-sm">
+                    <div className={`w-12 h-12 rounded-2xl text-white font-black text-base flex items-center justify-center shrink-0 shadow-sm ${isInactive ? 'bg-gray-400' : 'bg-teal-600'}`}>
                       {t.name.split(' ').map(n=>n[0]).join('').substring(0,2)}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h3 className="font-bold text-gray-900 text-base truncate">{t.name}</h3>
+                      <h3 className={`font-bold text-base truncate ${isInactive ? 'text-gray-500 line-through' : 'text-gray-900'}`}>{t.name}</h3>
                       <p className="text-xs text-gray-400 truncate">{t.email}</p>
-                      <span className="inline-block mt-2 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-teal-50 text-teal-700 border border-teal-100">
-                        Guru / Musyrif
-                      </span>
+                      
+                      <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-teal-50 text-teal-700 border border-teal-100">
+                          Guru / Musyrif
+                        </span>
+                        {isInactive ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">
+                            <XCircle size={10} /> Non-Aktif
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                            <CheckCircle2 size={10} /> Aktif
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 

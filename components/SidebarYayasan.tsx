@@ -35,7 +35,7 @@ export const SidebarYayasan: React.FC<SidebarProps> = ({ onLogout, onCloseMobile
           </div>
         </div>
       </div>
-      <div className="px-4 py-3 flex-1 overflow-y-auto custom-scrollbar">
+      <div className="px-4 py-3 flex-1 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         <nav className="space-y-1">
           {navItems.map((item, index) => {
             if (item.type === 'section') {
