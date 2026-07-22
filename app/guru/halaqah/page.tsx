@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Student, Report } from '../../../types';
 import { getStudentsByTeacher, getReportsByTeacher } from '../../../services/firestoreService';
 import { QURAN_MAPPING } from '../../../services/quranMapping';
+import { extractClassLevel } from '../../../services/sdqTargets';
 import { Button } from '../../../components/Button';
 import { Search, MoreVertical, BookOpen, Plus } from 'lucide-react';
 import { getStoredUser } from '../../../services/simpleAuth';
@@ -150,19 +151,44 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
            hafalanDisplay = parts.length > 0 ? parts.join(' ') : "0 Juz";
         }
 
-        // Prioritas: gunakan student.currentProgress jika ada, fallback ke laporan bulanan terbaru
-        let rawSabaq = (student.currentProgress && student.currentProgress !== 'Belum Ada' && student.currentProgress !== '-')
-          ? student.currentProgress
-          : (latest?.tahfizh?.individual || '-');
+        // KELAS 2 & Lainnya: Sabaq Terakhir HANYA dari Tahfizh Individual atau setoran sabaq resmi.
+        // Jika Kelas 2 tidak ada data di Tahfizh individual (atau currentProgress hanya berisi data tilawah), beri tanda '-' saja.
+        const classLvl = extractClassLevel(student.className);
+        const tahfizhIndiv = latest?.tahfizh?.individual;
+        const tilawahIndiv = latest?.tilawah?.individual;
+
+        let rawSabaq = '-';
+
+        if (classLvl === 1) {
+          // Kelas 1: Boleh Iqra / Tilawah / CurrentProgress
+          rawSabaq = (student.currentProgress && student.currentProgress !== 'Belum Ada' && student.currentProgress !== '-')
+            ? student.currentProgress
+            : (tahfizhIndiv || tilawahIndiv || '-');
+        } else {
+          // Kelas 2 dan Kelas 3-6:
+          // Hanya gunakan tahfizhIndiv jika valid
+          if (tahfizhIndiv && tahfizhIndiv !== '-' && tahfizhIndiv !== 'Belum Ada' && tahfizhIndiv.trim() !== '') {
+            rawSabaq = tahfizhIndiv;
+          } else if (
+            student.currentProgress && 
+            student.currentProgress !== 'Belum Ada' && 
+            student.currentProgress !== '-' &&
+            student.currentProgress !== tilawahIndiv
+          ) {
+            // Gunakan student.currentProgress HANYA jika bukan salinan/persamaan dari tilawahIndiv
+            rawSabaq = student.currentProgress;
+          } else {
+            rawSabaq = '-';
+          }
+        }
 
         let sabaqDisplay = formatSabaqTerakhir(rawSabaq);
 
-        const tilawahRaw = latest?.tilawah?.individual;
-        const tilawahDisplay = getEndPart(tilawahRaw);
+        const tilawahDisplay = getEndPart(tilawahIndiv);
 
         const currentJuzDisplay = (sabaqDisplay !== '-') 
           ? getJuzFromString(sabaqDisplay)
-          : (student.currentProgress || "-");
+          : ((student.currentProgress && student.currentProgress !== tilawahIndiv && student.currentProgress !== 'Belum Ada') ? student.currentProgress : "-");
 
         return {
           ...student,

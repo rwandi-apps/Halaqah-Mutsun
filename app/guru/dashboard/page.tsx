@@ -118,8 +118,12 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
           // Engine sdqTargets akan otomatis mendeteksi jika isinya Al-Quran (100%)
           progressString = latestReport.tilawah?.individual || progressString;
         } else {
-          // Kelas 2-6: Gunakan Tahfizh Individual
-          progressString = latestReport.tahfizh?.individual || progressString;
+          // Kelas 2-6: Gunakan Tahfizh Individual. Jika kosong/tidak ada, jangan ambil tilawah.
+          if (latestReport.tahfizh?.individual && latestReport.tahfizh.individual !== '-' && latestReport.tahfizh.individual !== 'Belum Ada') {
+            progressString = latestReport.tahfizh.individual;
+          } else if (progressString === latestReport.tilawah?.individual) {
+            progressString = "-";
+          }
         }
       }
 

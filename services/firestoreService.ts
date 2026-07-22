@@ -293,13 +293,16 @@ export const saveSDQReport = async (reportData: Omit<Report, 'id' | 'createdAt'>
     if (reportData.behaviorScore !== undefined) updates.behaviorScore = reportData.behaviorScore;
     
     // Update Current Progress (Sabaq)
-    // Prioritas: Tahfizh > Tilawah > Jangan update jika kosong
+    // Untuk Kelas 2 ke atas, HANYA update dari Tahfizh Individual (jangan pernah menimpa dengan Tilawah).
+    // Untuk Kelas 1, boleh fallback ke Tilawah Individual (Iqra).
+    const studentSnap = await getDoc(studentRef);
+    const studentClassLevel = extractClassLevel(studentSnap.data()?.className);
     const progressRaw = reportData.tahfizh?.individual;
     const tilawahRaw = reportData.tilawah?.individual;
 
     if (progressRaw && progressRaw !== '-' && progressRaw.trim().length > 3) {
       updates.currentProgress = progressRaw;
-    } else if (tilawahRaw && tilawahRaw !== '-' && tilawahRaw.trim().length > 3) {
+    } else if (studentClassLevel === 1 && tilawahRaw && tilawahRaw !== '-' && tilawahRaw.trim().length > 3) {
       updates.currentProgress = tilawahRaw;
     }
 
@@ -486,12 +489,14 @@ export const updateReport = async (reportId: string, data: Partial<Report>): Pro
       if (data.behaviorScore !== undefined) updates.behaviorScore = data.behaviorScore;
       
       // Update Progress jika diedit
+      const studentSnap = await getDoc(studentRef);
+      const studentClassLevel = extractClassLevel(studentSnap.data()?.className);
       const newProgress = data.tahfizh?.individual;
       const newTilawah = data.tilawah?.individual;
       
       if (newProgress && newProgress !== '-' && newProgress.trim().length > 3) {
         updates.currentProgress = newProgress;
-      } else if (newTilawah && newTilawah !== '-' && newTilawah.trim().length > 3) {
+      } else if (studentClassLevel === 1 && newTilawah && newTilawah !== '-' && newTilawah.trim().length > 3) {
         updates.currentProgress = newTilawah;
       }
 
