@@ -12,6 +12,7 @@ export interface User {
   createdAt?: string;
   teacherId?: string;
   status?: 'Aktif' | 'Nonaktif';
+  gender?: 'L' | 'P';
 }
 
 export interface Student {

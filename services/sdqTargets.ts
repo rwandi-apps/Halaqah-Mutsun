@@ -126,6 +126,45 @@ export const getStudentGender = (student: any): 'L' | 'P' => {
   return 'L'; 
 };
 
+export const getTeacherGender = (teacher: any): 'Ikhwan' | 'Akhwat' => {
+  if (!teacher) return 'Ikhwan';
+  
+  if (typeof teacher === 'object') {
+    if (teacher.gender === 'P' || teacher.gender === 'Akhwat' || teacher.gender === 'F') return 'Akhwat';
+    if (teacher.gender === 'L' || teacher.gender === 'Ikhwan' || teacher.gender === 'M') return 'Ikhwan';
+    
+    const nameStr = `${teacher.name || ''} ${teacher.nickname || ''} ${teacher.guruNama || ''}`.toLowerCase();
+    if (
+      nameStr.includes('ustadzah') || 
+      nameStr.includes('ustzah') || 
+      nameStr.includes('ustz') || 
+      nameStr.includes('akhwat') || 
+      nameStr.includes('ibu') || 
+      nameStr.includes('bu ') ||
+      nameStr.includes('ukhti') ||
+      nameStr.includes('ummu')
+    ) {
+      return 'Akhwat';
+    }
+    return 'Ikhwan';
+  }
+
+  const lower = String(teacher).toLowerCase();
+  if (
+    lower.includes('ustadzah') || 
+    lower.includes('ustzah') || 
+    lower.includes('ustz') || 
+    lower.includes('akhwat') || 
+    lower.includes('ibu') || 
+    lower.includes('bu ') ||
+    lower.includes('ukhti') ||
+    lower.includes('ummu')
+  ) {
+    return 'Akhwat';
+  }
+  return 'Ikhwan';
+};
+
 /**
  * Menghitung skor absolut untuk Iqra.
  * Jika siswa Kelas 1 sudah masuk Surah Al-Quran, otomatis dianggap tuntas target Iqra (100%).

@@ -12,7 +12,9 @@ import {
   Users,
   FileText,
   BookmarkCheck,
-  RotateCcw
+  RotateCcw,
+  UserCheck,
+  Filter
 } from 'lucide-react';
 import { SetoranGuru, User } from '../../../types';
 import { 
@@ -23,6 +25,7 @@ import {
   getAllTeachers
 } from '../../../services/firestoreService';
 import { QURAN_SURAHS } from '../../../services/surahData';
+import { getTeacherGender } from '../../../services/sdqTargets';
 
 export const CoordinatorSetoranGuruPage: React.FC = () => {
   const [setoranList, setSetoranList] = useState<SetoranGuru[]>([]);
@@ -44,8 +47,23 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
 
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterGender, setFilterGender] = useState<'Semua' | 'Ikhwan' | 'Akhwat'>('Semua');
   const [filterTeacherId, setFilterTeacherId] = useState('Semua');
   const [filterJenis, setFilterJenis] = useState('Semua');
+
+  // Teacher Map for fast lookup
+  const teacherMap = useMemo(() => {
+    const map = new Map<string, User>();
+    teachers.forEach(t => map.set(t.id, t));
+    return map;
+  }, [teachers]);
+
+  // Grouped Teachers for dropdowns
+  const groupedTeachers = useMemo(() => {
+    const ikhwan = teachers.filter(t => getTeacherGender(t) === 'Ikhwan');
+    const akhwat = teachers.filter(t => getTeacherGender(t) === 'Akhwat');
+    return { ikhwan, akhwat };
+  }, [teachers]);
 
   // Load current surah's max verses for validation
   const selectedSurahInfo = useMemo(() => {
@@ -65,8 +83,7 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
     const loadTeachers = async () => {
       try {
         const list = await getAllTeachers();
-        // Keep teachers with role GURU (case-insensitive)
-        const guruList = list.filter(t => t.role?.toUpperCase() === 'GURU');
+        const guruList = list.filter(t => t.role?.toUpperCase() === 'GURU' || t.teacherId);
         setTeachers(guruList);
         if (guruList.length > 0) {
           setSelectedTeacherId(prev => prev || guruList[0].id);
@@ -88,25 +105,53 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
-  // Stats Board
+  // Stats Board (Comprehensive Ikhwan vs Akhwat breakdown)
   const stats = useMemo(() => {
     const total = setoranList.length;
     const ziyadah = setoranList.filter(s => s.jenisSetoran === 'Ziyadah').length;
     const murojaah = setoranList.filter(s => s.jenisSetoran === 'Murojaah').length;
-    return { total, ziyadah, murojaah, teacherCount: teachers.length };
-  }, [setoranList, teachers]);
+
+    // Filter setoran by gender
+    const ikhwanSetoran = setoranList.filter(s => {
+      const t = teacherMap.get(s.guruId);
+      return getTeacherGender(t || s.guruNama) === 'Ikhwan';
+    });
+    const akhwatSetoran = setoranList.filter(s => {
+      const t = teacherMap.get(s.guruId);
+      return getTeacherGender(t || s.guruNama) === 'Akhwat';
+    });
+
+    const ikhwanTeachers = groupedTeachers.ikhwan.length;
+    const akhwatTeachers = groupedTeachers.akhwat.length;
+
+    return { 
+      total, 
+      ziyadah, 
+      murojaah, 
+      teacherCount: teachers.length,
+      ikhwanTotal: ikhwanSetoran.length,
+      akhwatTotal: akhwatSetoran.length,
+      ikhwanTeachers,
+      akhwatTeachers
+    };
+  }, [setoranList, teachers, teacherMap, groupedTeachers]);
 
   // Filtered List
   const filteredSetoran = useMemo(() => {
     return setoranList.filter(item => {
+      const teacherObj = teacherMap.get(item.guruId);
+      const gender = getTeacherGender(teacherObj || item.guruNama);
+
+      const matchGender = filterGender === 'Semua' || gender === filterGender;
       const matchSearch = item.guruNama.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           item.surah.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           (item.catatan || '').toLowerCase().includes(searchTerm.toLowerCase());
       const matchTeacher = filterTeacherId === 'Semua' || item.guruId === filterTeacherId;
       const matchJenis = filterJenis === 'Semua' || item.jenisSetoran === filterJenis;
-      return matchSearch && matchTeacher && matchJenis;
+
+      return matchGender && matchSearch && matchTeacher && matchJenis;
     });
-  }, [setoranList, searchTerm, filterTeacherId, filterJenis]);
+  }, [setoranList, searchTerm, filterGender, filterTeacherId, filterJenis, teacherMap]);
 
   // Form Reset
   const resetForm = () => {
@@ -251,6 +296,7 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
           <div>
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Total Setoran</p>
             <p className="text-xl font-black text-gray-800">{stats.total}</p>
+            <p className="text-[10px] text-gray-400 font-medium">Ikhwan: {stats.ikhwanTotal} | Akhwat: {stats.akhwatTotal}</p>
           </div>
         </div>
 
@@ -261,6 +307,7 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
           <div>
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Ziyadah</p>
             <p className="text-xl font-black text-emerald-600">{stats.ziyadah}</p>
+            <p className="text-[10px] text-emerald-600/70 font-medium">Log Hafalan Baru</p>
           </div>
         </div>
 
@@ -271,6 +318,7 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
           <div>
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Murojaah</p>
             <p className="text-xl font-black text-purple-600">{stats.murojaah}</p>
+            <p className="text-[10px] text-purple-600/70 font-medium">Pengulangan Hafalan</p>
           </div>
         </div>
 
@@ -281,12 +329,55 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
           <div>
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Total Guru</p>
             <p className="text-xl font-black text-amber-600">{stats.teacherCount}</p>
+            <p className="text-[10px] text-amber-700/70 font-medium">Ikhwan: {stats.ikhwanTeachers} | Akhwat: {stats.akhwatTeachers}</p>
           </div>
         </div>
       </div>
 
-      {/* Filter Options */}
-      <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-4">
+      {/* Category Tabs & Filter Options */}
+      <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
+        {/* Category Tabs Switcher */}
+        <div className="flex items-center gap-2 border-b border-gray-100 pb-3 overflow-x-auto">
+          <button
+            type="button"
+            onClick={() => setFilterGender('Semua')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
+              filterGender === 'Semua' 
+                ? 'bg-primary-700 text-white shadow-sm' 
+                : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+            }`}
+          >
+            <Users size={15} />
+            Semua Guru ({stats.total})
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setFilterGender('Ikhwan')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
+              filterGender === 'Ikhwan' 
+                ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-300' 
+                : 'bg-blue-50/60 text-blue-800 hover:bg-blue-100 border border-blue-200'
+            }`}
+          >
+            <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+            Guru Ikhwan / Ustadz ({stats.ikhwanTotal})
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setFilterGender('Akhwat')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
+              filterGender === 'Akhwat' 
+                ? 'bg-purple-600 text-white shadow-md ring-2 ring-purple-300' 
+                : 'bg-purple-50/60 text-purple-800 hover:bg-purple-100 border border-purple-200'
+            }`}
+          >
+            <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+            Guru Akhwat / Ustadzah ({stats.akhwatTotal})
+          </button>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Search */}
           <div className="relative">
@@ -307,12 +398,25 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
               onChange={(e) => setFilterTeacherId(e.target.value)}
               className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-600 focus:border-transparent transition-all"
             >
-              <option value="Semua">Semua Guru</option>
-              {teachers.map((teacher) => (
-                <option key={teacher.id} value={teacher.id}>
-                  {teacher.name}
-                </option>
-              ))}
+              <option value="Semua">Semua Guru ({teachers.length})</option>
+              {groupedTeachers.ikhwan.length > 0 && (
+                <optgroup label="--- GURU IKHWAN (USTADZ) ---">
+                  {groupedTeachers.ikhwan.map((teacher) => (
+                    <option key={teacher.id} value={teacher.id}>
+                      {teacher.name}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              {groupedTeachers.akhwat.length > 0 && (
+                <optgroup label="--- GURU AKHWAT (USTADZAH) ---">
+                  {groupedTeachers.akhwat.map((teacher) => (
+                    <option key={teacher.id} value={teacher.id}>
+                      {teacher.name}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
             </select>
           </div>
 
@@ -358,62 +462,81 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {filteredSetoran.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center text-primary-700 font-bold text-xs uppercase shadow-sm">
-                          {item.guruNama ? item.guruNama.split(' ').map(n => n[0]).join('').substring(0, 2) : 'GR'}
+                {filteredSetoran.map((item) => {
+                  const teacherObj = teacherMap.get(item.guruId);
+                  const gender = getTeacherGender(teacherObj || item.guruNama);
+                  const isIkhwan = gender === 'Ikhwan';
+
+                  return (
+                    <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-9 h-9 rounded-full flex items-center justify-center font-extrabold text-xs uppercase shadow-sm ${
+                            isIkhwan ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                          }`}>
+                            {item.guruNama ? item.guruNama.split(' ').map(n => n[0]).join('').substring(0, 2) : 'GR'}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-bold text-gray-800 leading-none">{item.guruNama}</p>
+                              <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider ${
+                                isIkhwan 
+                                  ? 'bg-blue-50 text-blue-700 border border-blue-200' 
+                                  : 'bg-purple-50 text-purple-700 border border-purple-200'
+                              }`}>
+                                {gender}
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-gray-400 font-semibold mt-1">
+                              {isIkhwan ? 'Ustadz (Ikhwan)' : 'Ustadzah (Akhwat)'}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-bold text-gray-800 leading-none">{item.guruNama}</p>
-                          <p className="text-[10px] text-gray-400 font-semibold mt-1">Ustadz/Ustadzah</p>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 font-medium">
+                        <div className="flex items-center gap-2">
+                          <Calendar size={14} className="text-gray-400" />
+                          {new Date(item.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 font-medium">
-                      <div className="flex items-center gap-2">
-                        <Calendar size={14} className="text-gray-400" />
-                        {new Date(item.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider
-                        ${item.jenisSetoran === 'Ziyadah' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-purple-50 text-purple-700 border border-purple-100'}
-                      `}>
-                        {item.jenisSetoran}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-800 font-bold">
-                      <div className="flex items-center gap-2">
-                        <BookOpen size={14} className="text-gray-400" />
-                        <span>{item.surah}</span>
-                        <span className="text-xs text-gray-400 font-medium">Ayat {item.ayatDari} - {item.ayatSampai}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500 font-medium max-w-xs truncate">
-                      {item.catatan || '-'}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          onClick={() => handleOpenEditModal(item)}
-                          className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-700 transition-colors"
-                          title="Ubah Data"
-                        >
-                          <Edit2 size={15} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(item.id!)}
-                          className="p-1.5 hover:bg-gray-100 rounded-lg text-rose-500 hover:text-rose-700 transition-colors"
-                          title="Hapus Data"
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider
+                          ${item.jenisSetoran === 'Ziyadah' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-purple-50 text-purple-700 border border-purple-100'}
+                        `}>
+                          {item.jenisSetoran}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-800 font-bold">
+                        <div className="flex items-center gap-2">
+                          <BookOpen size={14} className="text-gray-400" />
+                          <span>{item.surah}</span>
+                          <span className="text-xs text-gray-400 font-medium">Ayat {item.ayatDari} - {item.ayatSampai}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500 font-medium max-w-xs truncate">
+                        {item.catatan || '-'}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => handleOpenEditModal(item)}
+                            className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-700 transition-colors"
+                            title="Ubah Data"
+                          >
+                            <Edit2 size={15} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(item.id!)}
+                            className="p-1.5 hover:bg-gray-100 rounded-lg text-rose-500 hover:text-rose-700 transition-colors"
+                            title="Hapus Data"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -455,15 +578,28 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
                 <select
                   value={selectedTeacherId}
                   onChange={(e) => setSelectedTeacherId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-600 focus:border-transparent transition-all"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-600 focus:border-transparent transition-all font-semibold"
                   disabled={editingId !== null}
                 >
                   <option value="" disabled>Pilih Guru...</option>
-                  {teachers.map((teacher) => (
-                    <option key={teacher.id} value={teacher.id}>
-                      {teacher.name}
-                    </option>
-                  ))}
+                  {groupedTeachers.ikhwan.length > 0 && (
+                    <optgroup label="--- GURU IKHWAN (USTADZ) ---">
+                      {groupedTeachers.ikhwan.map((teacher) => (
+                        <option key={teacher.id} value={teacher.id}>
+                          {teacher.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  {groupedTeachers.akhwat.length > 0 && (
+                    <optgroup label="--- GURU AKHWAT (USTADZAH) ---">
+                      {groupedTeachers.akhwat.map((teacher) => (
+                        <option key={teacher.id} value={teacher.id}>
+                          {teacher.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
               </div>
 

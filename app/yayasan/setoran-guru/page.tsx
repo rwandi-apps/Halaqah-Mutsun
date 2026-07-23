@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { SetoranGuru, User } from '../../../types';
 import { subscribeToAllSetoranGuru, getAllTeachers } from '../../../services/firestoreService';
+import { getTeacherGender } from '../../../services/sdqTargets';
 
 export default function YayasanSetoranGuruPage() {
   const [setoranList, setSetoranList] = useState<SetoranGuru[]>([]);
@@ -26,9 +27,24 @@ export default function YayasanSetoranGuruPage() {
 
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterGender, setFilterGender] = useState<'Semua' | 'Ikhwan' | 'Akhwat'>('Semua');
   const [filterTeacherId, setFilterTeacherId] = useState('Semua');
   const [filterJenis, setFilterJenis] = useState('Semua');
   const [selectedMonth, setSelectedMonth] = useState('Semua');
+
+  // Teacher Map for fast lookup
+  const teacherMap = useMemo(() => {
+    const map = new Map<string, User>();
+    teachers.forEach(t => map.set(t.id, t));
+    return map;
+  }, [teachers]);
+
+  // Grouped Teachers
+  const groupedTeachers = useMemo(() => {
+    const ikhwan = teachers.filter(t => getTeacherGender(t) === 'Ikhwan');
+    const akhwat = teachers.filter(t => getTeacherGender(t) === 'Akhwat');
+    return { ikhwan, akhwat };
+  }, [teachers]);
 
   // Load teachers list
   useEffect(() => {
@@ -57,6 +73,10 @@ export default function YayasanSetoranGuruPage() {
   // Filtered list
   const filteredSetoran = useMemo(() => {
     return setoranList.filter(item => {
+      const teacherObj = teacherMap.get(item.guruId);
+      const gender = getTeacherGender(teacherObj || item.guruNama);
+
+      const matchGender = filterGender === 'Semua' || gender === filterGender;
       const matchSearch = (item.guruNama || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
                           (item.surah || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
                           (item.catatan || '').toLowerCase().includes(searchTerm.toLowerCase());
@@ -69,9 +89,9 @@ export default function YayasanSetoranGuruPage() {
         matchMonth = monthStr === selectedMonth;
       }
 
-      return matchSearch && matchTeacher && matchJenis && matchMonth;
+      return matchGender && matchSearch && matchTeacher && matchJenis && matchMonth;
     });
-  }, [setoranList, searchTerm, filterTeacherId, filterJenis, selectedMonth]);
+  }, [setoranList, searchTerm, filterGender, filterTeacherId, filterJenis, selectedMonth, teacherMap]);
 
   // Executive KPI Stats
   const stats = useMemo(() => {
@@ -314,44 +334,99 @@ export default function YayasanSetoranGuruPage() {
         </div>
 
         {/* Filter Toolbar */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-            <input
-              type="text"
-              placeholder="Cari guru, surah, catatan..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
-            />
+        <div className="space-y-4">
+          {/* Category Tabs Switcher */}
+          <div className="flex items-center gap-2 border-b border-gray-100 pb-3 overflow-x-auto">
+            <button
+              type="button"
+              onClick={() => setFilterGender('Semua')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
+                filterGender === 'Semua' 
+                  ? 'bg-slate-900 text-white shadow-sm' 
+                  : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+              }`}
+            >
+              <Users size={15} />
+              Semua Guru ({setoranList.length})
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setFilterGender('Ikhwan')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
+                filterGender === 'Ikhwan' 
+                  ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-300' 
+                  : 'bg-blue-50/60 text-blue-800 hover:bg-blue-100 border border-blue-200'
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+              Guru Ikhwan / Ustadz
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setFilterGender('Akhwat')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
+                filterGender === 'Akhwat' 
+                  ? 'bg-purple-600 text-white shadow-md ring-2 ring-purple-300' 
+                  : 'bg-purple-50/60 text-purple-800 hover:bg-purple-100 border border-purple-200'
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+              Guru Akhwat / Ustadzah
+            </button>
           </div>
 
-          {/* Filter Guru */}
-          <div>
-            <select
-              value={filterTeacherId}
-              onChange={(e) => setFilterTeacherId(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
-            >
-              <option value="Semua">Semua Guru ({teachers.length})</option>
-              {teachers.map(t => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
-            </select>
-          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <input
+                type="text"
+                placeholder="Cari guru, surah, catatan..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
+              />
+            </div>
 
-          {/* Filter Jenis */}
-          <div>
-            <select
-              value={filterJenis}
-              onChange={(e) => setFilterJenis(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
-            >
-              <option value="Semua">Semua Jenis Setoran</option>
-              <option value="Ziyadah">Ziyadah</option>
-              <option value="Murojaah">Murojaah</option>
-            </select>
+            {/* Filter Guru */}
+            <div>
+              <select
+                value={filterTeacherId}
+                onChange={(e) => setFilterTeacherId(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
+              >
+                <option value="Semua">Semua Guru ({teachers.length})</option>
+                {groupedTeachers.ikhwan.length > 0 && (
+                  <optgroup label="--- GURU IKHWAN (USTADZ) ---">
+                    {groupedTeachers.ikhwan.map(t => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </optgroup>
+                )}
+                {groupedTeachers.akhwat.length > 0 && (
+                  <optgroup label="--- GURU AKHWAT (USTADZAH) ---">
+                    {groupedTeachers.akhwat.map(t => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </optgroup>
+                )}
+              </select>
+            </div>
+
+            {/* Filter Jenis */}
+            <div>
+              <select
+                value={filterJenis}
+                onChange={(e) => setFilterJenis(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
+              >
+                <option value="Semua">Semua Jenis Setoran</option>
+                <option value="Ziyadah">Ziyadah</option>
+                <option value="Murojaah">Murojaah</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -379,39 +454,54 @@ export default function YayasanSetoranGuruPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {filteredSetoran.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50/60 transition-colors">
-                    <td className="px-5 py-4 text-xs font-semibold text-gray-600 whitespace-nowrap">
-                      <div className="flex items-center gap-1.5">
-                        <Calendar size={14} className="text-gray-400" />
-                        {new Date(item.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                      </div>
-                    </td>
-                    <td className="px-5 py-4 text-xs font-bold text-gray-900">
-                      {item.guruNama}
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${
-                        item.jenisSetoran === 'Ziyadah' 
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' 
-                          : 'bg-purple-50 text-purple-700 border border-purple-200/60'
-                      }`}>
-                        {item.jenisSetoran}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 text-xs font-extrabold text-gray-800">
-                      {item.surah} <span className="text-gray-500 font-normal">(Ayat {item.ayatDari} - {item.ayatSampai})</span>
-                    </td>
-                    <td className="px-5 py-4 text-xs text-gray-500 font-medium max-w-xs truncate">
-                      {item.catatan || '-'}
-                    </td>
-                    <td className="px-5 py-4 text-center">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-700">
-                        <CheckCircle2 size={12} /> Tuntas
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {filteredSetoran.map((item) => {
+                  const teacherObj = teacherMap.get(item.guruId);
+                  const gender = getTeacherGender(teacherObj || item.guruNama);
+                  const isIkhwan = gender === 'Ikhwan';
+
+                  return (
+                    <tr key={item.id} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="px-5 py-4 text-xs font-semibold text-gray-600 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5">
+                          <Calendar size={14} className="text-gray-400" />
+                          {new Date(item.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </div>
+                      </td>
+                      <td className="px-5 py-4 text-xs font-bold text-gray-900">
+                        <div className="flex items-center gap-2">
+                          <span>{item.guruNama}</span>
+                          <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${
+                            isIkhwan 
+                              ? 'bg-blue-50 text-blue-700 border border-blue-200' 
+                              : 'bg-purple-50 text-purple-700 border border-purple-200'
+                          }`}>
+                            {gender}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${
+                          item.jenisSetoran === 'Ziyadah' 
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' 
+                            : 'bg-purple-50 text-purple-700 border border-purple-200/60'
+                        }`}>
+                          {item.jenisSetoran}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4 text-xs font-extrabold text-gray-800">
+                        {item.surah} <span className="text-gray-500 font-normal">(Ayat {item.ayatDari} - {item.ayatSampai})</span>
+                      </td>
+                      <td className="px-5 py-4 text-xs text-gray-500 font-medium max-w-xs truncate">
+                        {item.catatan || '-'}
+                      </td>
+                      <td className="px-5 py-4 text-center">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-700">
+                          <CheckCircle2 size={12} /> Tuntas
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}

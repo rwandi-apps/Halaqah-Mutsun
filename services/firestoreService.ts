@@ -640,10 +640,10 @@ export const saveHalaqahMonthlyReport = async (data: HalaqahMonthlyReport): Prom
   await setDoc(docRef, { ...data, updatedAt: serverTimestamp() }, { merge: true });
 };
 
-export const addTeacher = async (name: string, email: string, nickname: string, role: Role): Promise<User> => {
+export const addTeacher = async (name: string, email: string, nickname: string, role: Role, gender?: 'L' | 'P'): Promise<User> => {
   if (!db) throw new Error("Firestore not initialized");
-  const docRef = await addDoc(collection(db, 'users'), { name, nickname, email, role, status: 'Aktif', createdAt: serverTimestamp() });
-  return { id: docRef.id, name, nickname, email, role, status: 'Aktif', createdAt: new Date().toISOString() } as User;
+  const docRef = await addDoc(collection(db, 'users'), { name, nickname, email, role, gender: gender || 'L', status: 'Aktif', createdAt: serverTimestamp() });
+  return { id: docRef.id, name, nickname, email, role, gender: gender || 'L', status: 'Aktif', createdAt: new Date().toISOString() } as User;
 };
 
 export const updateTeacher = async (id: string, data: Partial<User>): Promise<void> => {

@@ -17,6 +17,7 @@ const CoordinatorGuruPage: React.FC = () => {
   const [newName, setNewName] = useState('');
   const [newNickname, setNewNickname] = useState('');
   const [newEmail, setNewEmail] = useState('');
+  const [newGender, setNewGender] = useState<'L' | 'P'>('L');
   const [newRole, setNewRole] = useState<Role>('GURU');
   const [newStatus, setNewStatus] = useState<'Aktif' | 'Nonaktif'>('Aktif');
 
@@ -40,6 +41,7 @@ const CoordinatorGuruPage: React.FC = () => {
     setNewName('');
     setNewNickname('');
     setNewEmail('');
+    setNewGender('L');
     setNewRole('GURU');
     setNewStatus('Aktif');
     setIsModalOpen(true);
@@ -51,6 +53,7 @@ const CoordinatorGuruPage: React.FC = () => {
     setNewName(teacher.name);
     setNewNickname(teacher.nickname || '');
     setNewEmail(teacher.email);
+    setNewGender(teacher.gender || (teacher.name?.toLowerCase().includes('ustadzah') ? 'P' : 'L'));
     setNewRole(teacher.role);
     setNewStatus(teacher.status || 'Aktif');
     setIsModalOpen(true);
@@ -68,12 +71,13 @@ const CoordinatorGuruPage: React.FC = () => {
           name: newName,
           nickname: newNickname,
           email: newEmail,
+          gender: newGender,
           role: newRole,
           status: newStatus
         });
       } else {
         // Mode Tambah
-        await addTeacher(newName, newEmail, newNickname, newRole);
+        await addTeacher(newName, newEmail, newNickname, newRole, newGender);
       }
       
       await loadTeachers(); // Refresh list from Firestore
@@ -242,6 +246,18 @@ const CoordinatorGuruPage: React.FC = () => {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm"
                   required
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Kategori Guru / Gender</label>
+                <select 
+                  value={newGender}
+                  onChange={(e) => setNewGender(e.target.value as 'L' | 'P')}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-white text-sm font-bold"
+                >
+                  <option value="L">Ikhwan (Laki-laki / Ustadz)</option>
+                  <option value="P">Akhwat (Perempuan / Ustadzah)</option>
+                </select>
               </div>
 
               <div>
