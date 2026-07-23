@@ -468,16 +468,7 @@ export default function YayasanSetoranGuruPage() {
                         </div>
                       </td>
                       <td className="px-5 py-4 text-xs font-bold text-gray-900">
-                        <div className="flex items-center gap-2">
-                          <span>{item.guruNama}</span>
-                          <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${
-                            isIkhwan 
-                              ? 'bg-blue-50 text-blue-700 border border-blue-200' 
-                              : 'bg-purple-50 text-purple-700 border border-purple-200'
-                          }`}>
-                            {gender}
-                          </span>
-                        </div>
+                        <span>{item.guruNama}</span>
                       </td>
                       <td className="px-5 py-4">
                         <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${
