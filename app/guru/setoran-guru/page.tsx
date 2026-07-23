@@ -11,14 +11,17 @@ import {
   X,
   FileText,
   BookmarkCheck,
-  RotateCcw
+  RotateCcw,
+  Users
 } from 'lucide-react';
-import { SetoranGuru } from '../../../types';
+import { SetoranGuru, User } from '../../../types';
 import { 
-  subscribeToSetoranGuruByTeacher, 
+  subscribeToAllSetoranGuru,
+  subscribeToSetoranGuruByTeacher,
   addSetoranGuru, 
   updateSetoranGuru, 
-  deleteSetoranGuru 
+  deleteSetoranGuru,
+  getAllTeachers
 } from '../../../services/firestoreService';
 import { QURAN_SURAHS } from '../../../services/surahData';
 import { getStoredUser } from '../../../services/simpleAuth';
@@ -32,12 +35,26 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
   const actualTeacherId = teacherId || currentUser?.id || '';
   const actualTeacherName = currentUser?.name || 'Guru';
 
+  // Check if current user is Ust. Bagas or Koordinator/Yayasan (Assistant Role)
+  const isAssistant = useMemo(() => {
+    if (!currentUser) return false;
+    const nameStr = (currentUser.name || '').toLowerCase();
+    const nicknameStr = (currentUser.nickname || '').toLowerCase();
+    const emailStr = (currentUser.email || '').toLowerCase();
+    const roleStr = (currentUser.role || '').toUpperCase();
+
+    if (roleStr === 'KOORDINATOR' || roleStr === 'YAYASAN') return true;
+    return nameStr.includes('bagas') || nicknameStr.includes('bagas') || emailStr.includes('bagas');
+  }, [currentUser]);
+
   const [setoranList, setSetoranList] = useState<SetoranGuru[]>([]);
+  const [teachers, setTeachers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   // Form Fields
+  const [selectedTeacherId, setSelectedTeacherId] = useState<string>(actualTeacherId);
   const [tanggal, setTanggal] = useState(new Date().toISOString().split('T')[0]);
   const [jenisSetoran, setJenisSetoran] = useState<'Ziyadah' | 'Murojaah'>('Ziyadah');
   const [surahName, setSurahName] = useState('Al-Fatihah');
@@ -50,6 +67,7 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
   const [filterJenis, setFilterJenis] = useState<string>('Semua');
+  const [filterTeacherId, setFilterTeacherId] = useState<string>('Semua');
 
   // Load current surah's max verses for dynamic validation & UI hints
   const selectedSurahInfo = useMemo(() => {
@@ -64,18 +82,43 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
     }
   }, [surahName, selectedSurahInfo]);
 
-  // Subscribe to real-time teacher submissions
+  // Load all teachers for selection
   useEffect(() => {
-    if (!actualTeacherId) return;
+    const loadTeachers = async () => {
+      try {
+        const list = await getAllTeachers();
+        const guruList = list.filter(t => t.role?.toUpperCase() === 'GURU' || t.teacherId);
+        setTeachers(guruList);
+      } catch (err) {
+        console.error('Failed to load teachers for setoran guru dropdown', err);
+      }
+    };
+    loadTeachers();
+  }, []);
 
+  // Subscribe to real-time teacher submissions (all setoran for Ust. Bagas/Koordinator, own setoran for regular guru)
+  useEffect(() => {
     setIsLoading(true);
-    const unsubscribe = subscribeToSetoranGuruByTeacher(actualTeacherId, (data) => {
-      setSetoranList(data);
-      setIsLoading(false);
-    });
+    let unsubscribe: () => void = () => {};
+
+    if (isAssistant) {
+      unsubscribe = subscribeToAllSetoranGuru((data) => {
+        setSetoranList(data);
+        setIsLoading(false);
+      });
+    } else {
+      if (actualTeacherId) {
+        unsubscribe = subscribeToSetoranGuruByTeacher(actualTeacherId, (data) => {
+          setSetoranList(data);
+          setIsLoading(false);
+        });
+      } else {
+        setIsLoading(false);
+      }
+    }
 
     return () => unsubscribe();
-  }, [actualTeacherId]);
+  }, [actualTeacherId, isAssistant]);
 
   // Statistics
   const stats = useMemo(() => {
@@ -89,14 +132,17 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
   const filteredSetoran = useMemo(() => {
     return setoranList.filter(item => {
       const matchSearch = item.surah.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          (item.guruNama || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (item.catatan || '').toLowerCase().includes(searchTerm.toLowerCase());
       const matchJenis = filterJenis === 'Semua' || item.jenisSetoran === filterJenis;
-      return matchSearch && matchJenis;
+      const matchTeacher = !isAssistant || filterTeacherId === 'Semua' || item.guruId === filterTeacherId;
+      return matchSearch && matchJenis && matchTeacher;
     });
-  }, [setoranList, searchTerm, filterJenis]);
+  }, [setoranList, searchTerm, filterJenis, filterTeacherId, isAssistant]);
 
   // Form Reset
   const resetForm = () => {
+    setSelectedTeacherId(actualTeacherId);
     setTanggal(new Date().toISOString().split('T')[0]);
     setJenisSetoran('Ziyadah');
     setSurahName('Al-Fatihah');
@@ -117,6 +163,7 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
   const handleOpenEditModal = (item: SetoranGuru) => {
     setErrorMsg('');
     setEditingId(item.id || null);
+    setSelectedTeacherId(item.guruId || actualTeacherId);
     setTanggal(item.tanggal);
     setJenisSetoran(item.jenisSetoran === 'Murojaah' ? 'Murojaah' : 'Ziyadah');
     setSurahName(item.surah);
@@ -131,6 +178,11 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
+
+    if (!selectedTeacherId) {
+      setErrorMsg('Pilih guru yang menyetorkan hafalan');
+      return;
+    }
 
     if (!tanggal) {
       setErrorMsg('Tanggal harus diisi');
@@ -152,10 +204,16 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
       return;
     }
 
+    // Determine target teacher name
+    const targetTeacherObj = teachers.find(t => t.id === selectedTeacherId || t.teacherId === selectedTeacherId);
+    const targetTeacherName = targetTeacherObj 
+      ? (targetTeacherObj.nickname || targetTeacherObj.name)
+      : (selectedTeacherId === actualTeacherId ? actualTeacherName : 'Guru');
+
     const payload: Omit<SetoranGuru, 'id' | 'createdAt' | 'updatedAt'> = {
       tanggal,
-      guruId: actualTeacherId,
-      guruNama: actualTeacherName,
+      guruId: selectedTeacherId,
+      guruNama: targetTeacherName,
       surah: surahName,
       ayatDari,
       ayatSampai,
@@ -219,6 +277,14 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
         </div>
       )}
 
+      {/* Assistant Badge Notice */}
+      {isAssistant && (
+        <div className="bg-sky-50 border border-sky-200 text-sky-900 px-4 py-2.5 rounded-2xl flex items-center gap-2.5 text-xs font-semibold shadow-xs">
+          <span className="px-2 py-0.5 rounded-md bg-sky-600 text-white font-bold text-[10px] uppercase">Akses Asisten</span>
+          <span>Mode Asisten Setoran Guru: Anda memiliki wewenang untuk mencatat dan mengelola setoran hafalan seluruh Ustadz & Ustadzah.</span>
+        </div>
+      )}
+
       {/* Stats Board */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
@@ -254,18 +320,36 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
 
       {/* Filter Options */}
       <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className={`grid grid-cols-1 ${isAssistant ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-4`}>
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <input
               type="text"
-              placeholder="Cari surah, catatan..."
+              placeholder={isAssistant ? "Cari guru, surah, catatan..." : "Cari surah, catatan..."}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c75] focus:border-transparent transition-all"
             />
           </div>
+
+          {/* Filter Guru (Khusus Ust. Bagas / Koordinator) */}
+          {isAssistant && (
+            <div>
+              <select
+                value={filterTeacherId}
+                onChange={(e) => setFilterTeacherId(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c75] focus:border-transparent transition-all"
+              >
+                <option value="Semua">Semua Guru (Ustadz/Ustadzah)</option>
+                {teachers.map(t => (
+                  <option key={t.id} value={t.id}>
+                    {t.nickname || t.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Filter Jenis */}
           <div>
@@ -301,6 +385,7 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100">
                   <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Tanggal</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Nama Guru</th>
                   <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Jenis</th>
                   <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Surah & Ayat</th>
                   <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Catatan</th>
@@ -315,6 +400,9 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
                         <Calendar size={14} className="text-gray-400" />
                         {new Date(item.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm font-bold text-gray-800">
+                      {item.guruNama}
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider
@@ -385,6 +473,31 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
                 <div className="bg-rose-50 border border-rose-100 text-rose-700 p-3 rounded-xl text-xs font-semibold flex items-center gap-2">
                   <AlertTriangle size={14} className="shrink-0" />
                   <p>{errorMsg}</p>
+                </div>
+              )}
+
+              {/* Guru Selection Dropdown (Khusus Ust. Bagas / Koordinator) */}
+              {isAssistant && (
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1.5">
+                    Pilih Guru yang Menyetor
+                  </label>
+                  <select
+                    value={selectedTeacherId}
+                    onChange={(e) => setSelectedTeacherId(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c75] focus:border-transparent transition-all font-semibold"
+                  >
+                    <option value={actualTeacherId}>
+                      {actualTeacherName} (Saya Sendiri)
+                    </option>
+                    {teachers
+                      .filter(t => t.id !== actualTeacherId)
+                      .map((teacher) => (
+                        <option key={teacher.id} value={teacher.id}>
+                          {teacher.nickname || teacher.name}
+                        </option>
+                      ))}
+                  </select>
                 </div>
               )}
 
@@ -495,4 +608,5 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
 };
 
 export default GuruSetoranPage;
+
 
