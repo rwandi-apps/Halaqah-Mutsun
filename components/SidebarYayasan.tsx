@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, GraduationCap, BookOpen, FileText, Eye, LogOut, ShieldCheck, FileCheck } from 'lucide-react';
+import { LayoutDashboard, Users, GraduationCap, BookOpen, FileText, Eye, LogOut, ShieldCheck, FileCheck, BookmarkCheck } from 'lucide-react';
 
 interface SidebarProps {
   onLogout: () => void;
@@ -15,6 +15,7 @@ export const SidebarYayasan: React.FC<SidebarProps> = ({ onLogout, onCloseMobile
     { to: "/yayasan/lihat-guru", icon: Eye, label: "Lihat sebagai Guru" },
     
     { type: 'section', label: 'MONITORING & DATA' },
+    { to: "/yayasan/setoran-guru", icon: BookmarkCheck, label: "Program Setoran Guru" },
     { to: "/coordinator/reports", icon: FileText, label: "Monitoring Tahfizh" },
     { to: "/coordinator/guru", icon: Users, label: "Data Guru" },
     { to: "/coordinator/kelas", icon: BookOpen, label: "Data Kelas & Halaqah" },

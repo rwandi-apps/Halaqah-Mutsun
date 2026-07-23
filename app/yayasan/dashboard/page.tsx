@@ -12,7 +12,8 @@ import {
   ArrowRight,
   TrendingUp,
   CheckCircle2,
-  XCircle
+  XCircle,
+  BookmarkCheck
 } from 'lucide-react';
 import { Student, User } from '../../../types';
 import { getAllTeachers, getAllStudents, getClassHalaqahSummary } from '../../../services/firestoreService';
@@ -164,7 +165,28 @@ export default function YayasanDashboard() {
           <TrendingUp className="text-amber-500" size={20} />
           Navigasi Pengawasan Yayasan
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div 
+            onClick={() => navigate('/yayasan/setoran-guru')}
+            className="bg-white p-6 rounded-2xl border border-emerald-200/80 shadow-sm hover:shadow-lg transition-all cursor-pointer group hover:border-emerald-400 flex flex-col justify-between"
+          >
+            <div className="space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 font-bold group-hover:scale-110 transition-transform">
+                <BookmarkCheck size={24} />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 group-hover:text-emerald-600 transition-colors">
+                Program Setoran Guru
+              </h3>
+              <p className="text-xs text-gray-500 leading-relaxed">
+                Tinjau resumen & progres capaian setoran hafalan (Ziyadah & Murojaah) ustadz / ustadzah secara eksekutif.
+              </p>
+            </div>
+            <div className="pt-4 flex items-center gap-2 text-xs font-extrabold text-emerald-600 uppercase tracking-wider">
+              <span>Buka Resumen Setoran</span>
+              <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+            </div>
+          </div>
+
           <div 
             onClick={() => navigate('/yayasan/lihat-guru')}
             className="bg-white p-6 rounded-2xl border border-amber-200/80 shadow-sm hover:shadow-lg transition-all cursor-pointer group hover:border-amber-400 flex flex-col justify-between"

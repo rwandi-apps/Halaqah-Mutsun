@@ -22,6 +22,7 @@ import GuruRaporPage from './app/guru/rapor/page';
 import { GuruSetoranPage } from './app/guru/setoran-guru/page';
 import YayasanDashboard from './app/yayasan/dashboard/page';
 import YayasanLihatGuruPage from './app/yayasan/lihat-guru/page';
+import YayasanSetoranGuruPage from './app/yayasan/setoran-guru/page';
 import { getStoredUser, simpleLogout } from './services/simpleAuth';
 import { User } from './types';
 
@@ -92,6 +93,7 @@ function App() {
                 {/* Routes Yayasan */}
                 <Route path="/yayasan/dashboard" element={<YayasanDashboard />} />
                 <Route path="/yayasan/lihat-guru" element={<YayasanLihatGuruPage />} />
+                <Route path="/yayasan/setoran-guru" element={<YayasanSetoranGuruPage />} />
 
                 {/* Routes Koordinator */}
                 <Route path="/coordinator/dashboard" element={<CoordinatorDashboard />} />
