@@ -1,7 +1,8 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, FileText, ClipboardList, BarChart2, BookOpen, LogOut, ChevronDown } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, ClipboardList, BarChart2, BookOpen, LogOut, ChevronDown, BookmarkCheck } from 'lucide-react';
+import { getStoredUser } from '../services/simpleAuth';
 
 interface SidebarProps {
   onLogout: () => void;
@@ -9,6 +10,19 @@ interface SidebarProps {
 }
 
 export const SidebarGuru: React.FC<SidebarProps> = ({ onLogout, onCloseMobile }) => {
+  const currentUser = getStoredUser();
+
+  const isAssistant = useMemo(() => {
+    if (!currentUser) return false;
+    const nameStr = (currentUser.name || '').toLowerCase();
+    const nicknameStr = (currentUser.nickname || '').toLowerCase();
+    const emailStr = (currentUser.email || '').toLowerCase();
+    const roleStr = (currentUser.role || '').toUpperCase();
+
+    if (roleStr === 'KOORDINATOR' || roleStr === 'YAYASAN') return true;
+    return nameStr.includes('bagas') || nicknameStr.includes('bagas') || emailStr.includes('bagas');
+  }, [currentUser]);
+
   const navItems = [
     { type: 'section', label: 'UTAMA' },
     { to: "/guru/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -17,6 +31,7 @@ export const SidebarGuru: React.FC<SidebarProps> = ({ onLogout, onCloseMobile })
     { type: 'section', label: 'LAPORAN' },
     { to: "/guru/laporan", icon: FileText, label: "Input Laporan" },
     { to: "/guru/view-report", icon: ClipboardList, label: "Lihat Laporan" },
+    ...(isAssistant ? [{ to: "/guru/setoran-guru", icon: BookmarkCheck, label: "Setoran Guru" }] : []),
     
     { type: 'section', label: 'EVALUASI' },
     { to: "/guru/evaluation", icon: BarChart2, label: "Evaluasi & Tindak Lanjut" },
