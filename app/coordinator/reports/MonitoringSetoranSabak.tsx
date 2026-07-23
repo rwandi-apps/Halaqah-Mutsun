@@ -18,9 +18,18 @@ import {
   ChevronUp, 
   History, 
   X, 
-  Check, 
   Clock,
-  Filter
+  Filter,
+  Trophy,
+  TrendingUp,
+  TrendingDown,
+  Star,
+  MessageSquareQuote,
+  Edit3,
+  Save,
+  Target,
+  Sparkles,
+  Minus
 } from 'lucide-react';
 
 const getCurrentAcademicYear = (): string => {
@@ -63,11 +72,9 @@ const getWeeksForAcademicYear = (academicYear: string): WeekOption[] => {
   const endYear = parseInt(endYearStr) || 2026;
   
   const weeks: WeekOption[] = [];
-  // Academic year runs from July 1st of startYear to June 30th of endYear
   let current = new Date(startYear, 6, 1); // July 1st
   const endLimit = new Date(endYear, 5, 30, 23, 59, 59); // June 30th
   
-  // Align current to the Monday of that week
   const day = current.getDay();
   const diff = current.getDate() - day + (day === 0 ? -6 : 1);
   current.setDate(diff);
@@ -104,7 +111,7 @@ const isDateInWeek = (dateStr: string, startDate: Date, endDate: Date): boolean 
   const year = parseInt(parts[0], 10);
   const month = parseInt(parts[1], 10) - 1;
   const day = parseInt(parts[2], 10);
-  const d = new Date(year, month, day, 12, 0, 0); // avoid timezone shifts
+  const d = new Date(year, month, day, 12, 0, 0);
   const t = d.getTime();
   return t >= startDate.getTime() && t <= endDate.getTime();
 };
@@ -112,17 +119,18 @@ const isDateInWeek = (dateStr: string, startDate: Date, endDate: Date): boolean 
 const getDefaultWeek = (weeks: WeekOption[]): WeekOption | null => {
   if (weeks.length === 0) return null;
   const today = new Date();
-  today.setHours(12, 0, 0, 0); // avoid timezone boundary shifts
+  today.setHours(12, 0, 0, 0);
   const t = today.getTime();
   const found = weeks.find(w => t >= w.startDate.getTime() && t <= w.endDate.getTime());
   if (found) return found;
   
-  // If today is after the entire academic year, return the last week
   if (t > weeks[weeks.length - 1].endDate.getTime()) {
     return weeks[weeks.length - 1];
   }
   return weeks[0];
 };
+
+const DEFAULT_COORDINATOR_NOTE = "Alhamdulillah terdapat peningkatan setoran pada beberapa halaqah kelas 3. Jazakumullahu khairan kepada seluruh guru yang telah konsisten melakukan mutabaah dan pendampingan. Mari bersama-sama membantu halaqah yang masih memerlukan dukungan agar seluruh ananda mendapatkan layanan terbaik.";
 
 export const MonitoringSetoranSabak: React.FC = () => {
   const [teachers, setTeachers] = useState<User[]>([]);
@@ -137,6 +145,19 @@ export const MonitoringSetoranSabak: React.FC = () => {
   const [selectedClass, setSelectedClass] = useState('Semua');
   const [selectedTeacher, setSelectedTeacher] = useState('Semua');
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Target Sekolah (%)
+  const TARGET_SEKOLAH_PERCENT = 80;
+
+  // Coordinator Note state
+  const [coordinatorNote, setCoordinatorNote] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('sdq_koordinator_note') || DEFAULT_COORDINATOR_NOTE;
+    }
+    return DEFAULT_COORDINATOR_NOTE;
+  });
+  const [isEditingNote, setIsEditingNote] = useState(false);
+  const [tempNote, setTempNote] = useState('');
 
   // Accordion open/close states (grouped by class name)
   const [expandedClasses, setExpandedClasses] = useState<Record<string, boolean>>({});
@@ -188,6 +209,20 @@ export const MonitoringSetoranSabak: React.FC = () => {
     }
   }, [weekOptions]);
 
+  // Index of current selected week
+  const selectedWeekIndex = useMemo(() => {
+    if (!selectedWeek) return -1;
+    return weekOptions.findIndex(w => w.id === selectedWeek.id);
+  }, [selectedWeek, weekOptions]);
+
+  // Previous Week Option
+  const previousWeekOption = useMemo(() => {
+    if (selectedWeekIndex > 0) {
+      return weekOptions[selectedWeekIndex - 1];
+    }
+    return null;
+  }, [selectedWeekIndex, weekOptions]);
+
   // 4. Resolve Filters
   const uniqueClasses = useMemo(() => {
     const list = students.map(s => s.className).filter(Boolean);
@@ -205,7 +240,7 @@ export const MonitoringSetoranSabak: React.FC = () => {
   // Filter students
   const filteredStudents = useMemo(() => {
     return students.filter(student => {
-      const matchesYear = student.className !== "Lulus / Alumni"; // we already subscribe to active students, but verify
+      const matchesYear = student.className !== "Lulus / Alumni";
       const matchesGender = selectedGender === 'Semua' || 
         (selectedGender === 'Ikhwan' && getStudentGender(student) === 'L') || 
         (selectedGender === 'Akhwat' && getStudentGender(student) === 'P');
@@ -233,10 +268,25 @@ export const MonitoringSetoranSabak: React.FC = () => {
     return map;
   }, [sabakRecords, selectedWeek]);
 
+  // Map of Student ID -> array of setoran_sabak records in the previous week
+  const sabakInPreviousWeekByStudent = useMemo(() => {
+    const map: Record<string, SetoranSabak[]> = {};
+    if (!previousWeekOption) return map;
+
+    sabakRecords.forEach(rec => {
+      if (isDateInWeek(rec.tanggal, previousWeekOption.startDate, previousWeekOption.endDate)) {
+        if (!map[rec.siswaId]) {
+          map[rec.siswaId] = [];
+        }
+        map[rec.siswaId].push(rec);
+      }
+    });
+    return map;
+  }, [sabakRecords, previousWeekOption]);
+
   // Map of Student ID -> latest setoran_sabak record (entire history)
   const latestSabakByStudent = useMemo(() => {
     const map: Record<string, SetoranSabak> = {};
-    // Sabak records are already sorted descending by date
     sabakRecords.forEach(rec => {
       if (!map[rec.siswaId]) {
         map[rec.siswaId] = rec;
@@ -263,7 +313,7 @@ export const MonitoringSetoranSabak: React.FC = () => {
       const tId = student.teacherId;
       const tName = teacherMap[tId] || 'Guru Tidak Teridentifikasi';
 
-      // Exclusion rule: Kelas 3 Ubay bin Ka'ab (Ust. Eric) and Kelas 5 Muadz bin Jabal (Ust. Zubair)
+      // Exclusion rule: Eric in Ubay & Zubair in Muadz
       const isEricInUbay = cls?.toLowerCase().includes("ubay") && tName?.toLowerCase().includes("eric");
       const isZubairInMuadz = cls?.toLowerCase().includes("muadz") && tName?.toLowerCase().includes("zubair");
 
@@ -295,7 +345,6 @@ export const MonitoringSetoranSabak: React.FC = () => {
       }
     });
 
-    // Convert to sorted arrays
     return Object.values(groups)
       .map(g => ({
         className: g.className,
@@ -304,7 +353,7 @@ export const MonitoringSetoranSabak: React.FC = () => {
       .sort((a, b) => a.className.localeCompare(b.className));
   }, [filteredStudents, teacherMap, sabakInSelectedWeekByStudent]);
 
-  // Summary Metrics
+  // Summary Metrics for Header
   const metrics = useMemo(() => {
     let totalStudents = filteredStudents.length;
     let totalSetoransThisWeek = 0;
@@ -318,13 +367,134 @@ export const MonitoringSetoranSabak: React.FC = () => {
       }
     });
 
+    const percentageSchool = totalStudents > 0 ? Math.round((studentsDepositedCount / totalStudents) * 100) : 0;
+
     return {
       totalStudents,
       totalSetoransThisWeek,
       studentsDepositedCount,
-      studentsNotYetDepositedCount: totalStudents - studentsDepositedCount
+      studentsNotYetDepositedCount: totalStudents - studentsDepositedCount,
+      percentageSchool
     };
   }, [filteredStudents, sabakInSelectedWeekByStudent]);
+
+  // Previous Week Metrics for Weekly Trend
+  const previousMetrics = useMemo(() => {
+    let studentsDepositedPrev = 0;
+    filteredStudents.forEach(s => {
+      const prevWeekly = sabakInPreviousWeekByStudent[s.id] || [];
+      if (prevWeekly.length > 0) {
+        studentsDepositedPrev++;
+      }
+    });
+
+    return {
+      studentsDepositedCount: studentsDepositedPrev
+    };
+  }, [filteredStudents, sabakInPreviousWeekByStudent]);
+
+  // Trend Calculations
+  const trendData = useMemo(() => {
+    const current = metrics.studentsDepositedCount;
+    const prev = previousMetrics.studentsDepositedCount;
+    const diff = current - prev;
+    
+    let pct = 0;
+    if (prev > 0) {
+      pct = Math.round((Math.abs(diff) / prev) * 100);
+    } else if (current > 0) {
+      pct = 100;
+    }
+
+    let status: 'up' | 'down' | 'stable' = 'stable';
+    if (diff > 0) status = 'up';
+    else if (diff < 0) status = 'down';
+
+    return {
+      current,
+      prev,
+      diff,
+      pct,
+      status
+    };
+  }, [metrics.studentsDepositedCount, previousMetrics.studentsDepositedCount]);
+
+  // Section 1: Appreciation Cards Computations
+  const appreciationCards = useMemo(() => {
+    interface HalaqahPerf {
+      className: string;
+      teacherId: string;
+      teacherName: string;
+      totalStudents: number;
+      alreadyCount: number;
+      prevAlreadyCount: number;
+      pct: number;
+      prevPct: number;
+      diffPct: number;
+    }
+
+    const perfList: HalaqahPerf[] = [];
+
+    hierarchicalData.forEach(clsGroup => {
+      clsGroup.halaqahs.forEach(hal => {
+        if (hal.students.length === 0) return;
+
+        let prevAlready = 0;
+        hal.students.forEach(s => {
+          if ((sabakInPreviousWeekByStudent[s.id] || []).length > 0) {
+            prevAlready++;
+          }
+        });
+
+        const pct = Math.round((hal.alreadyDepositedCount / hal.students.length) * 100);
+        const prevPct = Math.round((prevAlready / hal.students.length) * 100);
+        const diffPct = pct - prevPct;
+
+        perfList.push({
+          className: clsGroup.className,
+          teacherId: hal.teacherId,
+          teacherName: hal.teacherName,
+          totalStudents: hal.students.length,
+          alreadyCount: hal.alreadyDepositedCount,
+          prevAlreadyCount: prevAlready,
+          pct,
+          prevPct,
+          diffPct
+        });
+      });
+    });
+
+    // 1. Best Halaqah This Week
+    const sortedByPct = [...perfList].sort((a, b) => b.pct - a.pct || b.alreadyCount - a.alreadyCount);
+    const topHalaqah = sortedByPct[0] || null;
+
+    // 2. Best Growth
+    const sortedByGrowth = [...perfList].sort((a, b) => b.diffPct - a.diffPct || b.pct - a.pct);
+    const topGrowth = sortedByGrowth[0] || null;
+
+    // 3. Best Consistency (High performing & stable)
+    const topConsistency = sortedByPct.find(h => h.pct >= 80) || sortedByPct[0] || null;
+
+    return {
+      topHalaqah,
+      topGrowth,
+      topConsistency
+    };
+  }, [hierarchicalData, sabakInPreviousWeekByStudent]);
+
+  // Note Save Handler
+  const handleSaveNote = () => {
+    setCoordinatorNote(tempNote);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sdq_koordinator_note', tempNote);
+    }
+    setIsEditingNote(false);
+  };
+
+  const handleStartEditNote = () => {
+    setTempNote(coordinatorNote);
+    setIsEditingNote(true);
+  };
 
   // Handle open student history modal
   const handleOpenHistory = (student: Student) => {
@@ -350,7 +520,6 @@ export const MonitoringSetoranSabak: React.FC = () => {
       ...prev,
       [halaqahKey]: !prev[halaqahKey]
     }));
-    // Reset page on toggle
     setHalaqahPage(prev => ({
       ...prev,
       [halaqahKey]: 1
@@ -359,106 +528,27 @@ export const MonitoringSetoranSabak: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* 1. FILTER PANEL */}
-      <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {/* Tahun Ajaran */}
-        <div className="space-y-1.5">
-          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Tahun Ajaran</label>
-          <select 
-            value={selectedYear} 
-            onChange={e => setSelectedYear(e.target.value)} 
-            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl bg-gray-50 text-xs font-bold outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            {ACADEMIC_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
-          </select>
+      {/* BANNER HEADER */}
+      <div className="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-700 text-white p-6 sm:p-8 rounded-[2rem] shadow-md relative overflow-hidden">
+        <div className="absolute -right-10 -bottom-10 opacity-10 pointer-events-none">
+          <Trophy size={240} />
         </div>
-
-        {/* Pekan Dropdown */}
-        <div className="space-y-1.5 md:col-span-2">
-          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Pekan Berjalan</label>
-          <div className="relative">
-            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-500" size={16} />
-            <select 
-              value={selectedWeek ? selectedWeek.id : ''} 
-              onChange={e => {
-                const found = weekOptions.find(w => w.id === e.target.value);
-                if (found) setSelectedWeek(found);
-              }} 
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl bg-gray-50 text-xs font-bold outline-none focus:ring-2 focus:ring-primary-500 appearance-none"
-            >
-              {weekOptions.length === 0 && <option value="">Membuat pekan...</option>}
-              {weekOptions.map(w => (
-                <option key={w.id} value={w.id}>{w.label}</option>
-              ))}
-            </select>
+        <div className="relative z-10 max-w-3xl space-y-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-emerald-100 text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
+            <Sparkles size={14} className="text-amber-300" />
+            <span>Dashboard Apresiasi & Monitoring</span>
           </div>
-        </div>
-
-        {/* Jenis Kelamin */}
-        <div className="space-y-1.5">
-          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Jenis Kelamin</label>
-          <select 
-            value={selectedGender} 
-            onChange={e => setSelectedGender(e.target.value)} 
-            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl bg-gray-50 text-xs font-bold outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            <option value="Semua">Semua</option>
-            <option value="Ikhwan">Ikhwan (L)</option>
-            <option value="Akhwat">Akhwat (P)</option>
-          </select>
-        </div>
-
-        {/* Kelas */}
-        <div className="space-y-1.5">
-          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Kelas</label>
-          <select 
-            value={selectedClass} 
-            onChange={e => setSelectedClass(e.target.value)} 
-            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl bg-gray-50 text-xs font-bold outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            <option value="Semua">Semua Kelas</option>
-            {uniqueClasses.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </div>
-
-        {/* Guru Pengampu */}
-        <div className="space-y-1.5">
-          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Guru Pengampu</label>
-          <select 
-            value={selectedTeacher} 
-            onChange={e => setSelectedTeacher(e.target.value)} 
-            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl bg-gray-50 text-xs font-bold outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            <option value="Semua">Semua Guru</option>
-            {teachers.map(t => (
-              <option key={t.id} value={t.id}>{t.nickname || t.name}</option>
-            ))}
-          </select>
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
+            Pantauan Setoran Sabaq Pekanan
+          </h1>
+          <p className="text-emerald-100 text-sm font-medium leading-relaxed">
+            Media kolaborasi untuk apresiasi, motivasi, dan saling belajar antar halaqah. Fokus utama kita adalah mendorong pertumbuhan hafalan ananda dalam suasana yang saling mendukung.
+          </p>
         </div>
       </div>
 
-      {/* SEARCH AND TEXT */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
-        <div className="relative w-full sm:max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-          <input 
-            type="text" 
-            placeholder="Cari nama siswa..." 
-            value={searchTerm} 
-            onChange={e => setSearchTerm(e.target.value)} 
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl bg-gray-50 text-xs font-bold focus:ring-2 focus:ring-primary-500 outline-none" 
-          />
-        </div>
-        {selectedWeek && (
-          <div className="flex items-center gap-1.5 text-[10px] font-black text-primary-700 bg-primary-50 px-3 py-1.5 rounded-full uppercase tracking-wider self-stretch sm:self-auto justify-center">
-            <Clock size={12} />
-            <span>Pekan: {selectedWeek.startDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })} - {selectedWeek.endDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-          </div>
-        )}
-      </div>
-
-      {/* 2. METRICS CARDS */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* TAMPILAN HEADER : KPI STATS CARDS */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Siswa */}
         <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-teal-50 flex items-center justify-center text-teal-600 shrink-0">
@@ -466,312 +556,674 @@ export const MonitoringSetoranSabak: React.FC = () => {
           </div>
           <div>
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider leading-none mb-1">Total Siswa</p>
-            <p className="text-xl font-black text-gray-800 leading-none">{metrics.totalStudents} <span className="text-xs text-gray-400 font-bold">Ananda</span></p>
+            <p className="text-2xl font-black text-gray-800 leading-none">{metrics.totalStudents} <span className="text-xs text-gray-400 font-bold">Ananda</span></p>
           </div>
         </div>
 
-        {/* Total Setoran */}
+        {/* Total Setoran Pekan Ini */}
         <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
             <BookOpen size={22} />
           </div>
           <div>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider leading-none mb-1">Setoran Pekan Ini</p>
-            <p className="text-xl font-black text-gray-800 leading-none">{metrics.totalSetoransThisWeek} <span className="text-xs text-gray-400 font-bold">Kali</span></p>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider leading-none mb-1">Total Setoran Pekan Ini</p>
+            <p className="text-2xl font-black text-indigo-900 leading-none">{metrics.totalSetoransThisWeek} <span className="text-xs text-gray-400 font-bold">Kali Setor</span></p>
           </div>
         </div>
 
-        {/* Sudah Setor */}
-        <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
+        {/* Sudah Setor & Persentase Sekolah */}
+        <div className="bg-white p-5 rounded-3xl border border-emerald-100/80 shadow-sm flex items-center gap-4 bg-gradient-to-br from-white to-emerald-50/20">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-100/70 flex items-center justify-center text-emerald-700 shrink-0">
             <CheckCircle2 size={22} />
           </div>
-          <div>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider leading-none mb-1">Sudah Setor</p>
-            <p className="text-xl font-black text-emerald-600 leading-none">
-              {metrics.studentsDepositedCount} 
-              <span className="text-xs text-gray-400 font-bold ml-1">
-                ({metrics.totalStudents > 0 ? Math.round((metrics.studentsDepositedCount / metrics.totalStudents) * 100) : 0}%)
+          <div className="flex-1 min-w-0">
+            <div className="flex justify-between items-center mb-1">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider leading-none">Sudah Setor</p>
+              <span className="text-[11px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                {metrics.percentageSchool}%
               </span>
+            </div>
+            <p className="text-xl font-black text-emerald-700 leading-none">
+              {metrics.studentsDepositedCount} <span className="text-xs text-gray-400 font-medium">dari {metrics.totalStudents} siswa</span>
             </p>
           </div>
         </div>
 
-        {/* Belum Setor */}
-        <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-500 shrink-0">
-            <AlertCircle size={22} />
+        {/* Target Sekolah */}
+        <div className="bg-white p-5 rounded-3xl border border-amber-100 shadow-sm flex items-center gap-4 bg-gradient-to-br from-white to-amber-50/20">
+          <div className="w-12 h-12 rounded-2xl bg-amber-100/70 flex items-center justify-center text-amber-700 shrink-0">
+            <Target size={22} />
           </div>
-          <div>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider leading-none mb-1">Belum Setor</p>
-            <p className="text-xl font-black text-rose-500 leading-none">
-              {metrics.studentsNotYetDepositedCount} 
-              <span className="text-xs text-gray-400 font-bold ml-1">
-                ({metrics.totalStudents > 0 ? Math.round((metrics.studentsNotYetDepositedCount / metrics.totalStudents) * 100) : 0}%)
+          <div className="flex-1 min-w-0">
+            <div className="flex justify-between items-center mb-1">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider leading-none">Target Sekolah</p>
+              <span className="text-[11px] font-black text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">
+                {TARGET_SEKOLAH_PERCENT}%
               </span>
+            </div>
+            <p className="text-xl font-black text-amber-800 leading-none">
+              {metrics.percentageSchool >= TARGET_SEKOLAH_PERCENT ? 'Tercapai 🎉' : 'Selisih ' + (TARGET_SEKOLAH_PERCENT - metrics.percentageSchool) + '%'}
+            </p>
+            <p className="text-[10px] text-gray-400 font-semibold mt-1">
+              Belum setor: {metrics.studentsNotYetDepositedCount} siswa ({metrics.totalStudents > 0 ? Math.round((metrics.studentsNotYetDepositedCount / metrics.totalStudents) * 100) : 0}%)
             </p>
           </div>
         </div>
       </div>
 
-      {/* 3. ACCORDION VIEW */}
-      {isLoading ? (
-        <div className="bg-white rounded-3xl p-20 border border-gray-100 text-center shadow-sm">
-          <Loader2 size={36} className="text-primary-500 animate-spin mx-auto mb-2" />
-          <p className="text-sm text-gray-400 font-bold uppercase tracking-wider">Memuat Data Monitoring...</p>
+      {/* SECTION 4 : PESAN KOORDINATOR */}
+      <div className="bg-white p-6 rounded-[2rem] border border-emerald-100 shadow-sm space-y-3 relative overflow-hidden bg-gradient-to-r from-emerald-50/40 via-white to-teal-50/30">
+        <div className="flex items-center justify-between gap-4 border-b border-emerald-100/60 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-emerald-600 text-white shadow-sm">
+              <MessageSquareQuote size={18} />
+            </div>
+            <div>
+              <h3 className="text-base font-black text-gray-800 tracking-tight">Catatan Koordinator Pekan Ini</h3>
+              <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Apresiasi & Arahan Pembina Tahfizh</p>
+            </div>
+          </div>
+
+          {!isEditingNote ? (
+            <button
+              type="button"
+              onClick={handleStartEditNote}
+              className="px-3.5 py-1.5 rounded-xl border border-emerald-200 text-xs font-bold text-emerald-800 bg-white hover:bg-emerald-50 transition-colors flex items-center gap-1.5 shadow-sm"
+            >
+              <Edit3 size={14} />
+              <span>Ubah Catatan</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleSaveNote}
+              className="px-4 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-colors flex items-center gap-1.5 shadow-sm"
+            >
+              <Save size={14} />
+              <span>Simpan Catatan</span>
+            </button>
+          )}
         </div>
-      ) : hierarchicalData.length > 0 ? (
-        <div className="space-y-4">
-          {hierarchicalData.map((classGroup) => {
-            const isClassExpanded = !!expandedClasses[classGroup.className];
-            const classStudentsCount = classGroup.halaqahs.reduce((sum, h) => sum + h.students.length, 0);
-            const classAlreadyCount = classGroup.halaqahs.reduce((sum, h) => sum + h.alreadyDepositedCount, 0);
 
-            return (
-              <div 
-                key={classGroup.className}
-                className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden transition-all duration-200"
+        {isEditingNote ? (
+          <div className="space-y-2">
+            <textarea
+              value={tempNote}
+              onChange={(e) => setTempNote(e.target.value)}
+              rows={3}
+              className="w-full p-3.5 border border-emerald-200 rounded-2xl text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white shadow-inner"
+              placeholder="Tuliskan pesan motivasi atau catatan evaluasi pekanan koordinator..."
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsEditingNote(false)}
+                className="px-3 py-1.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-100"
               >
-                {/* Class Accordion Header */}
-                <button
-                  type="button"
-                  onClick={() => toggleClass(classGroup.className)}
-                  className="w-full px-6 py-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-gray-50/50 transition-colors text-left border-b border-gray-50"
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveNote}
+                className="px-4 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700"
+              >
+                Simpan
+              </button>
+            </div>
+          </div>
+        ) : (
+          <p className="text-xs sm:text-sm font-medium text-gray-700 leading-relaxed italic bg-white/80 p-4 rounded-2xl border border-emerald-100/60 shadow-sm">
+            "{coordinatorNote}"
+          </p>
+        )}
+      </div>
+
+      {/* SECTION 1 : APRESIASI PEKAN INI (3 KARTU HORIZONTAL) */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <Trophy size={18} className="text-amber-500" />
+          <h3 className="text-sm font-black text-gray-800 uppercase tracking-wider">Apresiasi Pekan Ini</h3>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Card 1: Halaqah Terbaik Pekan Ini */}
+          <div className="bg-white p-5 rounded-3xl border border-amber-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden bg-gradient-to-b from-amber-50/30 to-white">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center font-bold shadow-md shadow-amber-500/20 shrink-0">
+                <Trophy size={20} />
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-amber-700 uppercase tracking-wider">🏆 Halaqah Terbaik Pekan Ini</p>
+                <h4 className="text-sm font-black text-gray-800 truncate">
+                  {appreciationCards.topHalaqah ? appreciationCards.topHalaqah.teacherName : 'Belum Ada Data'}
+                </h4>
+              </div>
+            </div>
+
+            {appreciationCards.topHalaqah ? (
+              <div className="bg-white/90 p-3.5 rounded-2xl border border-amber-100 space-y-1.5">
+                <p className="text-xs font-bold text-gray-700">{appreciationCards.topHalaqah.className}</p>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-gray-500 font-medium">Capaian Setoran:</span>
+                  <span className="font-extrabold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
+                    {appreciationCards.topHalaqah.pct}% ({appreciationCards.topHalaqah.alreadyCount}/{appreciationCards.topHalaqah.totalStudents} siswa)
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-gray-400 italic font-medium p-3">Data setoran pekan ini sedang dihimpun...</p>
+            )}
+          </div>
+
+          {/* Card 2: Peningkatan Terbaik */}
+          <div className="bg-white p-5 rounded-3xl border border-blue-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden bg-gradient-to-b from-blue-50/30 to-white">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-bold shadow-md shadow-blue-500/20 shrink-0">
+                <TrendingUp size={20} />
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-blue-700 uppercase tracking-wider">📈 Peningkatan Terbaik</p>
+                <h4 className="text-sm font-black text-gray-800 truncate">
+                  {appreciationCards.topGrowth ? appreciationCards.topGrowth.teacherName : 'Belum Ada Data'}
+                </h4>
+              </div>
+            </div>
+
+            {appreciationCards.topGrowth ? (
+              <div className="bg-white/90 p-3.5 rounded-2xl border border-blue-100 space-y-1.5">
+                <p className="text-xs font-bold text-gray-700">{appreciationCards.topGrowth.className}</p>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-gray-500 font-medium">Kenaikan Setoran:</span>
+                  <span className="font-extrabold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md">
+                    {appreciationCards.topGrowth.diffPct >= 0 ? `+${appreciationCards.topGrowth.diffPct}%` : `${appreciationCards.topGrowth.diffPct}%`} vs Pekan Lalu
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-gray-400 italic font-medium p-3">Data perbandingan pekanan belum tersedia...</p>
+            )}
+          </div>
+
+          {/* Card 3: Konsistensi Terbaik */}
+          <div className="bg-white p-5 rounded-3xl border border-purple-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden bg-gradient-to-b from-purple-50/30 to-white">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-2xl bg-purple-600 text-white flex items-center justify-center font-bold shadow-md shadow-purple-500/20 shrink-0">
+                <Star size={20} />
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-purple-700 uppercase tracking-wider">⭐ Konsistensi Terbaik</p>
+                <h4 className="text-sm font-black text-gray-800 truncate">
+                  {appreciationCards.topConsistency ? appreciationCards.topConsistency.teacherName : 'Belum Ada Data'}
+                </h4>
+              </div>
+            </div>
+
+            {appreciationCards.topConsistency ? (
+              <div className="bg-white/90 p-3.5 rounded-2xl border border-purple-100 space-y-1.5">
+                <p className="text-xs font-bold text-gray-700">{appreciationCards.topConsistency.className}</p>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-gray-500 font-medium">Status Konsistensi:</span>
+                  <span className="font-extrabold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md">
+                    {appreciationCards.topConsistency.pct}% Stabil Tinggi
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-gray-400 italic font-medium p-3">Memuat riwayat konsistensi halaqah...</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* SECTION 3 : TREN PEKANAN & FILTER PANEL */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* SECTION 3 : TREN PEKANAN WIDGET */}
+        <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col justify-between space-y-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <TrendingUp size={18} className="text-emerald-600" />
+              <h3 className="text-sm font-black text-gray-800 uppercase tracking-wider">Tren Pekanan Setoran</h3>
+            </div>
+            <p className="text-xs text-gray-400 font-medium">Perbandingan keaktifan siswa menyetor pekan lalu & pekan ini.</p>
+          </div>
+
+          <div className="bg-gray-50/80 p-4 rounded-2xl border border-gray-100 space-y-3">
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-gray-500 font-bold">Pekan Lalu:</span>
+              <span className="font-extrabold text-gray-800">{trendData.prev} Siswa</span>
+            </div>
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-gray-500 font-bold">Pekan Ini:</span>
+              <span className="font-extrabold text-emerald-700">{trendData.current} Siswa</span>
+            </div>
+
+            <div className="pt-2 border-t border-gray-200/60 flex items-center justify-between">
+              <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Indikator Tren:</span>
+              {trendData.status === 'up' && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  <TrendingUp size={14} />
+                  ⬆️ Naik {trendData.pct}%
+                </span>
+              )}
+              {trendData.status === 'down' && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-black bg-rose-100 text-rose-800 border border-rose-200">
+                  <TrendingDown size={14} />
+                  ⬇️ Turun {trendData.pct}%
+                </span>
+              )}
+              {trendData.status === 'stable' && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-black bg-gray-100 text-gray-700 border border-gray-200">
+                  <Minus size={14} />
+                  ➡️ Stabil
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* FILTER TOOLBAR */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm space-y-3">
+          <div className="flex items-center gap-2">
+            <Filter size={16} className="text-gray-400" />
+            <h4 className="text-xs font-black text-gray-500 uppercase tracking-wider">Filter Data Monitor</h4>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {/* Tahun Ajaran */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider ml-1">Tahun Ajaran</label>
+              <select 
+                value={selectedYear} 
+                onChange={e => setSelectedYear(e.target.value)} 
+                className="w-full px-3 py-2 border border-gray-200 rounded-xl bg-gray-50 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                {ACADEMIC_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+            </div>
+
+            {/* Pekan Dropdown */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider ml-1">Pekan Berjalan</label>
+              <select 
+                value={selectedWeek ? selectedWeek.id : ''} 
+                onChange={e => {
+                  const found = weekOptions.find(w => w.id === e.target.value);
+                  if (found) setSelectedWeek(found);
+                }} 
+                className="w-full px-3 py-2 border border-gray-200 rounded-xl bg-gray-50 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                {weekOptions.length === 0 && <option value="">Membuat pekan...</option>}
+                {weekOptions.map(w => (
+                  <option key={w.id} value={w.id}>{w.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Jenis Kelamin */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider ml-1">Kategori Guru / Siswa</label>
+              <select 
+                value={selectedGender} 
+                onChange={e => setSelectedGender(e.target.value)} 
+                className="w-full px-3 py-2 border border-gray-200 rounded-xl bg-gray-50 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                <option value="Semua">Semua (Ikhwan & Akhwat)</option>
+                <option value="Ikhwan">Ikhwan (L)</option>
+                <option value="Akhwat">Akhwat (P)</option>
+              </select>
+            </div>
+
+            {/* Kelas */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider ml-1">Kelas</label>
+              <select 
+                value={selectedClass} 
+                onChange={e => setSelectedClass(e.target.value)} 
+                className="w-full px-3 py-2 border border-gray-200 rounded-xl bg-gray-50 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                <option value="Semua">Semua Kelas</option>
+                {uniqueClasses.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+
+            {/* Guru Pengampu */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider ml-1">Guru Pengampu</label>
+              <select 
+                value={selectedTeacher} 
+                onChange={e => setSelectedTeacher(e.target.value)} 
+                className="w-full px-3 py-2 border border-gray-200 rounded-xl bg-gray-50 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                <option value="Semua">Semua Guru</option>
+                {teachers.map(t => (
+                  <option key={t.id} value={t.id}>{t.nickname || t.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Search */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider ml-1">Cari Nama Siswa</label>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                <input 
+                  type="text" 
+                  placeholder="Ketik nama siswa..." 
+                  value={searchTerm} 
+                  onChange={e => setSearchTerm(e.target.value)} 
+                  className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-xl bg-gray-50 text-xs font-bold focus:ring-2 focus:ring-emerald-500 outline-none" 
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* SECTION 2 : RINGKASAN PER KELAS & ACCORDION VIEW */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <BookOpen size={18} className="text-emerald-700" />
+            <h3 className="text-sm font-black text-gray-800 uppercase tracking-wider">Ringkasan Setoran Per Kelas</h3>
+          </div>
+          <span className="text-xs font-bold text-gray-400">
+            {hierarchicalData.length} Kelas Terdaftar
+          </span>
+        </div>
+
+        {isLoading ? (
+          <div className="bg-white rounded-[2rem] p-16 border border-gray-100 text-center shadow-sm">
+            <Loader2 size={36} className="text-emerald-600 animate-spin mx-auto mb-2" />
+            <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Memuat Data Setoran Class & Halaqah...</p>
+          </div>
+        ) : hierarchicalData.length > 0 ? (
+          <div className="space-y-4">
+            {hierarchicalData.map((classGroup) => {
+              const isClassExpanded = !!expandedClasses[classGroup.className];
+              const classStudentsCount = classGroup.halaqahs.reduce((sum, h) => sum + h.students.length, 0);
+              const classAlreadyCount = classGroup.halaqahs.reduce((sum, h) => sum + h.alreadyDepositedCount, 0);
+              const classPct = classStudentsCount > 0 ? Math.round((classAlreadyCount / classStudentsCount) * 100) : 0;
+
+              // Progress bar color rules: Hijau >= 80%, Kuning 50-79%, Merah < 50%
+              let progressBarColor = "bg-rose-500";
+              let badgeBgColor = "bg-rose-50 text-rose-700 border-rose-200";
+              if (classPct >= 80) {
+                progressBarColor = "bg-emerald-500";
+                badgeBgColor = "bg-emerald-50 text-emerald-800 border-emerald-200";
+              } else if (classPct >= 50) {
+                progressBarColor = "bg-amber-500";
+                badgeBgColor = "bg-amber-50 text-amber-800 border-amber-200";
+              }
+
+              return (
+                <div 
+                  key={classGroup.className}
+                  className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden transition-all duration-200 hover:border-emerald-100"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-primary-50 text-primary-600">
-                      <BookOpen size={18} />
-                    </div>
-                    <div>
-                      <h3 className="text-base font-black text-gray-800 tracking-tight">{classGroup.className}</h3>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{classGroup.halaqahs.length} Halaqah • {classStudentsCount} Siswa</p>
-                    </div>
-                  </div>
+                  {/* Class Card Header */}
+                  <div
+                    onClick={() => toggleClass(classGroup.className)}
+                    className="p-5 sm:p-6 cursor-pointer hover:bg-gray-50/60 transition-colors space-y-3"
+                  >
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-2xl bg-emerald-100/70 text-emerald-800 flex items-center justify-center font-bold shrink-0">
+                          <BookOpen size={20} />
+                        </div>
+                        <div>
+                          <h3 className="text-base font-black text-gray-900 tracking-tight">{classGroup.className}</h3>
+                          <p className="text-[11px] font-bold text-gray-400">
+                            {classGroup.halaqahs.length} Halaqah • {classStudentsCount} Siswa
+                          </p>
+                        </div>
+                      </div>
 
-                  <div className="flex items-center gap-3 self-stretch sm:self-auto justify-between sm:justify-end">
-                    <span className="text-[10px] font-bold px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700">
-                      ✅ {classAlreadyCount} / {classStudentsCount} Sudah Setor
-                    </span>
-                    {isClassExpanded ? (
-                      <ChevronUp size={20} className="text-gray-400" />
-                    ) : (
-                      <ChevronDown size={20} className="text-gray-400" />
-                    )}
-                  </div>
-                </button>
-
-                {/* Class Accordion Body (Halaqah List) */}
-                {isClassExpanded && (
-                  <div className="p-6 bg-gray-50/30 space-y-4">
-                    {classGroup.halaqahs.map((halaqah) => {
-                      const halaqahKey = `${classGroup.className}-${halaqah.teacherId}`;
-                      const isHalaqahExpanded = !!expandedHalaqahs[halaqahKey];
-                      const allDone = halaqah.notYetDepositedCount === 0 && halaqah.students.length > 0;
-
-                      return (
-                        <div 
-                          key={halaqah.teacherId}
-                          className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
+                      <div className="flex items-center gap-3 self-stretch sm:self-auto justify-between sm:justify-end">
+                        <div className={`px-3 py-1 rounded-xl text-xs font-extrabold border ${badgeBgColor}`}>
+                          {classAlreadyCount} dari {classStudentsCount} siswa sudah setor ({classPct}%)
+                        </div>
+                        <button
+                          type="button"
+                          className="p-1 rounded-lg text-gray-400 hover:text-gray-600"
                         >
-                          {/* Halaqah Item Header */}
-                          <div className="p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-50">
-                            <div className="space-y-1.5">
-                              <h4 className="text-sm font-black text-gray-800 tracking-tight">Halaqah {halaqah.teacherName}</h4>
-                              <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                                <span>{halaqah.students.length} Siswa</span>
-                                <span>•</span>
-                                <span className="text-emerald-600">✅ {halaqah.alreadyDepositedCount} Sudah Setor</span>
-                                <span>•</span>
-                                <span className="text-rose-500">❌ {halaqah.notYetDepositedCount} Belum</span>
+                          {isClassExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Progress Bar & Visual Percentage Indicator */}
+                    <div className="space-y-1">
+                      <div className="w-full bg-gray-100 h-3 rounded-full overflow-hidden flex">
+                        <div 
+                          className={`h-full transition-all duration-500 ${progressBarColor}`} 
+                          style={{ width: `${Math.min(100, classPct)}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between items-center text-[10px] font-bold text-gray-400">
+                        <span>Progress Setoran Kelas</span>
+                        <span className="font-extrabold text-gray-700">[{ '█'.repeat(Math.round(classPct / 10)) }{ '░'.repeat(10 - Math.round(classPct / 10)) }] {classPct}%</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Class Accordion Body (Halaqah List) */}
+                  {isClassExpanded && (
+                    <div className="p-5 sm:p-6 bg-gray-50/40 border-t border-gray-100 space-y-4">
+                      <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                        Daftar Halaqah dalam {classGroup.className}:
+                      </p>
+
+                      {classGroup.halaqahs.map((halaqah) => {
+                        const halaqahKey = `${classGroup.className}-${halaqah.teacherId}`;
+                        const isHalaqahExpanded = !!expandedHalaqahs[halaqahKey];
+                        const halPct = halaqah.students.length > 0 
+                          ? Math.round((halaqah.alreadyDepositedCount / halaqah.students.length) * 100) 
+                          : 0;
+
+                        let halBarColor = "bg-rose-500";
+                        if (halPct >= 80) halBarColor = "bg-emerald-500";
+                        else if (halPct >= 50) halBarColor = "bg-amber-500";
+
+                        return (
+                          <div 
+                            key={halaqah.teacherId}
+                            className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
+                          >
+                            {/* Halaqah Item Summary */}
+                            <div className="p-4 sm:p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-gray-50">
+                              <div className="space-y-1 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-emerald-600 font-bold">▶</span>
+                                  <h4 className="text-sm font-black text-gray-800">
+                                    Halaqah {halaqah.teacherName}
+                                  </h4>
+                                </div>
+                                <p className="text-xs font-bold text-gray-600 pl-5">
+                                  {halaqah.alreadyDepositedCount}/{halaqah.students.length} siswa setor ({halPct}%)
+                                </p>
+                              </div>
+
+                              <div className="flex items-center gap-3 self-stretch sm:self-auto justify-between w-full sm:w-auto">
+                                <div className="w-28 bg-gray-100 h-2 rounded-full overflow-hidden hidden md:block">
+                                  <div 
+                                    className={`h-full ${halBarColor}`} 
+                                    style={{ width: `${Math.min(100, halPct)}%` }} 
+                                  />
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() => toggleHalaqah(halaqahKey)}
+                                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 border ${
+                                    isHalaqahExpanded 
+                                      ? 'bg-gray-100 text-gray-700 border-gray-200' 
+                                      : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
+                                  }`}
+                                >
+                                  {isHalaqahExpanded ? 'Sembunyikan' : 'Lihat Detail Siswa'}
+                                  {isHalaqahExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                </button>
                               </div>
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-2.5 self-stretch sm:self-auto justify-between">
-                              {/* Automatic Badge */}
-                              {allDone ? (
-                                <span className="text-[9px] font-black tracking-wider uppercase bg-emerald-50 text-emerald-700 px-2.5 py-1.5 rounded-lg border border-emerald-100">
-                                  Semua Siswa Sudah Setor
-                                </span>
-                              ) : halaqah.alreadyDepositedCount === 0 ? (
-                                <span className="text-[9px] font-black tracking-wider uppercase bg-rose-50 text-rose-600 px-2.5 py-1.5 rounded-lg border border-rose-100">
-                                  Belum Ada Setoran Minggu Ini
-                                </span>
-                              ) : null}
+                            {/* Student Table (Halaqah Expanded Details) */}
+                            {isHalaqahExpanded && (
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse whitespace-nowrap">
+                                  <thead>
+                                    <tr className="bg-gray-50 border-b border-gray-100 text-[10px] font-black tracking-widest text-gray-400 uppercase">
+                                      <th className="px-5 py-3 w-10 text-center">No</th>
+                                      <th className="px-5 py-3">Nama Siswa</th>
+                                      <th className="px-5 py-3">Sedang Menghafal</th>
+                                      <th className="px-5 py-3 text-center">Setoran Terakhir</th>
+                                      <th className="px-5 py-3 text-center">Tanggal Terakhir</th>
+                                      <th className="px-5 py-3 text-center">Setoran Pekan Ini</th>
+                                      <th className="px-5 py-3 text-center">Riwayat</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-gray-50 text-xs text-gray-700">
+                                    {(() => {
+                                      const page = halaqahPage[halaqahKey] || 1;
+                                      const pageSize = 10;
+                                      const startIndex = (page - 1) * pageSize;
+                                      const paginatedStudents = halaqah.students.slice(startIndex, startIndex + pageSize);
+                                      const totalPages = Math.ceil(halaqah.students.length / pageSize);
 
-                              <button
-                                type="button"
-                                onClick={() => toggleHalaqah(halaqahKey)}
-                                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1 border ${
-                                  isHalaqahExpanded 
-                                    ? 'bg-gray-100 text-gray-600 border-gray-200' 
-                                    : 'bg-primary-50 text-primary-700 border-primary-100 hover:bg-primary-100'
-                                }`}
-                              >
-                                {isHalaqahExpanded ? 'Sembunyikan' : 'Lihat Detail'}
-                                {isHalaqahExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                              </button>
-                            </div>
-                          </div>
+                                      return (
+                                        <>
+                                          {paginatedStudents.map((student, idx) => {
+                                            const weeklySetorans = sabakInSelectedWeekByStudent[student.id] || [];
+                                            const isDepositedThisWeek = weeklySetorans.length > 0;
+                                            const latest = latestSabakByStudent[student.id];
 
-                          {/* Student Table (Halaqah Expanded Details) */}
-                          {isHalaqahExpanded && (
-                            <div className="overflow-x-auto">
-                              <table className="w-full text-left border-collapse whitespace-nowrap">
-                                <thead>
-                                  <tr className="bg-gray-50 border-b border-gray-100 text-[10px] font-black tracking-widest text-gray-400 uppercase">
-                                    <th className="px-5 py-3 w-10 text-center">No</th>
-                                    <th className="px-5 py-3">Nama Siswa</th>
-                                    <th className="px-5 py-3">Sedang Menghafal</th>
-                                    <th className="px-5 py-3 text-center">Setoran Terakhir</th>
-                                    <th className="px-5 py-3 text-center">Tanggal Terakhir</th>
-                                    <th className="px-5 py-3 text-center">Jumlah Pekan Ini</th>
-                                    <th className="px-5 py-3 text-center">Aksi</th>
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-50 text-xs text-gray-700">
-                                  {(() => {
-                                    const page = halaqahPage[halaqahKey] || 1;
-                                    const pageSize = 10;
-                                    const startIndex = (page - 1) * pageSize;
-                                    const paginatedStudents = halaqah.students.slice(startIndex, startIndex + pageSize);
-                                    const totalPages = Math.ceil(halaqah.students.length / pageSize);
-
-                                    return (
-                                      <>
-                                        {paginatedStudents.map((student, idx) => {
-                                          const weeklySetorans = sabakInSelectedWeekByStudent[student.id] || [];
-                                          const isDepositedThisWeek = weeklySetorans.length > 0;
-                                          const latest = latestSabakByStudent[student.id];
-
-                                          return (
-                                            <tr key={student.id} className="hover:bg-gray-50/50 transition-colors">
-                                              <td className="px-5 py-3 text-center font-bold text-gray-400">
-                                                {startIndex + idx + 1}
-                                              </td>
-                                              <td className="px-5 py-3">
-                                                <div className="flex items-center gap-2">
-                                                  {/* Color indicator */}
-                                                  {isDepositedThisWeek ? (
-                                                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" title="Sudah setor minggu ini" />
-                                                  ) : (
-                                                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500" title="Belum setor minggu ini" />
-                                                  )}
-                                                  <span className="font-bold text-gray-900 uppercase">{student.name}</span>
-                                                  
-                                                  {/* Red Badge "Belum Ada Setoran Minggu Ini" */}
-                                                  {!isDepositedThisWeek && (
-                                                    <span className="text-[8px] font-black tracking-widest uppercase px-1.5 py-0.5 rounded bg-rose-50 text-rose-500 border border-rose-100">
-                                                      Belum Ada Setoran
+                                            return (
+                                              <tr key={student.id} className="hover:bg-gray-50/50 transition-colors">
+                                                <td className="px-5 py-3 text-center font-bold text-gray-400">
+                                                  {startIndex + idx + 1}
+                                                </td>
+                                                <td className="px-5 py-3">
+                                                  <div className="flex items-center gap-2">
+                                                    {isDepositedThisWeek ? (
+                                                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" title="Sudah setor minggu ini" />
+                                                    ) : (
+                                                      <span className="w-2.5 h-2.5 rounded-full bg-rose-400 shrink-0" title="Belum setor minggu ini" />
+                                                    )}
+                                                    <span className="font-bold text-gray-900 uppercase">{student.name}</span>
+                                                    
+                                                    {!isDepositedThisWeek && (
+                                                      <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 border border-rose-100">
+                                                        Belum Setor
+                                                      </span>
+                                                    )}
+                                                  </div>
+                                                </td>
+                                                <td className="px-5 py-3 font-medium text-gray-600">
+                                                  {student.currentProgress || '-'}
+                                                </td>
+                                                <td className="px-5 py-3 text-center font-bold text-teal-700">
+                                                  {latest ? (
+                                                    <span className="bg-teal-50 px-2.5 py-1 rounded-lg">
+                                                      {latest.surah}: {latest.ayatDari}-{latest.ayatSampai}
                                                     </span>
+                                                  ) : (
+                                                    <span className="text-gray-300">-</span>
                                                   )}
-                                                </div>
-                                              </td>
-                                              <td className="px-5 py-3 font-medium text-gray-600">
-                                                {student.currentProgress || '-'}
-                                              </td>
-                                              <td className="px-5 py-3 text-center font-bold text-teal-700">
-                                                {latest ? (
-                                                  <span className="bg-teal-50 px-2.5 py-1 rounded-lg">
-                                                    {latest.surah}: {latest.ayatDari}-{latest.ayatSampai}
+                                                </td>
+                                                <td className="px-5 py-3 text-center text-gray-500">
+                                                  {latest ? (
+                                                    new Date(latest.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+                                                  ) : (
+                                                    '-'
+                                                  )}
+                                                </td>
+                                                <td className="px-5 py-3 text-center">
+                                                  <span className={`px-2.5 py-1 rounded-full text-xs font-black ${
+                                                    isDepositedThisWeek 
+                                                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
+                                                      : 'bg-rose-50 text-rose-600 border border-rose-100'
+                                                  }`}>
+                                                    {weeklySetorans.length} Setoran
                                                   </span>
-                                                ) : (
-                                                  <span className="text-gray-300">-</span>
-                                                )}
-                                              </td>
-                                              <td className="px-5 py-3 text-center text-gray-500">
-                                                {latest ? (
-                                                  new Date(latest.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
-                                                ) : (
-                                                  '-'
-                                                )}
-                                              </td>
-                                              <td className="px-5 py-3 text-center">
-                                                <span className={`px-2.5 py-1 rounded-full text-xs font-black ${
-                                                  isDepositedThisWeek 
-                                                    ? 'bg-emerald-50 text-emerald-700' 
-                                                    : 'bg-rose-50 text-rose-600'
-                                                }`}>
-                                                  {weeklySetorans.length} Setoran
-                                                </span>
-                                              </td>
-                                              <td className="px-5 py-3 text-center">
-                                                <button
-                                                  type="button"
-                                                  onClick={() => handleOpenHistory(student)}
-                                                  className="p-1.5 hover:bg-primary-50 rounded-lg text-primary-600 hover:text-primary-800 transition-colors inline-flex items-center gap-1 font-bold text-[10px] uppercase"
-                                                  title="Lihat Riwayat"
-                                                >
-                                                  <History size={14} />
-                                                  <span>Lihat Riwayat</span>
-                                                </button>
+                                                </td>
+                                                <td className="px-5 py-3 text-center">
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => handleOpenHistory(student)}
+                                                    className="p-1.5 hover:bg-emerald-50 rounded-lg text-emerald-700 hover:text-emerald-900 transition-colors inline-flex items-center gap-1 font-bold text-[10px] uppercase"
+                                                    title="Lihat Riwayat"
+                                                  >
+                                                    <History size={14} />
+                                                    <span>Riwayat</span>
+                                                  </button>
+                                                </td>
+                                              </tr>
+                                            );
+                                          })}
+
+                                          {/* Pagination */}
+                                          {totalPages > 1 && (
+                                            <tr>
+                                              <td colSpan={7} className="px-5 py-3 bg-gray-50 border-t border-gray-100">
+                                                <div className="flex justify-between items-center text-xs text-gray-500">
+                                                  <span>Menampilkan {paginatedStudents.length} dari {halaqah.students.length} siswa</span>
+                                                  <div className="flex gap-2">
+                                                    <button
+                                                      type="button"
+                                                      disabled={page === 1}
+                                                      onClick={() => setHalaqahPage(prev => ({ ...prev, [halaqahKey]: page - 1 }))}
+                                                      className="px-3 py-1 border border-gray-200 rounded-lg bg-white font-bold hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                                    >
+                                                      Previous
+                                                    </button>
+                                                    <button
+                                                      type="button"
+                                                      disabled={page === totalPages}
+                                                      onClick={() => setHalaqahPage(prev => ({ ...prev, [halaqahKey]: page + 1 }))}
+                                                      className="px-3 py-1 border border-gray-200 rounded-lg bg-white font-bold hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                                    >
+                                                      Next
+                                                    </button>
+                                                  </div>
+                                                </div>
                                               </td>
                                             </tr>
-                                          );
-                                        })}
-
-                                        {/* Pagination for students inside halaqah */}
-                                        {totalPages > 1 && (
-                                          <tr>
-                                            <td colSpan={7} className="px-5 py-3 bg-gray-50 border-t border-gray-100">
-                                              <div className="flex justify-between items-center text-xs text-gray-500">
-                                                <span>Menampilkan {paginatedStudents.length} dari {halaqah.students.length} siswa</span>
-                                                <div className="flex gap-2">
-                                                  <button
-                                                    type="button"
-                                                    disabled={page === 1}
-                                                    onClick={() => setHalaqahPage(prev => ({ ...prev, [halaqahKey]: page - 1 }))}
-                                                    className="px-3 py-1 border border-gray-200 rounded-lg bg-white font-bold hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                                  >
-                                                    Previous
-                                                  </button>
-                                                  <button
-                                                    type="button"
-                                                    disabled={page === totalPages}
-                                                    onClick={() => setHalaqahPage(prev => ({ ...prev, [halaqahKey]: page + 1 }))}
-                                                    className="px-3 py-1 border border-gray-200 rounded-lg bg-white font-bold hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                                  >
-                                                    Next
-                                                  </button>
-                                                </div>
-                                              </div>
-                                            </td>
-                                          </tr>
-                                        )}
-                                      </>
-                                    );
-                                  })()}
-                                </tbody>
-                              </table>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="bg-white rounded-3xl p-24 border border-gray-100 text-center shadow-sm">
-          <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center mx-auto mb-4 text-gray-300">
-            <Filter size={32} />
+                                          )}
+                                        </>
+                                      );
+                                    })()}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
-          <h3 className="text-base font-black text-gray-800 mb-1">DATA TIDAK DITEMUKAN</h3>
-          <p className="text-xs text-gray-400 font-medium">Sesuaikan pilihan filter atau pencarian Anda untuk melihat data setoran sabak.</p>
-        </div>
-      )}
+        ) : (
+          <div className="bg-white rounded-[2rem] p-20 border border-gray-100 text-center shadow-sm">
+            <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center mx-auto mb-4 text-gray-300">
+              <Filter size={32} />
+            </div>
+            <h3 className="text-base font-black text-gray-800 mb-1">DATA TIDAK DITEMUKAN</h3>
+            <p className="text-xs text-gray-400 font-medium">Sesuaikan filter atau pencarian Anda untuk menampilkan data setoran sabaq.</p>
+          </div>
+        )}
+      </div>
 
-      {/* 4. HISTORY MODAL */}
+      {/* HISTORY MODAL */}
       {historyStudent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 overflow-y-auto animate-in fade-in duration-200">
           <div className="bg-white rounded-[2rem] w-full max-w-4xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden border border-gray-100 animate-in zoom-in-95 duration-200">
             {/* Modal Header */}
-            <div className="px-6 py-5 bg-primary-700 text-white flex justify-between items-center shrink-0">
+            <div className="px-6 py-5 bg-emerald-800 text-white flex justify-between items-center shrink-0">
               <div>
                 <h3 className="text-lg font-black tracking-tight uppercase">Riwayat Setoran Sabak</h3>
-                <p className="text-xs text-primary-200 font-bold uppercase tracking-wider">{historyStudent.name} • {historyStudent.className}</p>
+                <p className="text-xs text-emerald-200 font-bold uppercase tracking-wider">{historyStudent.name} • {historyStudent.className}</p>
               </div>
               <button 
                 type="button"
@@ -784,10 +1236,10 @@ export const MonitoringSetoranSabak: React.FC = () => {
 
             {/* Modal Body */}
             <div className="p-6 overflow-y-auto space-y-4">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-primary-50/50 rounded-2xl border border-primary-50 gap-2">
-                <div className="text-xs font-bold text-primary-900">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100 gap-2">
+                <div className="text-xs font-bold text-emerald-900">
                   <span className="text-gray-400 font-medium mr-1 uppercase">Sedang Menghafal:</span>
-                  <span className="bg-primary-100 px-2.5 py-1 rounded-lg uppercase">{historyStudent.currentProgress || 'Belum Ada'}</span>
+                  <span className="bg-emerald-100 px-2.5 py-1 rounded-lg uppercase">{historyStudent.currentProgress || 'Belum Ada'}</span>
                 </div>
                 <div className="text-xs font-bold text-teal-900">
                   <span className="text-gray-400 font-medium mr-1 uppercase">Total Setoran Sabak:</span>
@@ -816,7 +1268,7 @@ export const MonitoringSetoranSabak: React.FC = () => {
                           <td className="px-5 py-3.5 font-bold text-gray-700">
                             {new Date(rec.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}
                           </td>
-                          <td className="px-5 py-3.5 font-black text-primary-700 uppercase">{rec.surah}</td>
+                          <td className="px-5 py-3.5 font-black text-emerald-700 uppercase">{rec.surah}</td>
                           <td className="px-5 py-3.5 text-center font-bold">
                             <span className="bg-gray-100 px-2.5 py-1 rounded-lg text-gray-700">
                               {rec.ayatDari} - {rec.ayatSampai}
