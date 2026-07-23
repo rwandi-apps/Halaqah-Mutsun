@@ -7,13 +7,12 @@ import {
   Calendar, 
   BookOpen, 
   CheckCircle2, 
-  Clock, 
   AlertTriangle, 
   X,
   Users,
-  Check,
-  XOctagon,
-  FileText
+  FileText,
+  BookmarkCheck,
+  RotateCcw
 } from 'lucide-react';
 import { SetoranGuru, User } from '../../../types';
 import { 
@@ -35,11 +34,10 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
   // Form Fields
   const [selectedTeacherId, setSelectedTeacherId] = useState('');
   const [tanggal, setTanggal] = useState(new Date().toISOString().split('T')[0]);
-  const [jenisSetoran, setJenisSetoran] = useState<'Ziyadah' | 'Murojaah' | 'Sabaq' | 'Sabki' | 'Manzil'>('Ziyadah');
+  const [jenisSetoran, setJenisSetoran] = useState<'Ziyadah' | 'Murojaah'>('Ziyadah');
   const [surahName, setSurahName] = useState('Al-Fatihah');
   const [ayatDari, setAyatDari] = useState<number>(1);
   const [ayatSampai, setAyatSampai] = useState<number>(7);
-  const [status, setStatus] = useState<'Tuntas' | 'Belum Tuntas' | 'Menunggu Verifikasi'>('Menunggu Verifikasi');
   const [catatan, setCatatan] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -47,7 +45,6 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTeacherId, setFilterTeacherId] = useState('Semua');
-  const [filterStatus, setFilterStatus] = useState('Semua');
   const [filterJenis, setFilterJenis] = useState('Semua');
 
   // Load current surah's max verses for validation
@@ -68,8 +65,12 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
     const loadTeachers = async () => {
       try {
         const list = await getAllTeachers();
-        // Only keep teachers with role 'GURU'
-        setTeachers(list.filter(t => t.role === 'GURU'));
+        // Keep teachers with role GURU (case-insensitive)
+        const guruList = list.filter(t => t.role?.toUpperCase() === 'GURU');
+        setTeachers(guruList);
+        if (guruList.length > 0) {
+          setSelectedTeacherId(prev => prev || guruList[0].id);
+        }
       } catch (err) {
         console.error('Failed to load teachers', err);
       }
@@ -90,11 +91,10 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
   // Stats Board
   const stats = useMemo(() => {
     const total = setoranList.length;
-    const tuntas = setoranList.filter(s => s.status === 'Tuntas').length;
-    const pending = setoranList.filter(s => s.status === 'Menunggu Verifikasi').length;
-    const belum = setoranList.filter(s => s.status === 'Belum Tuntas').length;
-    return { total, tuntas, pending, belum };
-  }, [setoranList]);
+    const ziyadah = setoranList.filter(s => s.jenisSetoran === 'Ziyadah').length;
+    const murojaah = setoranList.filter(s => s.jenisSetoran === 'Murojaah').length;
+    return { total, ziyadah, murojaah, teacherCount: teachers.length };
+  }, [setoranList, teachers]);
 
   // Filtered List
   const filteredSetoran = useMemo(() => {
@@ -103,11 +103,10 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
                           item.surah.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           (item.catatan || '').toLowerCase().includes(searchTerm.toLowerCase());
       const matchTeacher = filterTeacherId === 'Semua' || item.guruId === filterTeacherId;
-      const matchStatus = filterStatus === 'Semua' || item.status === filterStatus;
       const matchJenis = filterJenis === 'Semua' || item.jenisSetoran === filterJenis;
-      return matchSearch && matchTeacher && matchStatus && matchJenis;
+      return matchSearch && matchTeacher && matchJenis;
     });
-  }, [setoranList, searchTerm, filterTeacherId, filterStatus, filterJenis]);
+  }, [setoranList, searchTerm, filterTeacherId, filterJenis]);
 
   // Form Reset
   const resetForm = () => {
@@ -117,7 +116,6 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
     setSurahName('Al-Fatihah');
     setAyatDari(1);
     setAyatSampai(7);
-    setStatus('Menunggu Verifikasi');
     setCatatan('');
     setErrorMsg('');
     setEditingId(null);
@@ -135,25 +133,12 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
     setEditingId(item.id || null);
     setSelectedTeacherId(item.guruId);
     setTanggal(item.tanggal);
-    setJenisSetoran(item.jenisSetoran);
+    setJenisSetoran(item.jenisSetoran === 'Murojaah' ? 'Murojaah' : 'Ziyadah');
     setSurahName(item.surah);
     setAyatDari(item.ayatDari);
     setAyatSampai(item.ayatSampai);
-    setStatus(item.status);
     setCatatan(item.catatan || '');
     setIsModalOpen(true);
-  };
-
-  // Verify / Quick Change Status
-  const handleVerifyStatus = async (id: string, newStatus: 'Tuntas' | 'Belum Tuntas') => {
-    try {
-      await updateSetoranGuru(id, { status: newStatus });
-      setSuccessMsg(`Status setoran berhasil diubah menjadi ${newStatus}!`);
-      setTimeout(() => setSuccessMsg(''), 3000);
-    } catch (err) {
-      console.error(err);
-      setErrorMsg('Gagal memverifikasi setoran');
-    }
   };
 
   // Submit Handler
@@ -188,21 +173,18 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
     }
 
     const tUser = teachers.find(t => t.id === selectedTeacherId);
-    if (!tUser) {
-      setErrorMsg('Ustadz/Ustadzah tidak valid');
-      return;
-    }
+    const guruNama = tUser ? (tUser.nickname || tUser.name) : 'Guru';
 
     const payload: Omit<SetoranGuru, 'id' | 'createdAt' | 'updatedAt'> = {
       tanggal,
       guruId: selectedTeacherId,
-      guruNama: tUser.name,
+      guruNama,
       surah: surahName,
       ayatDari,
       ayatSampai,
       jenisSetoran,
-      status,
-      catatan: catatan.trim() || undefined
+      status: 'Tuntas',
+      catatan: catatan.trim() ? catatan.trim() : ''
     };
 
     try {
@@ -217,7 +199,7 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
       resetForm();
       setTimeout(() => setSuccessMsg(''), 3000);
     } catch (err: any) {
-      console.error(err);
+      console.error('Error saving setoran guru:', err);
       setErrorMsg('Terjadi kesalahan saat menyimpan data setoran');
     }
   };
@@ -242,7 +224,7 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-black text-gray-800 tracking-tight uppercase">Monitoring Setoran Guru</h2>
-          <p className="text-xs text-gray-500 font-medium">Evaluasi, input, dan verifikasi kelulusan setoran hafalan Ustadz / Ustadzah</p>
+          <p className="text-xs text-gray-500 font-medium">Log dan input capaian setoran hafalan Ustadz / Ustadzah (Ziyadah & Murojaah)</p>
         </div>
         <button
           onClick={handleOpenAddModal}
@@ -264,7 +246,7 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-primary-700 shrink-0">
-            <Users size={22} />
+            <BookOpen size={22} />
           </div>
           <div>
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Total Setoran</p>
@@ -274,38 +256,38 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
 
         <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
-            <CheckCircle2 size={22} />
+            <BookmarkCheck size={22} />
           </div>
           <div>
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Tuntas</p>
-            <p className="text-xl font-black text-emerald-600">{stats.tuntas}</p>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Ziyadah</p>
+            <p className="text-xl font-black text-emerald-600">{stats.ziyadah}</p>
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600 shrink-0">
+            <RotateCcw size={22} />
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Murojaah</p>
+            <p className="text-xl font-black text-purple-600">{stats.murojaah}</p>
           </div>
         </div>
 
         <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 shrink-0">
-            <Clock size={22} />
+            <Users size={22} />
           </div>
           <div>
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Menunggu</p>
-            <p className="text-xl font-black text-amber-600">{stats.pending}</p>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600 shrink-0">
-            <AlertTriangle size={22} />
-          </div>
-          <div>
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Belum Tuntas</p>
-            <p className="text-xl font-black text-rose-600">{stats.belum}</p>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Total Guru</p>
+            <p className="text-xl font-black text-amber-600">{stats.teacherCount}</p>
           </div>
         </div>
       </div>
 
       {/* Filter Options */}
       <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
@@ -334,20 +316,6 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
             </select>
           </div>
 
-          {/* Filter Status */}
-          <div>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-600 focus:border-transparent transition-all"
-            >
-              <option value="Semua">Semua Status</option>
-              <option value="Tuntas">Tuntas</option>
-              <option value="Belum Tuntas">Belum Tuntas</option>
-              <option value="Menunggu Verifikasi">Menunggu Verifikasi</option>
-            </select>
-          </div>
-
           {/* Filter Jenis */}
           <div>
             <select
@@ -358,9 +326,6 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
               <option value="Semua">Semua Jenis Setoran</option>
               <option value="Ziyadah">Ziyadah</option>
               <option value="Murojaah">Murojaah</option>
-              <option value="Sabaq">Sabaq</option>
-              <option value="Sabki">Sabki</option>
-              <option value="Manzil">Manzil</option>
             </select>
           </div>
         </div>
@@ -370,7 +335,7 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         {isLoading ? (
           <div className="py-20 flex flex-col items-center justify-center text-gray-400">
-            <Clock className="animate-spin mb-3 text-gray-300" size={32} />
+            <BookOpen className="animate-pulse mb-3 text-gray-300" size={32} />
             <span className="text-sm font-semibold">Memuat riwayat setoran guru...</span>
           </div>
         ) : filteredSetoran.length === 0 ? (
@@ -389,8 +354,7 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
                   <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Jenis</th>
                   <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Surah & Ayat</th>
                   <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Catatan</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Status</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Verifikasi & Aksi</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -399,7 +363,7 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center text-primary-700 font-bold text-xs uppercase shadow-sm">
-                          {item.guruNama.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                          {item.guruNama ? item.guruNama.split(' ').map(n => n[0]).join('').substring(0, 2) : 'GR'}
                         </div>
                         <div>
                           <p className="text-sm font-bold text-gray-800 leading-none">{item.guruNama}</p>
@@ -415,11 +379,7 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider
-                        ${item.jenisSetoran === 'Ziyadah' ? 'bg-blue-50 text-blue-700 border border-blue-100' : ''}
-                        ${item.jenisSetoran === 'Murojaah' ? 'bg-purple-50 text-purple-700 border border-purple-100' : ''}
-                        ${item.jenisSetoran === 'Sabaq' ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' : ''}
-                        ${item.jenisSetoran === 'Sabki' ? 'bg-teal-50 text-teal-700 border border-teal-100' : ''}
-                        ${item.jenisSetoran === 'Manzil' ? 'bg-orange-50 text-orange-700 border border-orange-100' : ''}
+                        ${item.jenisSetoran === 'Ziyadah' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-purple-50 text-purple-700 border border-purple-100'}
                       `}>
                         {item.jenisSetoran}
                       </span>
@@ -434,39 +394,8 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
                     <td className="px-6 py-4 text-sm text-gray-500 font-medium max-w-xs truncate">
                       {item.catatan || '-'}
                     </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold
-                        ${item.status === 'Tuntas' ? 'bg-emerald-50 text-emerald-700' : ''}
-                        ${item.status === 'Belum Tuntas' ? 'bg-rose-50 text-rose-700' : ''}
-                        ${item.status === 'Menunggu Verifikasi' ? 'bg-amber-50 text-amber-700' : ''}
-                      `}>
-                        {item.status === 'Tuntas' && <CheckCircle2 size={12} />}
-                        {item.status === 'Menunggu Verifikasi' && <Clock size={12} />}
-                        {item.status === 'Belum Tuntas' && <AlertTriangle size={12} />}
-                        {item.status}
-                      </span>
-                    </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">
-                        {/* Quick Verifications */}
-                        {item.status === 'Menunggu Verifikasi' && (
-                          <>
-                            <button
-                              onClick={() => handleVerifyStatus(item.id!, 'Tuntas')}
-                              className="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg transition-colors"
-                              title="Tandai Tuntas / Lulus"
-                            >
-                              <Check size={14} className="stroke-[3]" />
-                            </button>
-                            <button
-                              onClick={() => handleVerifyStatus(item.id!, 'Belum Tuntas')}
-                              className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg transition-colors"
-                              title="Tandai Belum Tuntas / Ulang"
-                            >
-                              <XOctagon size={14} className="stroke-[3]" />
-                            </button>
-                          </>
-                        )}
                         <button
                           onClick={() => handleOpenEditModal(item)}
                           className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-700 transition-colors"
@@ -501,7 +430,7 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
                 <h3 className="text-base font-black text-gray-800 uppercase tracking-tight">
                   {editingId ? 'Edit Setoran Guru' : 'Input Setoran Guru'}
                 </h3>
-                <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Formulir Koordinasi Capaian Hafalan Guru</p>
+                <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Formulir Log Capaian Hafalan Guru</p>
               </div>
               <button 
                 onClick={() => setIsModalOpen(false)}
@@ -556,14 +485,11 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
                   <label className="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1.5">Jenis Setoran</label>
                   <select
                     value={jenisSetoran}
-                    onChange={(e) => setJenisSetoran(e.target.value as any)}
+                    onChange={(e) => setJenisSetoran(e.target.value as 'Ziyadah' | 'Murojaah')}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-600 focus:border-transparent transition-all"
                   >
                     <option value="Ziyadah">Ziyadah</option>
                     <option value="Murojaah">Murojaah</option>
-                    <option value="Sabaq">Sabaq</option>
-                    <option value="Sabki">Sabki</option>
-                    <option value="Manzil">Manzil</option>
                   </select>
                 </div>
               </div>
@@ -611,20 +537,6 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Status Setoran */}
-              <div>
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1.5">Status Kelulusan</label>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value as any)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-600 focus:border-transparent transition-all"
-                >
-                  <option value="Menunggu Verifikasi">Menunggu Verifikasi (Pending)</option>
-                  <option value="Tuntas">Tuntas (Lulus)</option>
-                  <option value="Belum Tuntas">Belum Tuntas (Ulangi)</option>
-                </select>
-              </div>
-
               {/* Catatan / Keterangan */}
               <div>
                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1.5">Keterangan / Catatan Tambahan</label>
@@ -662,3 +574,4 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
 };
 
 export default CoordinatorSetoranGuruPage;
+

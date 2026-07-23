@@ -50,49 +50,44 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
 
     let trimmed = str.trim();
 
-    // 1. Jika mengandung pemisah range ' - ' (contoh "Al-Baqarah: 197 - Al-Baqarah: 204" atau "Al-Baqarah: 197 - 204")
-    if (trimmed.includes(' - ')) {
-      const parts = trimmed.split(' - ').map(p => p.trim());
-      const lastPart = parts[parts.length - 1];
+    if (trimmed.toLowerCase().startsWith('iqra')) return trimmed;
 
-      // Jika bagian akhir sudah ada nama surah (contoh "Al-Baqarah: 204")
-      if (/[a-zA-Z]/.test(lastPart) && !lastPart.toLowerCase().startsWith('ayat')) {
-        trimmed = lastPart;
-      } else {
-        // Bagian akhir hanya angka ayat (contoh "204"), ambil surah dari bagian awal
-        const firstPart = parts[0];
-        const matchSurah = firstPart.match(/^(.+?)\s*[:\-–]?\s*\d+$/);
-        if (matchSurah) {
-          const surah = matchSurah[1].replace(/[:\-–]$/, '').trim();
-          const lastAyat = lastPart.replace(/^ayat\s*/i, '').trim();
-          return `${surah}: ${lastAyat}`;
-        }
+    // 1. Tangani range dengan pemisah seperti ' - ', '-', 's/d', 's.d.', 'sampai'
+    // Contoh: "Al-Baqarah: 197 - Al-Baqarah: 204", "Al-Baqarah: 197 - 204", "Al-Baqarah 197-204", "Al-Baqarah: 197 s/d 204"
+    const rangeRegex = /^(.+?)\s*(?:[:\-–]\s*)?(\d+)\s*(?:[\-–]|s\/d|s\.d\.|sampai)\s*(?:(.+?)\s*[:\-–]\s*)?(\d+)$/i;
+    const matchRange = trimmed.match(rangeRegex);
+    if (matchRange) {
+      let surah = (matchRange[3] && matchRange[3].trim()) ? matchRange[3].trim() : matchRange[1].trim();
+      surah = surah.replace(/[:\-–]$/, '').trim();
+      const lastAyat = matchRange[4].trim();
+      if (surah && lastAyat) {
+        return `${surah}: ${lastAyat}`;
       }
     }
 
-    if (trimmed.toLowerCase().startsWith('iqra')) return trimmed;
-
-    // 2. Jika berbentuk range "Al-Baqarah 197-204" atau "Al-Baqarah: 197-204"
-    const rangeAtEndMatch = trimmed.match(/^(.+?)\s*[:\-–]?\s*\d+\s*[\-–]\s*(\d+)$/i);
-    if (rangeAtEndMatch) {
-      const surah = rangeAtEndMatch[1].replace(/[:\-–]$/, '').trim();
-      const lastAyat = rangeAtEndMatch[2];
-      return `${surah}: ${lastAyat}`;
+    // 2. Jika string memiliki pemisah ' - ' dan bagian kedua berisi nama surah/ayat
+    if (trimmed.includes(' - ')) {
+      const parts = trimmed.split(' - ').map(p => p.trim());
+      const lastPart = parts[parts.length - 1];
+      const singleMatch = lastPart.match(/^(.+?)\s*[:\-–]\s*(\d+)$/i);
+      if (singleMatch) {
+        return `${singleMatch[1].trim()}: ${singleMatch[2].trim()}`;
+      }
+      const singleSpaceMatch = lastPart.match(/^(.+?)\s+(\d+)$/i);
+      if (singleSpaceMatch && !singleSpaceMatch[1].toLowerCase().startsWith('juz') && !singleSpaceMatch[1].toLowerCase().startsWith('iqra')) {
+        return `${singleSpaceMatch[1].trim()}: ${singleSpaceMatch[2].trim()}`;
+      }
     }
 
-    // 3. Jika berbentuk "Surah: Ayat" atau "Surah Ayat" (contoh "Al-Baqarah: 204" atau "Al-Baqarah 204")
-    const singleMatch = trimmed.match(/^(.+?)\s*[:\-–]\s*(\d+)$/i);
-    if (singleMatch) {
-      const surah = singleMatch[1].trim();
-      const ayat = singleMatch[2];
-      return `${surah}: ${ayat}`;
+    // 3. Format "Surah: Ayat" atau "Surah Ayat"
+    const singleColonMatch = trimmed.match(/^(.+?)\s*[:\-–]\s*(\d+)$/i);
+    if (singleColonMatch) {
+      return `${singleColonMatch[1].trim()}: ${singleColonMatch[2].trim()}`;
     }
 
     const singleSpaceMatch = trimmed.match(/^(.+?)\s+(\d+)$/i);
-    if (singleSpaceMatch && !singleSpaceMatch[1].toLowerCase().startsWith('juz')) {
-      const surah = singleSpaceMatch[1].trim();
-      const ayat = singleSpaceMatch[2];
-      return `${surah}: ${ayat}`;
+    if (singleSpaceMatch && !singleSpaceMatch[1].toLowerCase().startsWith('juz') && !singleSpaceMatch[1].toLowerCase().startsWith('iqra')) {
+      return `${singleSpaceMatch[1].trim()}: ${singleSpaceMatch[2].trim()}`;
     }
 
     return trimmed;
@@ -164,9 +159,27 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
           rawSabaq = (student.currentProgress && student.currentProgress !== 'Belum Ada' && student.currentProgress !== '-')
             ? student.currentProgress
             : (tahfizhIndiv || tilawahIndiv || '-');
+        } else if (classLvl === 2) {
+          // KELAS 2: HANYA gunakan Tahfizh Individual atau Setoran Sabaq resmi.
+          // Jika tidak ada data di Tahfizh Individual (dan tidak ada setoran sabaq resmi), beri tanda '-' saja.
+          if (tahfizhIndiv && tahfizhIndiv !== '-' && tahfizhIndiv !== 'Belum Ada' && tahfizhIndiv.trim() !== '') {
+            rawSabaq = tahfizhIndiv;
+          } else if (
+            student.currentProgress && 
+            student.currentProgress !== 'Belum Ada' && 
+            student.currentProgress !== '-' &&
+            student.currentProgress !== tilawahIndiv &&
+            !student.currentProgress.toLowerCase().startsWith('iqra') &&
+            !student.currentProgress.toLowerCase().startsWith('juz') &&
+            !student.currentProgress.toLowerCase().startsWith('tilawah') &&
+            student.currentProgress.includes(':')
+          ) {
+            rawSabaq = student.currentProgress;
+          } else {
+            rawSabaq = '-';
+          }
         } else {
-          // Kelas 2 dan Kelas 3-6:
-          // Hanya gunakan tahfizhIndiv jika valid
+          // Kelas 3-6:
           if (tahfizhIndiv && tahfizhIndiv !== '-' && tahfizhIndiv !== 'Belum Ada' && tahfizhIndiv.trim() !== '') {
             rawSabaq = tahfizhIndiv;
           } else if (
@@ -175,7 +188,6 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
             student.currentProgress !== '-' &&
             student.currentProgress !== tilawahIndiv
           ) {
-            // Gunakan student.currentProgress HANYA jika bukan salinan/persamaan dari tilawahIndiv
             rawSabaq = student.currentProgress;
           } else {
             rawSabaq = '-';

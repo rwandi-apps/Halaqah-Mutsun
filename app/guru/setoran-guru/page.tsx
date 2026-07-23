@@ -6,12 +6,12 @@ import {
   Search, 
   Calendar, 
   BookOpen, 
-  Award, 
   CheckCircle2, 
-  Clock, 
   AlertTriangle, 
   X,
-  FileText
+  FileText,
+  BookmarkCheck,
+  RotateCcw
 } from 'lucide-react';
 import { SetoranGuru } from '../../../types';
 import { 
@@ -39,18 +39,16 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
 
   // Form Fields
   const [tanggal, setTanggal] = useState(new Date().toISOString().split('T')[0]);
-  const [jenisSetoran, setJenisSetoran] = useState<'Ziyadah' | 'Murojaah' | 'Sabaq' | 'Sabki' | 'Manzil'>('Ziyadah');
+  const [jenisSetoran, setJenisSetoran] = useState<'Ziyadah' | 'Murojaah'>('Ziyadah');
   const [surahName, setSurahName] = useState('Al-Fatihah');
   const [ayatDari, setAyatDari] = useState<number>(1);
   const [ayatSampai, setAyatSampai] = useState<number>(7);
-  const [status, setStatus] = useState<'Tuntas' | 'Belum Tuntas' | 'Menunggu Verifikasi'>('Menunggu Verifikasi');
   const [catatan, setCatatan] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string>('Semua');
   const [filterJenis, setFilterJenis] = useState<string>('Semua');
 
   // Load current surah's max verses for dynamic validation & UI hints
@@ -82,10 +80,9 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
   // Statistics
   const stats = useMemo(() => {
     const total = setoranList.length;
-    const tuntas = setoranList.filter(s => s.status === 'Tuntas').length;
-    const pending = setoranList.filter(s => s.status === 'Menunggu Verifikasi').length;
-    const belum = setoranList.filter(s => s.status === 'Belum Tuntas').length;
-    return { total, tuntas, pending, belum };
+    const ziyadah = setoranList.filter(s => s.jenisSetoran === 'Ziyadah').length;
+    const murojaah = setoranList.filter(s => s.jenisSetoran === 'Murojaah').length;
+    return { total, ziyadah, murojaah };
   }, [setoranList]);
 
   // Filtered List
@@ -93,11 +90,10 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
     return setoranList.filter(item => {
       const matchSearch = item.surah.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           (item.catatan || '').toLowerCase().includes(searchTerm.toLowerCase());
-      const matchStatus = filterStatus === 'Semua' || item.status === filterStatus;
       const matchJenis = filterJenis === 'Semua' || item.jenisSetoran === filterJenis;
-      return matchSearch && matchStatus && matchJenis;
+      return matchSearch && matchJenis;
     });
-  }, [setoranList, searchTerm, filterStatus, filterJenis]);
+  }, [setoranList, searchTerm, filterJenis]);
 
   // Form Reset
   const resetForm = () => {
@@ -106,7 +102,6 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
     setSurahName('Al-Fatihah');
     setAyatDari(1);
     setAyatSampai(7);
-    setStatus('Menunggu Verifikasi');
     setCatatan('');
     setErrorMsg('');
     setEditingId(null);
@@ -123,11 +118,10 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
     setErrorMsg('');
     setEditingId(item.id || null);
     setTanggal(item.tanggal);
-    setJenisSetoran(item.jenisSetoran);
+    setJenisSetoran(item.jenisSetoran === 'Murojaah' ? 'Murojaah' : 'Ziyadah');
     setSurahName(item.surah);
     setAyatDari(item.ayatDari);
     setAyatSampai(item.ayatSampai);
-    setStatus(item.status);
     setCatatan(item.catatan || '');
     setIsModalOpen(true);
   };
@@ -166,8 +160,8 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
       ayatDari,
       ayatSampai,
       jenisSetoran,
-      status,
-      catatan: catatan.trim() || undefined
+      status: 'Tuntas',
+      catatan: catatan.trim() ? catatan.trim() : ''
     };
 
     try {
@@ -182,7 +176,7 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
       resetForm();
       setTimeout(() => setSuccessMsg(''), 3000);
     } catch (err: any) {
-      console.error(err);
+      console.error('Error saving setoran guru:', err);
       setErrorMsg('Terjadi kesalahan saat menyimpan data setoran');
     }
   };
@@ -207,7 +201,7 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-black text-gray-800 tracking-tight uppercase">Setoran Hafalan Guru</h2>
-          <p className="text-xs text-gray-500 font-medium">Log bimbingan dan capaian hafalan pribadi Ustadz / Ustadzah</p>
+          <p className="text-xs text-gray-500 font-medium">Log bimbingan dan capaian hafalan pribadi Ustadz / Ustadzah (Ziyadah & Murojaah)</p>
         </div>
         <button
           onClick={handleOpenAddModal}
@@ -226,7 +220,7 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
       )}
 
       {/* Stats Board */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-[#0f4c75] shrink-0">
             <BookOpen size={22} />
@@ -239,62 +233,38 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
 
         <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
-            <CheckCircle2 size={22} />
+            <BookmarkCheck size={22} />
           </div>
           <div>
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Tuntas</p>
-            <p className="text-xl font-black text-emerald-600">{stats.tuntas}</p>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Ziyadah</p>
+            <p className="text-xl font-black text-emerald-600">{stats.ziyadah}</p>
           </div>
         </div>
 
         <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 shrink-0">
-            <Clock size={22} />
+          <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600 shrink-0">
+            <RotateCcw size={22} />
           </div>
           <div>
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Menunggu</p>
-            <p className="text-xl font-black text-amber-600">{stats.pending}</p>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600 shrink-0">
-            <AlertTriangle size={22} />
-          </div>
-          <div>
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Belum Tuntas</p>
-            <p className="text-xl font-black text-rose-600">{stats.belum}</p>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Murojaah</p>
+            <p className="text-xl font-black text-purple-600">{stats.murojaah}</p>
           </div>
         </div>
       </div>
 
-      {/* Filtering Card */}
+      {/* Filter Options */}
       <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <input
               type="text"
-              placeholder="Cari Surah atau catatan..."
+              placeholder="Cari surah, catatan..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c75] focus:border-transparent transition-all"
             />
-          </div>
-
-          {/* Filter Status */}
-          <div>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c75] focus:border-transparent transition-all"
-            >
-              <option value="Semua">Semua Status</option>
-              <option value="Tuntas">Tuntas</option>
-              <option value="Belum Tuntas">Belum Tuntas</option>
-              <option value="Menunggu Verifikasi">Menunggu Verifikasi</option>
-            </select>
           </div>
 
           {/* Filter Jenis */}
@@ -307,9 +277,6 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
               <option value="Semua">Semua Jenis Setoran</option>
               <option value="Ziyadah">Ziyadah</option>
               <option value="Murojaah">Murojaah</option>
-              <option value="Sabaq">Sabaq</option>
-              <option value="Sabki">Sabki</option>
-              <option value="Manzil">Manzil</option>
             </select>
           </div>
         </div>
@@ -319,14 +286,14 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         {isLoading ? (
           <div className="py-20 flex flex-col items-center justify-center text-gray-400">
-            <Clock className="animate-spin mb-3 text-gray-300" size={32} />
-            <span className="text-sm font-semibold">Memuat riwayat setoran...</span>
+            <BookOpen className="animate-pulse mb-3 text-gray-300" size={32} />
+            <span className="text-sm font-semibold">Memuat data setoran...</span>
           </div>
         ) : filteredSetoran.length === 0 ? (
           <div className="py-20 flex flex-col items-center justify-center text-gray-400">
             <FileText className="mb-3 text-gray-300" size={36} />
-            <span className="text-sm font-semibold">Tidak ada data setoran ditemukan</span>
-            <span className="text-xs text-gray-400 mt-1">Coba sesuaikan filter atau tambahkan setoran baru</span>
+            <span className="text-sm font-semibold">Belum ada riwayat setoran</span>
+            <span className="text-xs text-gray-400 mt-1">Klik tombol "Tambah Setoran" untuk menginput hafalan baru</span>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -337,7 +304,6 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
                   <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Jenis</th>
                   <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Surah & Ayat</th>
                   <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Catatan</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Status</th>
                   <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Aksi</th>
                 </tr>
               </thead>
@@ -352,11 +318,7 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider
-                        ${item.jenisSetoran === 'Ziyadah' ? 'bg-blue-50 text-blue-700 border border-blue-100' : ''}
-                        ${item.jenisSetoran === 'Murojaah' ? 'bg-purple-50 text-purple-700 border border-purple-100' : ''}
-                        ${item.jenisSetoran === 'Sabaq' ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' : ''}
-                        ${item.jenisSetoran === 'Sabki' ? 'bg-teal-50 text-teal-700 border border-teal-100' : ''}
-                        ${item.jenisSetoran === 'Manzil' ? 'bg-orange-50 text-orange-700 border border-orange-100' : ''}
+                        ${item.jenisSetoran === 'Ziyadah' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-purple-50 text-purple-700 border border-purple-100'}
                       `}>
                         {item.jenisSetoran}
                       </span>
@@ -371,33 +333,21 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
                     <td className="px-6 py-4 text-sm text-gray-500 font-medium max-w-xs truncate">
                       {item.catatan || '-'}
                     </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold
-                        ${item.status === 'Tuntas' ? 'bg-emerald-50 text-emerald-700' : ''}
-                        ${item.status === 'Belum Tuntas' ? 'bg-rose-50 text-rose-700' : ''}
-                        ${item.status === 'Menunggu Verifikasi' ? 'bg-amber-50 text-amber-700' : ''}
-                      `}>
-                        {item.status === 'Tuntas' && <CheckCircle2 size={12} />}
-                        {item.status === 'Menunggu Verifikasi' && <Clock size={12} />}
-                        {item.status === 'Belum Tuntas' && <AlertTriangle size={12} />}
-                        {item.status}
-                      </span>
-                    </td>
                     <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => handleOpenEditModal(item)}
                           className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-700 transition-colors"
-                          title="Ubah Setoran"
+                          title="Ubah Data"
                         >
-                          <Edit2 size={16} />
+                          <Edit2 size={15} />
                         </button>
                         <button
                           onClick={() => handleDelete(item.id!)}
                           className="p-1.5 hover:bg-gray-100 rounded-lg text-rose-500 hover:text-rose-700 transition-colors"
-                          title="Hapus Setoran"
+                          title="Hapus Data"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={15} />
                         </button>
                       </div>
                     </td>
@@ -417,9 +367,9 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
               <div>
                 <h3 className="text-base font-black text-gray-800 uppercase tracking-tight">
-                  {editingId ? 'Edit Record Setoran' : 'Tambah Setoran Baru'}
+                  {editingId ? 'Edit Setoran' : 'Tambah Setoran Hafalan'}
                 </h3>
-                <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Form Pengisian Capaian Hafalan Guru</p>
+                <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Pencatatan Capaian Hafalan Guru</p>
               </div>
               <button 
                 onClick={() => setIsModalOpen(false)}
@@ -456,14 +406,11 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
                   <label className="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1.5">Jenis Setoran</label>
                   <select
                     value={jenisSetoran}
-                    onChange={(e) => setJenisSetoran(e.target.value as any)}
+                    onChange={(e) => setJenisSetoran(e.target.value as 'Ziyadah' | 'Murojaah')}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c75] focus:border-transparent transition-all"
                   >
                     <option value="Ziyadah">Ziyadah</option>
                     <option value="Murojaah">Murojaah</option>
-                    <option value="Sabaq">Sabaq</option>
-                    <option value="Sabki">Sabki</option>
-                    <option value="Manzil">Manzil</option>
                   </select>
                 </div>
               </div>
@@ -511,20 +458,6 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
                 </div>
               </div>
 
-              {/* Status Setoran */}
-              <div>
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1.5">Status Kelulusan</label>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value as any)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c75] focus:border-transparent transition-all"
-                >
-                  <option value="Menunggu Verifikasi">Menunggu Verifikasi (Pending)</option>
-                  <option value="Tuntas">Tuntas (Lulus)</option>
-                  <option value="Belum Tuntas">Belum Tuntas (Ulangi)</option>
-                </select>
-              </div>
-
               {/* Catatan / Keterangan */}
               <div>
                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1.5">Keterangan / Catatan Tambahan</label>
@@ -562,3 +495,4 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
 };
 
 export default GuruSetoranPage;
+
