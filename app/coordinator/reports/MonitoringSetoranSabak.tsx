@@ -263,6 +263,14 @@ export const MonitoringSetoranSabak: React.FC = () => {
       const tId = student.teacherId;
       const tName = teacherMap[tId] || 'Guru Tidak Teridentifikasi';
 
+      // Exclusion rule: Kelas 3 Ubay bin Ka'ab (Ust. Eric) and Kelas 5 Muadz bin Jabal (Ust. Zubair)
+      const isEricInUbay = cls?.toLowerCase().includes("ubay") && tName?.toLowerCase().includes("eric");
+      const isZubairInMuadz = cls?.toLowerCase().includes("muadz") && tName?.toLowerCase().includes("zubair");
+
+      if (isEricInUbay || isZubairInMuadz) {
+        return;
+      }
+
       if (!groups[cls]) {
         groups[cls] = { className: cls, halaqahs: {} };
       }

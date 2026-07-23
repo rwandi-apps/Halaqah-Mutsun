@@ -769,11 +769,21 @@ export const getClassHalaqahSummary = async (): Promise<ClassSummary[]> => {
 
   activeStudents.forEach(student => {
     const name = student.className;
+    const tId = student.teacherId;
+    const tName = teacherMap[tId] || 'Guru Tidak Teridentifikasi';
+
+    // Exclusion rule: Kelas 3 Ubay bin Ka'ab (Ust. Eric) and Kelas 5 Muadz bin Jabal (Ust. Zubair)
+    const isEricInUbay = name?.toLowerCase().includes("ubay") && tName?.toLowerCase().includes("eric");
+    const isZubairInMuadz = name?.toLowerCase().includes("muadz") && tName?.toLowerCase().includes("zubair");
+
+    if (isEricInUbay || isZubairInMuadz) {
+      return;
+    }
+
     if (!classGroups[name]) {
       classGroups[name] = { className: name, totalStudents: 0, halaqahMap: {} };
     }
     classGroups[name].totalStudents++;
-    const tId = student.teacherId;
     if (tId) {
       if (!classGroups[name].halaqahMap[tId]) {
         classGroups[name].halaqahMap[tId] = {
