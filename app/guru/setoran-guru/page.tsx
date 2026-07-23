@@ -44,7 +44,7 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
     const roleStr = (currentUser.role || '').toUpperCase();
 
     if (roleStr === 'KOORDINATOR' || roleStr === 'YAYASAN') return true;
-    return nameStr.includes('bagas') || nicknameStr.includes('bagas') || emailStr.includes('bagas');
+    return nameStr.includes('bagas') || nicknameStr.includes('bagas') || emailStr.includes('bagas') || emailStr === 'fauzipasha08@gmail.com';
   }, [currentUser]);
 
   const [setoranList, setSetoranList] = useState<SetoranGuru[]>([]);

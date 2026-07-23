@@ -20,7 +20,7 @@ export const SidebarGuru: React.FC<SidebarProps> = ({ onLogout, onCloseMobile })
     const roleStr = (currentUser.role || '').toUpperCase();
 
     if (roleStr === 'KOORDINATOR' || roleStr === 'YAYASAN') return true;
-    return nameStr.includes('bagas') || nicknameStr.includes('bagas') || emailStr.includes('bagas');
+    return nameStr.includes('bagas') || nicknameStr.includes('bagas') || emailStr.includes('bagas') || emailStr === 'fauzipasha08@gmail.com';
   }, [currentUser]);
 
   const navItems = [
