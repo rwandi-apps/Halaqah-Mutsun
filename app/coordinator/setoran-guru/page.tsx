@@ -263,6 +263,12 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
     }
   };
 
+  // Selected Teacher Gender Detection for Modal
+  const selectedTeacherObj = teacherMap.get(selectedTeacherId);
+  const selectedGender = selectedTeacherObj ? getTeacherGender(selectedTeacherObj) : null;
+  const isIkhwanSelected = selectedGender === 'Ikhwan';
+  const isAkhwatSelected = selectedGender === 'Akhwat';
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -572,35 +578,84 @@ export const CoordinatorSetoranGuruPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Select Teacher */}
+              {/* Select Teacher in 2 Columns: Ikhwan & Akhwat */}
               <div>
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1.5">Ustadz / Ustadzah</label>
-                <select
-                  value={selectedTeacherId}
-                  onChange={(e) => setSelectedTeacherId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-600 focus:border-transparent transition-all font-semibold"
-                  disabled={editingId !== null}
-                >
-                  <option value="" disabled>Pilih Guru...</option>
-                  {groupedTeachers.ikhwan.length > 0 && (
-                    <optgroup label="--- GURU IKHWAN (USTADZ) ---">
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-2">
+                  Pilih Guru (Dua Kolom: Ikhwan & Akhwat)
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Kolom 1: Guru Ikhwan (Ustadz) */}
+                  <div className={`p-3 rounded-2xl border transition-all ${
+                    isIkhwanSelected 
+                      ? 'bg-blue-50/80 border-blue-300 ring-2 ring-blue-500/20 shadow-sm' 
+                      : 'bg-gray-50/60 border-gray-200/80 hover:border-blue-200'
+                  }`}>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="flex items-center gap-1.5 text-xs font-extrabold text-blue-900">
+                        <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+                        Guru Ikhwan (Ustadz)
+                      </label>
+                      {isIkhwanSelected && (
+                        <span className="text-[10px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
+                          Terpilih
+                        </span>
+                      )}
+                    </div>
+                    <select
+                      value={isIkhwanSelected ? selectedTeacherId : ''}
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          setSelectedTeacherId(e.target.value);
+                        }
+                      }}
+                      disabled={editingId !== null}
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-semibold bg-white text-gray-800 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    >
+                      <option value="">-- Pilih Ustadz --</option>
                       {groupedTeachers.ikhwan.map((teacher) => (
                         <option key={teacher.id} value={teacher.id}>
                           {teacher.name}
                         </option>
                       ))}
-                    </optgroup>
-                  )}
-                  {groupedTeachers.akhwat.length > 0 && (
-                    <optgroup label="--- GURU AKHWAT (USTADZAH) ---">
+                    </select>
+                  </div>
+
+                  {/* Kolom 2: Guru Akhwat (Ustadzah) */}
+                  <div className={`p-3 rounded-2xl border transition-all ${
+                    isAkhwatSelected 
+                      ? 'bg-purple-50/80 border-purple-300 ring-2 ring-purple-500/20 shadow-sm' 
+                      : 'bg-gray-50/60 border-gray-200/80 hover:border-purple-200'
+                  }`}>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="flex items-center gap-1.5 text-xs font-extrabold text-purple-900">
+                        <span className="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
+                        Guru Akhwat (Ustadzah)
+                      </label>
+                      {isAkhwatSelected && (
+                        <span className="text-[10px] font-bold text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full">
+                          Terpilih
+                        </span>
+                      )}
+                    </div>
+                    <select
+                      value={isAkhwatSelected ? selectedTeacherId : ''}
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          setSelectedTeacherId(e.target.value);
+                        }
+                      }}
+                      disabled={editingId !== null}
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-semibold bg-white text-gray-800 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                    >
+                      <option value="">-- Pilih Ustadzah --</option>
                       {groupedTeachers.akhwat.map((teacher) => (
                         <option key={teacher.id} value={teacher.id}>
                           {teacher.name}
                         </option>
                       ))}
-                    </optgroup>
-                  )}
-                </select>
+                    </select>
+                  </div>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
