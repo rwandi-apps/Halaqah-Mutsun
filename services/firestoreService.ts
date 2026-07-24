@@ -18,7 +18,15 @@ import {
   writeBatch
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { User, Student, Report, Role, SemesterReport, HalaqahEvaluation, HalaqahMonthlyReport, HalaqahTeacherHistory, SetoranSabak, SetoranGuru } from '../types';
+import { User, Student, Report, Role, SubRole, SemesterReport, HalaqahEvaluation, HalaqahMonthlyReport, HalaqahTeacherHistory, SetoranSabak, SetoranGuru } from '../types';
+
+export const isHalaqahTeacher = (teacher: User): boolean => {
+  if (!teacher) return false;
+  if (teacher.subRole) {
+    return teacher.subRole === 'Guru Halaqah';
+  }
+  return teacher.role === 'GURU' || teacher.role === 'guru';
+};
 import { extractClassLevel } from './sdqTargets';
 import { calculateFromRangeString } from './quranMapping';
 
@@ -640,10 +648,21 @@ export const saveHalaqahMonthlyReport = async (data: HalaqahMonthlyReport): Prom
   await setDoc(docRef, { ...data, updatedAt: serverTimestamp() }, { merge: true });
 };
 
-export const addTeacher = async (name: string, email: string, nickname: string, role: Role, gender?: 'L' | 'P'): Promise<User> => {
+export const addTeacher = async (name: string, email: string, nickname: string, role: Role, gender?: 'L' | 'P', subRole?: SubRole): Promise<User> => {
   if (!db) throw new Error("Firestore not initialized");
-  const docRef = await addDoc(collection(db, 'users'), { name, nickname, email, role, gender: gender || 'L', status: 'Aktif', createdAt: serverTimestamp() });
-  return { id: docRef.id, name, nickname, email, role, gender: gender || 'L', status: 'Aktif', createdAt: new Date().toISOString() } as User;
+  const teacherSubRole = subRole || (role === 'KOORDINATOR' ? 'Koordinator' : 'Guru Halaqah');
+  const teacherData = { 
+    name, 
+    nickname, 
+    email, 
+    role, 
+    subRole: teacherSubRole, 
+    gender: gender || 'L', 
+    status: 'Aktif', 
+    createdAt: serverTimestamp() 
+  };
+  const docRef = await addDoc(collection(db, 'users'), teacherData);
+  return { id: docRef.id, ...teacherData, createdAt: new Date().toISOString() } as User;
 };
 
 export const updateTeacher = async (id: string, data: Partial<User>): Promise<void> => {

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getClassHalaqahSummary, ClassSummary, getAllTeachers, getAllStudents, reassignHalaqahTeacher } from '../../../services/firestoreService';
+import { getClassHalaqahSummary, ClassSummary, getAllTeachers, getAllStudents, reassignHalaqahTeacher, isHalaqahTeacher } from '../../../services/firestoreService';
 import { User, Student } from '../../../types';
 import { getStoredUser } from '../../../services/simpleAuth';
 import { Button } from '../../../components/Button';
@@ -36,7 +36,7 @@ const CoordinatorKelasPage: React.FC = () => {
         getAllStudents()
       ]);
       setClasses(summary);
-      setTeachers(allTeachers.filter(t => t.role === 'GURU'));
+      setTeachers(allTeachers.filter(isHalaqahTeacher));
 
       // Count alumni students
       const alumni = allStudents.filter(s => 

@@ -1,5 +1,6 @@
 
 export type Role = 'KOORDINATOR' | 'GURU' | 'YAYASAN' | 'koordinator' | 'guru' | 'yayasan';
+export type SubRole = 'Guru Halaqah' | 'Guru Umum' | 'Admin' | 'Staf' | 'Koordinator';
 
 // Collection: users
 export interface User {
@@ -8,6 +9,7 @@ export interface User {
   nickname?: string; 
   email: string;
   role: Role;
+  subRole?: SubRole;
   photoURL?: string;
   createdAt?: string;
   teacherId?: string;

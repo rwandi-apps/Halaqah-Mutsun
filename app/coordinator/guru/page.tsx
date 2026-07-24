@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Role } from '../../../types';
+import { User, Role, SubRole } from '../../../types';
 import { getAllTeachers, addTeacher, updateTeacher } from '../../../services/firestoreService';
-import { Users, ChevronRight, Mail, Plus, X, ShieldCheck, Edit2, Search } from 'lucide-react';
+import { Users, ChevronRight, Mail, Plus, X, ShieldCheck, Edit2, Search, Briefcase } from 'lucide-react';
 import { Button } from '../../../components/Button';
 
 const CoordinatorGuruPage: React.FC = () => {
@@ -18,7 +18,7 @@ const CoordinatorGuruPage: React.FC = () => {
   const [newNickname, setNewNickname] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newGender, setNewGender] = useState<'L' | 'P'>('L');
-  const [newRole, setNewRole] = useState<Role>('GURU');
+  const [newSubRole, setNewSubRole] = useState<SubRole>('Guru Halaqah');
   const [newStatus, setNewStatus] = useState<'Aktif' | 'Nonaktif'>('Aktif');
 
   useEffect(() => {
@@ -42,7 +42,7 @@ const CoordinatorGuruPage: React.FC = () => {
     setNewNickname('');
     setNewEmail('');
     setNewGender('L');
-    setNewRole('GURU');
+    setNewSubRole('Guru Halaqah');
     setNewStatus('Aktif');
     setIsModalOpen(true);
   };
@@ -54,7 +54,7 @@ const CoordinatorGuruPage: React.FC = () => {
     setNewNickname(teacher.nickname || '');
     setNewEmail(teacher.email);
     setNewGender(teacher.gender || (teacher.name?.toLowerCase().includes('ustadzah') ? 'P' : 'L'));
-    setNewRole(teacher.role);
+    setNewSubRole(teacher.subRole || (teacher.role === 'KOORDINATOR' ? 'Koordinator' : 'Guru Halaqah'));
     setNewStatus(teacher.status || 'Aktif');
     setIsModalOpen(true);
   };
@@ -64,6 +64,8 @@ const CoordinatorGuruPage: React.FC = () => {
     if (!newName || !newEmail || !newNickname) return;
 
     setIsSubmitting(true);
+    const calculatedRole: Role = newSubRole === 'Koordinator' ? 'KOORDINATOR' : 'GURU';
+
     try {
       if (editingId) {
         // Mode Edit
@@ -72,12 +74,13 @@ const CoordinatorGuruPage: React.FC = () => {
           nickname: newNickname,
           email: newEmail,
           gender: newGender,
-          role: newRole,
+          role: calculatedRole,
+          subRole: newSubRole,
           status: newStatus
         });
       } else {
         // Mode Tambah
-        await addTeacher(newName, newEmail, newNickname, newRole, newGender);
+        await addTeacher(newName, newEmail, newNickname, calculatedRole, newGender, newSubRole);
       }
       
       await loadTeachers(); // Refresh list from Firestore
@@ -174,6 +177,25 @@ const CoordinatorGuruPage: React.FC = () => {
                         </span>
                       </div>
                       <p className="text-xs text-gray-500 truncate max-w-[150px]">{name}</p>
+                      
+                      {/* SubRole Badge */}
+                      <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+                        {(() => {
+                          const displaySubRole = teacher.subRole || (role === 'KOORDINATOR' ? 'Koordinator' : 'Guru Halaqah');
+                          return (
+                            <span className={`text-[9px] font-black px-2 py-0.5 rounded-full border uppercase tracking-wider ${
+                              displaySubRole === 'Guru Halaqah' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                              displaySubRole === 'Guru Umum' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                              displaySubRole === 'Admin' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                              displaySubRole === 'Staf' ? 'bg-slate-100 text-slate-700 border-slate-200' :
+                              'bg-purple-50 text-purple-700 border-purple-200'
+                            }`}>
+                              {displaySubRole}
+                            </span>
+                          );
+                        })()}
+                      </div>
+
                       <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1">
                         <Mail size={12} />
                         {email}
@@ -261,17 +283,20 @@ const CoordinatorGuruPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Peran (Role)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Peran (Sub-Role)</label>
                 <select 
-                  value={newRole}
-                  onChange={(e) => setNewRole(e.target.value as Role)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-white text-sm"
+                  value={newSubRole}
+                  onChange={(e) => setNewSubRole(e.target.value as SubRole)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-white text-sm font-bold"
                 >
-                  <option value="GURU">Guru Halaqah / Guru Umum / Staf / Admin</option>
-                  <option value="KOORDINATOR">Koordinator / Admin Utama</option>
+                  <option value="Guru Halaqah">Guru Halaqah</option>
+                  <option value="Guru Umum">Guru Umum</option>
+                  <option value="Admin">Admin</option>
+                  <option value="Staf">Staf</option>
+                  <option value="Koordinator">Koordinator</option>
                 </select>
-                <p className="text-[11px] text-gray-500 mt-1">
-                  * Semua akun yang didaftarkan (baik Guru Halaqah, Guru Umum, Staf, maupun Admin) otomatis masuk dalam daftar program Setoran Guru SDQ.
+                <p className="text-[11px] text-gray-500 mt-1.5 leading-relaxed">
+                  * Semua peran (Guru Halaqah, Guru Umum, Admin, Staf, Koordinator) otomatis muncul di menu <strong>Setoran Guru</strong>. Namun selain Guru Halaqah, tidak akan muncul di menu halaqah siswa (Pantau Laporan, Evaluasi, Pindah Kelas, dll).
                 </p>
               </div>
 

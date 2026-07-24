@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAllStudents, getAllTeachers, updateStudent } from '../../../services/firestoreService';
+import { getAllStudents, getAllTeachers, updateStudent, isHalaqahTeacher } from '../../../services/firestoreService';
 import { Student, User } from '../../../types';
 import { CLASS_LIST } from '../../../services/mockBackend';
 import { Button } from '../../../components/Button';
@@ -49,7 +49,7 @@ export default function CoordinatorTransitionPage() {
         getAllTeachers()
       ]);
       setStudents(allStudents);
-      setTeachers(allTeachers);
+      setTeachers(allTeachers.filter(isHalaqahTeacher));
 
       // Initialize default mapping
       const uniqueClasses = Array.from(new Set(allStudents.map(s => s.className).filter(Boolean)));

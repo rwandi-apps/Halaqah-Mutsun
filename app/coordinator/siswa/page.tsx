@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Student, User } from '../../../types';
-import { getAllStudents, getAllTeachers, addStudent, updateStudent } from '../../../services/firestoreService';
+import { getAllStudents, getAllTeachers, addStudent, updateStudent, isHalaqahTeacher } from '../../../services/firestoreService';
 import { CLASS_LIST } from '../../../services/mockBackend';
 import { getStudentGender, getAutomaticTargetLabel, extractClassLevel } from '../../../services/sdqTargets';
 import { Button } from '../../../components/Button';
@@ -519,7 +519,7 @@ export default function CoordinatorSiswaPage() {
                   >
                     <option value="">Pilih Guru...</option>
                     {teachers
-                      .filter(t => t.status !== 'Nonaktif' || t.id === formData.teacherId)
+                      .filter(t => isHalaqahTeacher(t) && (t.status !== 'Nonaktif' || t.id === formData.teacherId))
                       .map(t => (
                         <option key={t.id} value={t.id}>
                           {t.name} {t.status === 'Nonaktif' ? '(Nonaktif)' : ''}

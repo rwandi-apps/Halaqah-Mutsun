@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { Report, User } from '../../../types';
-import { getAllTeachers, subscribeToReportsByTeacher } from '../../../services/firestoreService';
+import { getAllTeachers, subscribeToReportsByTeacher, isHalaqahTeacher } from '../../../services/firestoreService';
 import { SDQQuranEngine } from '../../../services/tahfizh/engine';
 import { Search, Loader2, AlertCircle, CheckCircle2, Filter, Calendar, Users, BookOpen, Heart, Star } from 'lucide-react';
 import { MonitoringSetoranSabak } from './MonitoringSetoranSabak';
@@ -91,7 +91,7 @@ export default function CoordinatorReportsPage() {
   // 1. Initial Load
   useEffect(() => {
     getAllTeachers().then(data => {
-      const onlyTeachers = data.filter(u => u.role === 'GURU');
+      const onlyTeachers = data.filter(isHalaqahTeacher);
       setTeachers(onlyTeachers);
     });
   }, []);

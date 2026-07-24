@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { User, Report, HalaqahEvaluation } from '../../../types';
-import { getAllTeachers, subscribeToReportsByTeacher, saveHalaqahEvaluation, getHalaqahEvaluation } from '../../../services/firestoreService';
+import { getAllTeachers, subscribeToReportsByTeacher, saveHalaqahEvaluation, getHalaqahEvaluation, isHalaqahTeacher } from '../../../services/firestoreService';
 import { generateEvaluasiAI } from '../../../services/geminiService';
 import { Button } from '../../../components/Button';
 import { Sparkles, Save, User as UserIcon, Calendar, ClipboardList, AlertCircle, MessageSquarePlus, Filter, Loader2, Database } from 'lucide-react';
@@ -44,7 +44,7 @@ export default function CoordinatorEvaluationsPage() {
 
   useEffect(() => {
     getAllTeachers().then(data => {
-      setTeachers(data.filter(u => u.role === 'GURU'));
+      setTeachers(data.filter(isHalaqahTeacher));
     });
   }, []);
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Eye, Search, GraduationCap, ArrowLeft, CheckCircle2, XCircle } from 'lucide-react';
 import { User, Student } from '../../../types';
-import { getAllTeachers, getAllStudents } from '../../../services/firestoreService';
+import { getAllTeachers, getAllStudents, isHalaqahTeacher } from '../../../services/firestoreService';
 
 export default function YayasanLihatGuruPage() {
   const navigate = useNavigate();
@@ -36,7 +36,7 @@ export default function YayasanLihatGuruPage() {
         getAllStudents()
       ]);
 
-      const guruList = allUsers.filter(u => u.role === 'GURU' || u.role === 'guru' || u.teacherId);
+      const guruList = allUsers.filter(isHalaqahTeacher);
       const sortedGuru = sortTeachers(guruList);
 
       setTeachers(sortedGuru);

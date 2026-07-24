@@ -4,7 +4,8 @@ import { getStudentGender, extractClassLevel } from '../../../services/sdqTarget
 import { 
   getAllTeachers, 
   subscribeToAllStudents, 
-  subscribeToAllSetoranSabak 
+  subscribeToAllSetoranSabak,
+  isHalaqahTeacher
 } from '../../../services/firestoreService';
 import { 
   Search, 
@@ -180,7 +181,7 @@ export const MonitoringSetoranSabak: React.FC = () => {
   // 1. Initial Load of Teachers
   useEffect(() => {
     getAllTeachers().then(data => {
-      setTeachers(data.filter(u => u.role === 'GURU'));
+      setTeachers(data.filter(isHalaqahTeacher));
     });
   }, []);
 
