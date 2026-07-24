@@ -267,9 +267,12 @@ const CoordinatorGuruPage: React.FC = () => {
                   onChange={(e) => setNewRole(e.target.value as Role)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-white text-sm"
                 >
-                  <option value="GURU">Guru Halaqah</option>
-                  <option value="KOORDINATOR">Koordinator</option>
+                  <option value="GURU">Guru Halaqah / Guru Umum / Staf / Admin</option>
+                  <option value="KOORDINATOR">Koordinator / Admin Utama</option>
                 </select>
+                <p className="text-[11px] text-gray-500 mt-1">
+                  * Semua akun yang didaftarkan (baik Guru Halaqah, Guru Umum, Staf, maupun Admin) otomatis masuk dalam daftar program Setoran Guru SDQ.
+                </p>
               </div>
 
               <div>

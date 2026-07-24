@@ -1264,7 +1264,7 @@ export const MonitoringSetoranSabak: React.FC = () => {
                       </div>
                       <div className="flex justify-between items-center text-[10px] font-bold text-gray-400">
                         <span>{isGrade1 ? 'Aktivitas Setoran Opsional' : 'Progress Setoran Kelas'}</span>
-                        <span className="font-extrabold text-gray-700">[{ '█'.repeat(Math.round(classPct / 10)) }{ '░'.repeat(10 - Math.round(classPct / 10)) }] {classPct}%</span>
+                        <span className="font-extrabold text-gray-700">{classPct}%</span>
                       </div>
                     </div>
                   </div>

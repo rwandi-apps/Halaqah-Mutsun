@@ -57,7 +57,9 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
   const [selectedTeacherId, setSelectedTeacherId] = useState<string>(actualTeacherId);
   const [tanggal, setTanggal] = useState(new Date().toISOString().split('T')[0]);
   const [jenisSetoran, setJenisSetoran] = useState<'Ziyadah' | 'Murojaah'>('Ziyadah');
+  const [isMultiSurah, setIsMultiSurah] = useState(false);
   const [surahName, setSurahName] = useState('Al-Fatihah');
+  const [surahSampaiName, setSurahSampaiName] = useState('Al-Fatihah');
   const [ayatDari, setAyatDari] = useState<number>(1);
   const [ayatSampai, setAyatSampai] = useState<number>(7);
   const [catatan, setCatatan] = useState('');
@@ -74,20 +76,24 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
     return QURAN_SURAHS.find(s => s.nama === surahName) || { nama: 'Al-Fatihah', jumlahAyat: 7 };
   }, [surahName]);
 
-  // Adjust ayatSampai when surahName changes to keep it valid
+  const selectedSurahSampaiInfo = useMemo(() => {
+    return QURAN_SURAHS.find(s => s.nama === surahSampaiName) || { nama: 'Al-Fatihah', jumlahAyat: 7 };
+  }, [surahSampaiName]);
+
+  // Adjust ayatSampai when surahName changes to keep it valid (in single surah mode)
   useEffect(() => {
-    if (selectedSurahInfo) {
+    if (!isMultiSurah && selectedSurahInfo) {
       setAyatDari(1);
       setAyatSampai(selectedSurahInfo.jumlahAyat);
     }
-  }, [surahName, selectedSurahInfo]);
+  }, [surahName, selectedSurahInfo, isMultiSurah]);
 
-  // Load all teachers for selection
+  // Load all teachers for selection (termasuk Guru Halaqah, Guru Umum, Staff, & Admin)
   useEffect(() => {
     const loadTeachers = async () => {
       try {
         const list = await getAllTeachers();
-        const guruList = list.filter(t => t.role?.toUpperCase() === 'GURU' || t.teacherId);
+        const guruList = list.filter(t => t.status !== 'Nonaktif');
         setTeachers(guruList);
       } catch (err) {
         console.error('Failed to load teachers for setoran guru dropdown', err);
@@ -132,6 +138,7 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
   const filteredSetoran = useMemo(() => {
     return setoranList.filter(item => {
       const matchSearch = item.surah.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          (item.surahSampai || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (item.guruNama || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (item.catatan || '').toLowerCase().includes(searchTerm.toLowerCase());
       const matchJenis = filterJenis === 'Semua' || item.jenisSetoran === filterJenis;
@@ -145,7 +152,9 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
     setSelectedTeacherId(actualTeacherId);
     setTanggal(new Date().toISOString().split('T')[0]);
     setJenisSetoran('Ziyadah');
+    setIsMultiSurah(false);
     setSurahName('Al-Fatihah');
+    setSurahSampaiName('Al-Fatihah');
     setAyatDari(1);
     setAyatSampai(7);
     setCatatan('');
@@ -167,6 +176,9 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
     setTanggal(item.tanggal);
     setJenisSetoran(item.jenisSetoran === 'Murojaah' ? 'Murojaah' : 'Ziyadah');
     setSurahName(item.surah);
+    const hasMulti = !!(item.surahSampai && item.surahSampai !== item.surah);
+    setIsMultiSurah(hasMulti);
+    setSurahSampaiName(item.surahSampai || item.surah);
     setAyatDari(item.ayatDari);
     setAyatSampai(item.ayatSampai);
     setCatatan(item.catatan || '');
@@ -194,14 +206,24 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
       return;
     }
 
-    if (ayatDari > ayatSampai) {
-      setErrorMsg('Ayat dari tidak boleh lebih besar dari ayat sampai');
-      return;
-    }
-
-    if (ayatSampai > selectedSurahInfo.jumlahAyat) {
-      setErrorMsg(`Surah ${surahName} hanya memiliki maksimal ${selectedSurahInfo.jumlahAyat} ayat`);
-      return;
+    if (!isMultiSurah) {
+      if (ayatDari > ayatSampai) {
+        setErrorMsg('Ayat dari tidak boleh lebih besar dari ayat sampai');
+        return;
+      }
+      if (ayatSampai > selectedSurahInfo.jumlahAyat) {
+        setErrorMsg(`Surah ${surahName} hanya memiliki maksimal ${selectedSurahInfo.jumlahAyat} ayat`);
+        return;
+      }
+    } else {
+      if (ayatDari > selectedSurahInfo.jumlahAyat) {
+        setErrorMsg(`Surah awal ${surahName} hanya memiliki maksimal ${selectedSurahInfo.jumlahAyat} ayat`);
+        return;
+      }
+      if (ayatSampai > selectedSurahSampaiInfo.jumlahAyat) {
+        setErrorMsg(`Surah akhir ${surahSampaiName} hanya memiliki maksimal ${selectedSurahSampaiInfo.jumlahAyat} ayat`);
+        return;
+      }
     }
 
     // Determine target teacher name
@@ -215,6 +237,7 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
       guruId: selectedTeacherId,
       guruNama: targetTeacherName,
       surah: surahName,
+      surahSampai: isMultiSurah ? surahSampaiName : surahName,
       ayatDari,
       ayatSampai,
       jenisSetoran,
@@ -413,9 +436,21 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-800 font-bold">
                       <div className="flex items-center gap-2">
-                        <BookOpen size={14} className="text-gray-400" />
-                        <span>{item.surah}</span>
-                        <span className="text-xs text-gray-400 font-medium">Ayat {item.ayatDari} - {item.ayatSampai}</span>
+                        <BookOpen size={14} className="text-gray-400 shrink-0" />
+                        <div>
+                          {item.surahSampai && item.surahSampai !== item.surah ? (
+                            <span>
+                              <strong className="text-gray-900">{item.surah}</strong> <span className="text-xs text-gray-400 font-medium">(Ayat {item.ayatDari})</span>
+                              <span className="text-xs font-bold text-sky-700 mx-1.5">s/d</span>
+                              <strong className="text-gray-900">{item.surahSampai}</strong> <span className="text-xs text-gray-400 font-medium">(Ayat {item.ayatSampai})</span>
+                            </span>
+                          ) : (
+                            <span>
+                              <strong className="text-gray-900">{item.surah}</strong>
+                              <span className="text-xs text-gray-400 font-medium ml-2">Ayat {item.ayatDari} - {item.ayatSampai}</span>
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500 font-medium max-w-xs truncate">
@@ -528,48 +563,167 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
                 </div>
               </div>
 
-              {/* Surah Name Dropdown */}
+              {/* Mode Selector (Satu Surah vs Lintas Surah) */}
               <div>
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1.5">Surah</label>
-                <select
-                  value={surahName}
-                  onChange={(e) => setSurahName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c75] focus:border-transparent transition-all search-select-fallback"
-                >
-                  {QURAN_SURAHS.map((surah) => (
-                    <option key={surah.nomor} value={surah.nama}>
-                      {surah.nomor}. {surah.nama} ({surah.jumlahAyat} ayat)
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Ayat Range */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1.5">Dari Ayat</label>
-                  <input
-                    type="number"
-                    min="1"
-                    required
-                    value={ayatDari}
-                    onChange={(e) => setAyatDari(parseInt(e.target.value) || 0)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c75] focus:border-transparent transition-all"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1.5">Sampai Ayat</label>
-                  <input
-                    type="number"
-                    min="1"
-                    required
-                    value={ayatSampai}
-                    onChange={(e) => setAyatSampai(parseInt(e.target.value) || 0)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c75] focus:border-transparent transition-all"
-                  />
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1.5">
+                  Cakupan Surah Setoran
+                </label>
+                <div className="grid grid-cols-2 gap-2 p-1 bg-gray-100 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMultiSurah(false);
+                      setSurahSampaiName(surahName);
+                    }}
+                    className={`py-2 px-3 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                      !isMultiSurah 
+                        ? 'bg-white text-gray-900 shadow-xs border border-gray-200' 
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    <span>📖 Satu Surah</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMultiSurah(true);
+                      if (!surahSampaiName || surahSampaiName === surahName) {
+                        setSurahSampaiName(surahName);
+                      }
+                    }}
+                    className={`py-2 px-3 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                      isMultiSurah 
+                        ? 'bg-sky-600 text-white shadow-xs' 
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    <span>📚 Lintas / Banyak Surah</span>
+                  </button>
                 </div>
               </div>
+
+              {!isMultiSurah ? (
+                /* SINGLE SURAH MODE */
+                <div className="space-y-4 bg-gray-50/70 p-3.5 rounded-2xl border border-gray-200/80">
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1.5">Surah</label>
+                    <select
+                      value={surahName}
+                      onChange={(e) => setSurahName(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c75] bg-white transition-all font-semibold"
+                    >
+                      {QURAN_SURAHS.map((surah) => (
+                        <option key={surah.nomor} value={surah.nama}>
+                          {surah.nomor}. {surah.nama} ({surah.jumlahAyat} ayat)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1.5">Dari Ayat</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max={selectedSurahInfo.jumlahAyat}
+                        required
+                        value={ayatDari}
+                        onChange={(e) => setAyatDari(parseInt(e.target.value) || 0)}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c75] bg-white transition-all font-semibold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1.5">Sampai Ayat</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max={selectedSurahInfo.jumlahAyat}
+                        required
+                        value={ayatSampai}
+                        onChange={(e) => setAyatSampai(parseInt(e.target.value) || 0)}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c75] bg-white transition-all font-semibold"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* MULTI SURAH MODE */
+                <div className="space-y-4 bg-sky-50/50 p-3.5 rounded-2xl border border-sky-200/80">
+                  <div className="text-[11px] text-sky-900 font-medium bg-sky-100/70 p-2.5 rounded-xl flex items-center gap-2">
+                    <span className="font-extrabold uppercase px-1.5 py-0.5 rounded bg-sky-700 text-white text-[9px] shrink-0">Lintas Surah</span>
+                    <span>Sangat cocok untuk setoran beberapa surat (contoh: An-Nas s/d Al-Ikhlas)</span>
+                  </div>
+
+                  {/* Dari Surah & Ayat */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="sm:col-span-2">
+                      <label className="block text-[10px] font-black text-sky-900 uppercase tracking-wider mb-1.5">Dari Surah</label>
+                      <select
+                        value={surahName}
+                        onChange={(e) => setSurahName(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-sky-200 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600 bg-white transition-all font-semibold"
+                      >
+                        {QURAN_SURAHS.map((surah) => (
+                          <option key={surah.nomor} value={surah.nama}>
+                            {surah.nomor}. {surah.nama} ({surah.jumlahAyat} ayat)
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black text-sky-900 uppercase tracking-wider mb-1.5">Ayat Awal</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max={selectedSurahInfo.jumlahAyat}
+                        required
+                        value={ayatDari}
+                        onChange={(e) => setAyatDari(parseInt(e.target.value) || 0)}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-sky-200 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600 bg-white transition-all font-semibold"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Sampai Surah & Ayat */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="sm:col-span-2">
+                      <label className="block text-[10px] font-black text-sky-900 uppercase tracking-wider mb-1.5">Sampai Surah</label>
+                      <select
+                        value={surahSampaiName}
+                        onChange={(e) => {
+                          const nextSurah = e.target.value;
+                          setSurahSampaiName(nextSurah);
+                          const targetInfo = QURAN_SURAHS.find(s => s.nama === nextSurah);
+                          if (targetInfo) {
+                            setAyatSampai(targetInfo.jumlahAyat);
+                          }
+                        }}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-sky-200 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600 bg-white transition-all font-semibold"
+                      >
+                        {QURAN_SURAHS.map((surah) => (
+                          <option key={surah.nomor} value={surah.nama}>
+                            {surah.nomor}. {surah.nama} ({surah.jumlahAyat} ayat)
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black text-sky-900 uppercase tracking-wider mb-1.5">Ayat Akhir</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max={selectedSurahSampaiInfo.jumlahAyat}
+                        required
+                        value={ayatSampai}
+                        onChange={(e) => setAyatSampai(parseInt(e.target.value) || 0)}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-sky-200 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600 bg-white transition-all font-semibold"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Catatan / Keterangan */}
               <div>

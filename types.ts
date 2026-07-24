@@ -190,7 +190,8 @@ export interface SetoranGuru {
   tanggal: string; // YYYY-MM-DD
   guruId: string;
   guruNama: string;
-  surah: string;
+  surah: string; // Surah awal
+  surahSampai?: string; // Surah akhir (opsional jika lintas surah)
   ayatDari: number;
   ayatSampai: number;
   jenisSetoran: 'Ziyadah' | 'Murojaah' | 'Sabaq' | 'Sabki' | 'Manzil';

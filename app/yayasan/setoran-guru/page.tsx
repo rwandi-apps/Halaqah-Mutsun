@@ -46,12 +46,12 @@ export default function YayasanSetoranGuruPage() {
     return { ikhwan, akhwat };
   }, [teachers]);
 
-  // Load teachers list
+  // Load teachers list (termasuk Guru Halaqah, Guru Umum, Staff, & Admin)
   useEffect(() => {
     const loadTeachers = async () => {
       try {
         const list = await getAllTeachers();
-        const guruList = list.filter(t => t.role?.toUpperCase() === 'GURU' || t.role === 'guru' || t.teacherId);
+        const guruList = list.filter(t => t.status !== 'Nonaktif');
         setTeachers(guruList);
       } catch (err) {
         console.error('Failed to load teachers:', err);
@@ -79,6 +79,7 @@ export default function YayasanSetoranGuruPage() {
       const matchGender = filterGender === 'Semua' || gender === filterGender;
       const matchSearch = (item.guruNama || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
                           (item.surah || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          (item.surahSampai || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
                           (item.catatan || '').toLowerCase().includes(searchTerm.toLowerCase());
       const matchTeacher = filterTeacherId === 'Semua' || item.guruId === filterTeacherId;
       const matchJenis = filterJenis === 'Semua' || item.jenisSetoran === filterJenis;
@@ -137,8 +138,16 @@ export default function YayasanSetoranGuruPage() {
         ziyadahCount: ziyadahLogs.length,
         murojaahCount: murojaahLogs.length,
         latestLogDate: latestLog ? latestLog.tanggal : null,
-        latestZiyadah: latestZiyadah ? `${latestZiyadah.surah}: ${latestZiyadah.ayatDari}-${latestZiyadah.ayatSampai}` : '-',
-        latestMurojaah: latestMurojaah ? `${latestMurojaah.surah}: ${latestMurojaah.ayatDari}-${latestMurojaah.ayatSampai}` : '-',
+        latestZiyadah: latestZiyadah 
+          ? (latestZiyadah.surahSampai && latestZiyadah.surahSampai !== latestZiyadah.surah 
+              ? `${latestZiyadah.surah} s/d ${latestZiyadah.surahSampai}` 
+              : `${latestZiyadah.surah}: ${latestZiyadah.ayatDari}-${latestZiyadah.ayatSampai}`) 
+          : '-',
+        latestMurojaah: latestMurojaah 
+          ? (latestMurojaah.surahSampai && latestMurojaah.surahSampai !== latestMurojaah.surah 
+              ? `${latestMurojaah.surah} s/d ${latestMurojaah.surahSampai}` 
+              : `${latestMurojaah.surah}: ${latestMurojaah.ayatDari}-${latestMurojaah.ayatSampai}`) 
+          : '-',
       };
     }).sort((a, b) => b.totalCount - a.totalCount);
   }, [teachers, setoranList]);
@@ -480,7 +489,15 @@ export default function YayasanSetoranGuruPage() {
                         </span>
                       </td>
                       <td className="px-5 py-4 text-xs font-extrabold text-gray-800">
-                        {item.surah} <span className="text-gray-500 font-normal">(Ayat {item.ayatDari} - {item.ayatSampai})</span>
+                        {item.surahSampai && item.surahSampai !== item.surah ? (
+                          <span>
+                            {item.surah} <span className="text-gray-500 font-normal">(Ayat {item.ayatDari})</span> <span className="text-amber-600 font-bold">s/d</span> {item.surahSampai} <span className="text-gray-500 font-normal">(Ayat {item.ayatSampai})</span>
+                          </span>
+                        ) : (
+                          <span>
+                            {item.surah} <span className="text-gray-500 font-normal">(Ayat {item.ayatDari} - {item.ayatSampai})</span>
+                          </span>
+                        )}
                       </td>
                       <td className="px-5 py-4 text-xs text-gray-500 font-medium max-w-xs truncate">
                         {item.catatan || '-'}
