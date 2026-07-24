@@ -385,7 +385,9 @@ export default function CoordinatorSiswaPage() {
                       )}
                     </td>
                     <td className="px-6 py-4 text-gray-700">
-                      {teacherMap[student.teacherId] || 'Tidak Diketahui'}
+                      {(student.status === 'Mutasi/Keluar' || student.status === 'Alumni/Lulus' || !student.teacherId)
+                        ? '-'
+                        : (teacherMap[student.teacherId] || '-')}
                     </td>
                     <td className="px-6 py-4">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
