@@ -261,6 +261,18 @@ export const MonitoringSetoranSabak: React.FC<MonitoringSetoranSabakProps> = ({ 
   // Filter students
   const filteredStudents = useMemo(() => {
     return students.filter(student => {
+      // Exclude students who are Mutasi, Alumni, Nonaktif, or do not have a teacher assigned
+      const isInactiveStatus = 
+        student.status === 'Mutasi/Keluar' || 
+        student.status === 'Mutasi' || 
+        student.status === 'Alumni/Lulus' || 
+        student.status === 'Nonaktif' || 
+        !student.teacherId;
+
+      if (isInactiveStatus) {
+        return false;
+      }
+
       const matchesYear = student.className !== "Lulus / Alumni";
       const matchesGender = selectedGender === 'Semua' || 
         (selectedGender === 'Ikhwan' && getStudentGender(student) === 'L') || 
