@@ -31,7 +31,8 @@ import {
   Target,
   Sparkles,
   Minus,
-  RotateCcw
+  RotateCcw,
+  Share2
 } from 'lucide-react';
 
 const getCurrentAcademicYear = (): string => {
@@ -147,6 +148,15 @@ export const MonitoringSetoranSabak: React.FC = () => {
   const [selectedClass, setSelectedClass] = useState('Semua');
   const [selectedTeacher, setSelectedTeacher] = useState('Semua');
   const [searchTerm, setSearchTerm] = useState('');
+  const [shareCopied, setShareCopied] = useState(false);
+
+  const handleCopyShareLink = () => {
+    const url = `${window.location.origin}${window.location.pathname}#/public/monitoring-sabak`;
+    navigator.clipboard.writeText(url).then(() => {
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 3000);
+    });
+  };
 
   // Target Sekolah (%)
   const TARGET_SEKOLAH_PERCENT = 80;
@@ -703,17 +713,38 @@ export const MonitoringSetoranSabak: React.FC = () => {
         <div className="absolute -right-10 -bottom-10 opacity-10 pointer-events-none">
           <Trophy size={240} />
         </div>
-        <div className="relative z-10 max-w-3xl space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-emerald-100 text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
-            <Sparkles size={14} className="text-amber-300" />
-            <span>Dashboard Apresiasi & Monitoring</span>
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="max-w-3xl space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-emerald-100 text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
+              <Sparkles size={14} className="text-amber-300" />
+              <span>Dashboard Apresiasi & Monitoring</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
+              Pantauan Setoran Sabaq Pekanan
+            </h1>
+            <p className="text-emerald-100 text-sm font-medium leading-relaxed">
+              Media kolaborasi untuk apresiasi, motivasi, dan saling belajar antar halaqah. Fokus utama kita adalah mendorong pertumbuhan hafalan ananda dalam suasana yang saling mendukung.
+            </p>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
-            Pantauan Setoran Sabaq Pekanan
-          </h1>
-          <p className="text-emerald-100 text-sm font-medium leading-relaxed">
-            Media kolaborasi untuk apresiasi, motivasi, dan saling belajar antar halaqah. Fokus utama kita adalah mendorong pertumbuhan hafalan ananda dalam suasana yang saling mendukung.
-          </p>
+          <div className="shrink-0 self-start sm:self-center">
+            <button
+              onClick={handleCopyShareLink}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white text-emerald-900 font-extrabold text-xs shadow-md hover:bg-emerald-50 transition-all active:scale-95 border border-white/40"
+              title="Salin link khusus untuk berbagi tampilan Monitoring Setoran Sabaq saja"
+            >
+              {shareCopied ? (
+                <>
+                  <CheckCircle2 size={16} className="text-emerald-600" />
+                  <span>Link Disalin!</span>
+                </>
+              ) : (
+                <>
+                  <Share2 size={16} className="text-emerald-700" />
+                  <span>Bagikan Link Shared</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
