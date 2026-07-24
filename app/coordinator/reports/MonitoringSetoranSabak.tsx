@@ -437,6 +437,22 @@ export const MonitoringSetoranSabak: React.FC = () => {
       pct: number;
       prevPct: number;
       diffPct: number;
+
+      // INTENSITAS SETORAN (Target ideal 5 hari KBM = 5 kali setoran per siswa per pekan)
+      totalSetorans: number;
+      prevTotalSetorans: number;
+      targetSetorans: number; // totalStudents * 5
+      avgSetoranPerStudent: number;
+      prevAvgSetoranPerStudent: number;
+      intensityPct: number; // Math.min(100, Math.round((totalSetorans / targetSetorans) * 100))
+      prevIntensityPct: number;
+
+      // SCORE GABUNGAN (35% Partisipasi Siswa + 65% Intensitas Setoran 5 Hari KBM)
+      combinedScore: number;
+      prevCombinedScore: number;
+      diffCombinedScore: number;
+      diffAvgSetoran: number;
+      diffIntensityPct: number;
     }
 
     const perfList: HalaqahPerf[] = [];
@@ -445,48 +461,100 @@ export const MonitoringSetoranSabak: React.FC = () => {
       clsGroup.halaqahs.forEach(hal => {
         if (hal.students.length === 0) return;
 
+        let totalSetorans = 0;
+        let prevTotalSetorans = 0;
         let prevAlready = 0;
+
         hal.students.forEach(s => {
-          if ((sabakInPreviousWeekByStudent[s.id] || []).length > 0) {
+          const currentWeekly = sabakInSelectedWeekByStudent[s.id] || [];
+          totalSetorans += currentWeekly.length;
+
+          const prevWeekly = sabakInPreviousWeekByStudent[s.id] || [];
+          prevTotalSetorans += prevWeekly.length;
+          if (prevWeekly.length > 0) {
             prevAlready++;
           }
         });
 
-        const pct = Math.round((hal.alreadyDepositedCount / hal.students.length) * 100);
-        const prevPct = Math.round((prevAlready / hal.students.length) * 100);
+        const totalStudents = hal.students.length;
+        const targetSetorans = totalStudents * 5; // Ideal 5 hari KBM
+
+        // Current week metrics
+        const pct = Math.round((hal.alreadyDepositedCount / totalStudents) * 100);
+        const avgSetoranPerStudent = totalStudents > 0 ? (totalSetorans / totalStudents) : 0;
+        const intensityPct = targetSetorans > 0 ? Math.min(100, Math.round((totalSetorans / targetSetorans) * 100)) : 0;
+        const combinedScore = Math.round((pct * 0.35) + (intensityPct * 0.65));
+
+        // Previous week metrics
+        const prevPct = Math.round((prevAlready / totalStudents) * 100);
+        const prevAvgSetoranPerStudent = totalStudents > 0 ? (prevTotalSetorans / totalStudents) : 0;
+        const prevIntensityPct = targetSetorans > 0 ? Math.min(100, Math.round((prevTotalSetorans / targetSetorans) * 100)) : 0;
+        const prevCombinedScore = Math.round((prevPct * 0.35) + (prevIntensityPct * 0.65));
+
+        // Differences
         const diffPct = pct - prevPct;
+        const diffAvgSetoran = avgSetoranPerStudent - prevAvgSetoranPerStudent;
+        const diffIntensityPct = intensityPct - prevIntensityPct;
+        const diffCombinedScore = combinedScore - prevCombinedScore;
 
         perfList.push({
           className: clsGroup.className,
           teacherId: hal.teacherId,
           teacherName: hal.teacherName,
-          totalStudents: hal.students.length,
+          totalStudents,
           alreadyCount: hal.alreadyDepositedCount,
           prevAlreadyCount: prevAlready,
           pct,
           prevPct,
-          diffPct
+          diffPct,
+          totalSetorans,
+          prevTotalSetorans,
+          targetSetorans,
+          avgSetoranPerStudent,
+          prevAvgSetoranPerStudent,
+          intensityPct,
+          prevIntensityPct,
+          combinedScore,
+          prevCombinedScore,
+          diffCombinedScore,
+          diffAvgSetoran,
+          diffIntensityPct
         });
       });
     });
 
-    // 1. Best Halaqah This Week
-    const sortedByPct = [...perfList].sort((a, b) => b.pct - a.pct || b.alreadyCount - a.alreadyCount);
-    const topHalaqah = sortedByPct[0] || null;
+    // 1. Halaqah Terbaik Pekan Ini (Memperhitungkan persentase partisipasi & intensitas setoran 5 hari KBM)
+    const sortedByScore = [...perfList].sort((a, b) => 
+      b.combinedScore - a.combinedScore || 
+      b.intensityPct - a.intensityPct || 
+      b.avgSetoranPerStudent - a.avgSetoranPerStudent || 
+      b.pct - a.pct
+    );
+    const topHalaqah = sortedByScore[0] || null;
 
-    // 2. Best Growth
-    const sortedByGrowth = [...perfList].sort((a, b) => b.diffPct - a.diffPct || b.pct - a.pct);
+    // 2. Peningkatan Terbaik (Memperhitungkan pertumbuhan intensitas setoran per siswa dibanding pekan lalu)
+    const sortedByGrowth = [...perfList].sort((a, b) => 
+      b.diffCombinedScore - a.diffCombinedScore || 
+      b.diffIntensityPct - a.diffIntensityPct || 
+      b.diffAvgSetoran - a.diffAvgSetoran || 
+      b.diffPct - a.diffPct
+    );
     const topGrowth = sortedByGrowth[0] || null;
 
-    // 3. Best Consistency (High performing & stable)
-    const topConsistency = sortedByPct.find(h => h.pct >= 80) || sortedByPct[0] || null;
+    // 3. Konsistensi Terbaik (Kestabilan intensitas setoran mendekati/mencapai target 5 hari KBM)
+    const highIntensityList = perfList.filter(h => h.intensityPct >= 75 || h.avgSetoranPerStudent >= 3.8);
+    const sortedByConsistency = (highIntensityList.length > 0 ? highIntensityList : sortedByScore).sort((a, b) => 
+      (b.intensityPct + b.prevIntensityPct) - (a.intensityPct + a.prevIntensityPct) ||
+      b.combinedScore - a.combinedScore
+    );
+    const topConsistency = sortedByConsistency[0] || null;
 
     return {
       topHalaqah,
       topGrowth,
       topConsistency
     };
-  }, [hierarchicalData, sabakInPreviousWeekByStudent]);
+  }, [hierarchicalData, sabakInSelectedWeekByStudent, sabakInPreviousWeekByStudent]);
 
   // Generator Otomatis Pesan Koordinator berdasarkan Data Pekan Ini
   const autoGeneratedNote = useMemo(() => {
@@ -508,11 +576,11 @@ export const MonitoringSetoranSabak: React.FC = () => {
     }
 
     if (topHalaqah && topHalaqah.alreadyCount > 0) {
-      sentence += `Apresiasi setinggi-tingginya kepada Halaqah ${topHalaqah.teacherName} (${topHalaqah.className}) dengan capaian setoran ${topHalaqah.pct}%. `;
+      sentence += `Apresiasi setinggi-tingginya kepada Halaqah ${topHalaqah.teacherName} (${topHalaqah.className}) dengan partisipasi siswa ${topHalaqah.pct}% dan rata-rata intensitas setoran ${topHalaqah.avgSetoranPerStudent.toFixed(1)}x/pekan dari target 5 hari KBM (${topHalaqah.intensityPct}%). `;
     }
 
-    if (topGrowth && topGrowth.diffPct > 0) {
-      sentence += `Juga puji syukur atas peningkatan signifikan pada Halaqah ${topGrowth.teacherName} (+${topGrowth.diffPct}% dibanding pekan lalu). `;
+    if (topGrowth && topGrowth.diffAvgSetoran > 0) {
+      sentence += `Juga puji syukur atas peningkatan signifikan pada Halaqah ${topGrowth.teacherName} (naik +${topGrowth.diffAvgSetoran.toFixed(1)}x setoran/siswa dibanding pekan lalu). `;
     }
 
     sentence += `Jazakumullahu khairan kepada seluruh ustadz dan ustadzah atas istiqamah bimbingannya. Mari bersama-sama menguatkan dan merangkul ananda agar seluruhnya mendapatkan pendampingan terbaik.`;
@@ -817,12 +885,18 @@ export const MonitoringSetoranSabak: React.FC = () => {
             </div>
 
             {appreciationCards.topHalaqah ? (
-              <div className="bg-white/90 p-3.5 rounded-2xl border border-amber-100 space-y-1.5">
+              <div className="bg-white/90 p-3.5 rounded-2xl border border-amber-100 space-y-2">
                 <p className="text-xs font-bold text-gray-700">{appreciationCards.topHalaqah.className}</p>
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-gray-500 font-medium">Capaian Setoran:</span>
-                  <span className="font-extrabold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
-                    {appreciationCards.topHalaqah.pct}% ({appreciationCards.topHalaqah.alreadyCount}/{appreciationCards.topHalaqah.totalStudents} siswa)
+                  <span className="text-gray-500 font-medium">Intensitas Setoran:</span>
+                  <span className="font-extrabold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60">
+                    ⚡ {appreciationCards.topHalaqah.avgSetoranPerStudent.toFixed(1)}x / 5 Hari KBM ({appreciationCards.topHalaqah.intensityPct}%)
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-gray-500 font-medium">Partisipasi Siswa:</span>
+                  <span className="font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+                    {appreciationCards.topHalaqah.pct}% ({appreciationCards.topHalaqah.alreadyCount}/{appreciationCards.topHalaqah.totalStudents} Siswa)
                   </span>
                 </div>
               </div>
@@ -846,12 +920,18 @@ export const MonitoringSetoranSabak: React.FC = () => {
             </div>
 
             {appreciationCards.topGrowth ? (
-              <div className="bg-white/90 p-3.5 rounded-2xl border border-blue-100 space-y-1.5">
+              <div className="bg-white/90 p-3.5 rounded-2xl border border-blue-100 space-y-2">
                 <p className="text-xs font-bold text-gray-700">{appreciationCards.topGrowth.className}</p>
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-gray-500 font-medium">Kenaikan Setoran:</span>
-                  <span className="font-extrabold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md">
-                    {appreciationCards.topGrowth.diffPct >= 0 ? `+${appreciationCards.topGrowth.diffPct}%` : `${appreciationCards.topGrowth.diffPct}%`} vs Pekan Lalu
+                  <span className="text-gray-500 font-medium">Kenaikan Intensitas:</span>
+                  <span className="font-extrabold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200/60">
+                    📈 {appreciationCards.topGrowth.diffAvgSetoran >= 0 ? `+${appreciationCards.topGrowth.diffAvgSetoran.toFixed(1)}x` : `${appreciationCards.topGrowth.diffAvgSetoran.toFixed(1)}x`} / siswa ({appreciationCards.topGrowth.diffIntensityPct >= 0 ? `+${appreciationCards.topGrowth.diffIntensityPct}%` : `${appreciationCards.topGrowth.diffIntensityPct}%`})
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-gray-500 font-medium">Rata-rata Pekan Ini:</span>
+                  <span className="font-extrabold text-gray-700">
+                    {appreciationCards.topGrowth.avgSetoranPerStudent.toFixed(1)}x / 5 Hari KBM
                   </span>
                 </div>
               </div>
@@ -875,12 +955,18 @@ export const MonitoringSetoranSabak: React.FC = () => {
             </div>
 
             {appreciationCards.topConsistency ? (
-              <div className="bg-white/90 p-3.5 rounded-2xl border border-purple-100 space-y-1.5">
+              <div className="bg-white/90 p-3.5 rounded-2xl border border-purple-100 space-y-2">
                 <p className="text-xs font-bold text-gray-700">{appreciationCards.topConsistency.className}</p>
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-gray-500 font-medium">Status Konsistensi:</span>
-                  <span className="font-extrabold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md">
-                    {appreciationCards.topConsistency.pct}% Stabil Tinggi
+                  <span className="text-gray-500 font-medium">Intensitas Setoran:</span>
+                  <span className="font-extrabold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200/60">
+                    ⭐ {appreciationCards.topConsistency.avgSetoranPerStudent.toFixed(1)}x / 5 Hari KBM ({appreciationCards.topConsistency.intensityPct}%)
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-gray-500 font-medium">Status Keaktifan:</span>
+                  <span className="font-extrabold text-purple-800">
+                    {appreciationCards.topConsistency.avgSetoranPerStudent >= 4.5 ? 'Istiqamah Optimal (5 Hari KBM)' : 'Istiqamah Tinggi'}
                   </span>
                 </div>
               </div>
@@ -1136,6 +1222,10 @@ export const MonitoringSetoranSabak: React.FC = () => {
                           ? Math.round((halaqah.alreadyDepositedCount / halaqah.students.length) * 100) 
                           : 0;
 
+                        const halTotalSetorans = halaqah.students.reduce((sum, s) => sum + (sabakInSelectedWeekByStudent[s.id] || []).length, 0);
+                        const halAvgSetoran = halaqah.students.length > 0 ? (halTotalSetorans / halaqah.students.length) : 0;
+                        const halIntensityPct = halaqah.students.length > 0 ? Math.min(100, Math.round((halTotalSetorans / (halaqah.students.length * 5)) * 100)) : 0;
+
                         let halBarColor = "bg-rose-500";
                         if (halPct >= 80) halBarColor = "bg-emerald-500";
                         else if (halPct >= 50) halBarColor = "bg-amber-500";
@@ -1154,9 +1244,12 @@ export const MonitoringSetoranSabak: React.FC = () => {
                                     Halaqah {halaqah.teacherName}
                                   </h4>
                                 </div>
-                                <p className="text-xs font-bold text-gray-600 pl-5">
-                                  {halaqah.alreadyDepositedCount}/{halaqah.students.length} siswa setor ({halPct}%)
-                                </p>
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold text-gray-600 pl-5">
+                                  <span>Partisipasi: {halaqah.alreadyDepositedCount}/{halaqah.students.length} siswa ({halPct}%)</span>
+                                  <span className="text-emerald-800 bg-emerald-50/90 px-2 py-0.5 rounded border border-emerald-100 font-extrabold text-[11px]">
+                                    ⚡ Intensitas: {halAvgSetoran.toFixed(1)}x / 5 hari KBM ({halIntensityPct}%)
+                                  </span>
+                                </div>
                               </div>
 
                               <div className="flex items-center gap-3 self-stretch sm:self-auto justify-between w-full sm:w-auto">
