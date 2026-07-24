@@ -255,9 +255,17 @@ export const MonitoringSetoranSabak: React.FC = () => {
       const matchesTeacher = selectedTeacher === 'Semua' || student.teacherId === selectedTeacher;
       const matchesSearch = searchTerm === '' || student.name.toLowerCase().includes(searchTerm.toLowerCase());
       
+      const tName = teacherMap[student.teacherId] || '';
+      const isEricInUbay = student.className?.toLowerCase().includes("ubay") && /(eric|erric|erik|errik)/i.test(tName);
+      const isZubairInMuadz = student.className?.toLowerCase().includes("muadz") && tName.toLowerCase().includes("zubair");
+
+      if (isEricInUbay || isZubairInMuadz) {
+        return false;
+      }
+
       return matchesYear && matchesGender && matchesClass && matchesTeacher && matchesSearch;
     });
-  }, [students, selectedGender, selectedClass, selectedTeacher, searchTerm]);
+  }, [students, selectedGender, selectedClass, selectedTeacher, searchTerm, teacherMap]);
 
   // Map of Student ID -> array of setoran_sabak records in the selected week
   const sabakInSelectedWeekByStudent = useMemo(() => {
@@ -320,8 +328,8 @@ export const MonitoringSetoranSabak: React.FC = () => {
       const tId = student.teacherId;
       const tName = teacherMap[tId] || 'Guru Tidak Teridentifikasi';
 
-      // Exclusion rule: Eric in Ubay & Zubair in Muadz
-      const isEricInUbay = cls?.toLowerCase().includes("ubay") && tName?.toLowerCase().includes("eric");
+      // Exclusion rule: Eric / Erric in Ubay & Zubair in Muadz
+      const isEricInUbay = cls?.toLowerCase().includes("ubay") && /(eric|erric|erik|errik)/i.test(tName);
       const isZubairInMuadz = cls?.toLowerCase().includes("muadz") && tName?.toLowerCase().includes("zubair");
 
       if (isEricInUbay || isZubairInMuadz) {

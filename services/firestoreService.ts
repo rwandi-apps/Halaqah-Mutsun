@@ -791,8 +791,8 @@ export const getClassHalaqahSummary = async (): Promise<ClassSummary[]> => {
     const tId = student.teacherId;
     const tName = teacherMap[tId] || 'Guru Tidak Teridentifikasi';
 
-    // Exclusion rule: Kelas 3 Ubay bin Ka'ab (Ust. Eric) and Kelas 5 Muadz bin Jabal (Ust. Zubair)
-    const isEricInUbay = name?.toLowerCase().includes("ubay") && tName?.toLowerCase().includes("eric");
+    // Exclusion rule: Kelas 3 Ubay bin Ka'ab (Ust. Eric / Erric) and Kelas 5 Muadz bin Jabal (Ust. Zubair)
+    const isEricInUbay = name?.toLowerCase().includes("ubay") && /(eric|erric|erik|errik)/i.test(tName);
     const isZubairInMuadz = name?.toLowerCase().includes("muadz") && tName?.toLowerCase().includes("zubair");
 
     if (isEricInUbay || isZubairInMuadz) {
