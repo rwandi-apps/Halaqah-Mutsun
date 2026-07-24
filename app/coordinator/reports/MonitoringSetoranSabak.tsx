@@ -135,7 +135,11 @@ const getDefaultWeek = (weeks: WeekOption[]): WeekOption | null => {
 
 const DEFAULT_COORDINATOR_NOTE = "Alhamdulillah terdapat peningkatan setoran pada beberapa halaqah kelas 3. Jazakumullahu khairan kepada seluruh guru yang telah konsisten melakukan mutabaah dan pendampingan. Mari bersama-sama membantu halaqah yang masih memerlukan dukungan agar seluruh ananda mendapatkan layanan terbaik.";
 
-export const MonitoringSetoranSabak: React.FC = () => {
+interface MonitoringSetoranSabakProps {
+  isPublic?: boolean;
+}
+
+export const MonitoringSetoranSabak: React.FC<MonitoringSetoranSabakProps> = ({ isPublic = false }) => {
   const [teachers, setTeachers] = useState<User[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [sabakRecords, setSabakRecords] = useState<SetoranSabak[]>([]);
@@ -726,25 +730,27 @@ export const MonitoringSetoranSabak: React.FC = () => {
               Media kolaborasi untuk apresiasi, motivasi, dan saling belajar antar halaqah. Fokus utama kita adalah mendorong pertumbuhan hafalan ananda dalam suasana yang saling mendukung.
             </p>
           </div>
-          <div className="shrink-0 self-start sm:self-center">
-            <button
-              onClick={handleCopyShareLink}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white text-emerald-900 font-extrabold text-xs shadow-md hover:bg-emerald-50 transition-all active:scale-95 border border-white/40"
-              title="Salin link khusus untuk berbagi tampilan Monitoring Setoran Sabaq saja"
-            >
-              {shareCopied ? (
-                <>
-                  <CheckCircle2 size={16} className="text-emerald-600" />
-                  <span>Link Disalin!</span>
-                </>
-              ) : (
-                <>
-                  <Share2 size={16} className="text-emerald-700" />
-                  <span>Bagikan Link Shared</span>
-                </>
-              )}
-            </button>
-          </div>
+          {!isPublic && (
+            <div className="shrink-0 self-start sm:self-center">
+              <button
+                onClick={handleCopyShareLink}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white text-emerald-900 font-extrabold text-xs shadow-md hover:bg-emerald-50 transition-all active:scale-95 border border-white/40"
+                title="Salin link khusus untuk berbagi tampilan Monitoring Setoran Sabaq saja"
+              >
+                {shareCopied ? (
+                  <>
+                    <CheckCircle2 size={16} className="text-emerald-600" />
+                    <span>Link Disalin!</span>
+                  </>
+                ) : (
+                  <>
+                    <Share2 size={16} className="text-emerald-700" />
+                    <span>Bagikan Link Shared</span>
+                  </>
+                )}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -853,54 +859,55 @@ export const MonitoringSetoranSabak: React.FC = () => {
                   </span>
                 )}
               </div>
-              <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Apresiasi & Arahan Pembina Tahfizh</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-end sm:self-auto">
-            {isCustomNote && !isEditingNote && (
-              <button
-                type="button"
-                onClick={handleResetToAutoNote}
-                className="px-3 py-1.5 rounded-xl border border-emerald-200 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors flex items-center gap-1.5 shadow-sm"
-                title="Atur ulang kalimat kembali ke data otomatis pekan ini"
-              >
-                <RotateCcw size={13} />
-                <span>Reset ke Otomatis</span>
-              </button>
-            )}
+          {!isPublic && (
+            <div className="flex items-center gap-2 self-end sm:self-auto">
+              {isCustomNote && !isEditingNote && (
+                <button
+                  type="button"
+                  onClick={handleResetToAutoNote}
+                  className="px-3 py-1.5 rounded-xl border border-emerald-200 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors flex items-center gap-1.5 shadow-sm"
+                  title="Atur ulang kalimat kembali ke data otomatis pekan ini"
+                >
+                  <RotateCcw size={13} />
+                  <span>Reset ke Otomatis</span>
+                </button>
+              )}
 
-            {!isEditingNote ? (
-              <button
-                type="button"
-                onClick={handleStartEditNote}
-                className="px-3.5 py-1.5 rounded-xl border border-emerald-200 text-xs font-bold text-emerald-800 bg-white hover:bg-emerald-50 transition-colors flex items-center gap-1.5 shadow-sm"
-              >
-                <Edit3 size={14} />
-                <span>Ubah Catatan</span>
-              </button>
-            ) : (
-              <div className="flex items-center gap-2">
+              {!isEditingNote ? (
                 <button
                   type="button"
-                  onClick={handleUseAutoTextInEditor}
-                  className="px-3 py-1.5 rounded-xl border border-amber-200 text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 transition-colors flex items-center gap-1.5 shadow-sm"
-                  title="Isi teks dengan rangkuman data otomatis pekan ini"
+                  onClick={handleStartEditNote}
+                  className="px-3.5 py-1.5 rounded-xl border border-emerald-200 text-xs font-bold text-emerald-800 bg-white hover:bg-emerald-50 transition-colors flex items-center gap-1.5 shadow-sm"
                 >
-                  <Sparkles size={13} />
-                  <span>Ambil Kalimat Otomatis</span>
+                  <Edit3 size={14} />
+                  <span>Ubah Catatan</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={handleSaveNote}
-                  className="px-4 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-colors flex items-center gap-1.5 shadow-sm"
-                >
-                  <Save size={14} />
-                  <span>Simpan Catatan</span>
-                </button>
-              </div>
-            )}
-          </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleUseAutoTextInEditor}
+                    className="px-3 py-1.5 rounded-xl border border-amber-200 text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 transition-colors flex items-center gap-1.5 shadow-sm"
+                    title="Isi teks dengan rangkuman data otomatis pekan ini"
+                  >
+                    <Sparkles size={13} />
+                    <span>Ambil Kalimat Otomatis</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveNote}
+                    className="px-4 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-colors flex items-center gap-1.5 shadow-sm"
+                  >
+                    <Save size={14} />
+                    <span>Simpan Catatan</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {isEditingNote ? (
@@ -1062,9 +1069,9 @@ export const MonitoringSetoranSabak: React.FC = () => {
       </div>
 
       {/* SECTION 3 : TREN PEKANAN & FILTER PANEL */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className={`grid grid-cols-1 ${isPublic ? '' : 'lg:grid-cols-3'} gap-4`}>
         {/* SECTION 3 : TREN PEKANAN WIDGET */}
-        <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col justify-between space-y-4">
+        <div className={`bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col justify-between space-y-4 ${isPublic ? 'w-full' : ''}`}>
           <div>
             <div className="flex items-center gap-2 mb-1">
               <TrendingUp size={18} className="text-emerald-600" />
@@ -1107,102 +1114,104 @@ export const MonitoringSetoranSabak: React.FC = () => {
           </div>
         </div>
 
-        {/* FILTER TOOLBAR */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm space-y-3">
-          <div className="flex items-center gap-2">
-            <Filter size={16} className="text-gray-400" />
-            <h4 className="text-xs font-black text-gray-500 uppercase tracking-wider">Filter Data Monitor</h4>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {/* Tahun Ajaran */}
-            <div className="space-y-1">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider ml-1">Tahun Ajaran</label>
-              <select 
-                value={selectedYear} 
-                onChange={e => setSelectedYear(e.target.value)} 
-                className="w-full px-3 py-2 border border-gray-200 rounded-xl bg-gray-50 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500"
-              >
-                {ACADEMIC_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
-              </select>
+        {!isPublic && (
+          /* FILTER TOOLBAR */
+          <div className="lg:col-span-2 bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm space-y-3">
+            <div className="flex items-center gap-2">
+              <Filter size={16} className="text-gray-400" />
+              <h4 className="text-xs font-black text-gray-500 uppercase tracking-wider">Filter Data Monitor</h4>
             </div>
 
-            {/* Pekan Dropdown */}
-            <div className="space-y-1">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider ml-1">Pekan Berjalan</label>
-              <select 
-                value={selectedWeek ? selectedWeek.id : ''} 
-                onChange={e => {
-                  const found = weekOptions.find(w => w.id === e.target.value);
-                  if (found) setSelectedWeek(found);
-                }} 
-                className="w-full px-3 py-2 border border-gray-200 rounded-xl bg-gray-50 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500"
-              >
-                {weekOptions.length === 0 && <option value="">Membuat pekan...</option>}
-                {weekOptions.map(w => (
-                  <option key={w.id} value={w.id}>{w.label}</option>
-                ))}
-              </select>
-            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {/* Tahun Ajaran */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider ml-1">Tahun Ajaran</label>
+                <select 
+                  value={selectedYear} 
+                  onChange={e => setSelectedYear(e.target.value)} 
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl bg-gray-50 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  {ACADEMIC_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+              </div>
 
-            {/* Jenis Kelamin */}
-            <div className="space-y-1">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider ml-1">Kategori Guru / Siswa</label>
-              <select 
-                value={selectedGender} 
-                onChange={e => setSelectedGender(e.target.value)} 
-                className="w-full px-3 py-2 border border-gray-200 rounded-xl bg-gray-50 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500"
-              >
-                <option value="Semua">Semua (Ikhwan & Akhwat)</option>
-                <option value="Ikhwan">Ikhwan (L)</option>
-                <option value="Akhwat">Akhwat (P)</option>
-              </select>
-            </div>
+              {/* Pekan Dropdown */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider ml-1">Pekan Berjalan</label>
+                <select 
+                  value={selectedWeek ? selectedWeek.id : ''} 
+                  onChange={e => {
+                    const found = weekOptions.find(w => w.id === e.target.value);
+                    if (found) setSelectedWeek(found);
+                  }} 
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl bg-gray-50 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  {weekOptions.length === 0 && <option value="">Membuat pekan...</option>}
+                  {weekOptions.map(w => (
+                    <option key={w.id} value={w.id}>{w.label}</option>
+                  ))}
+                </select>
+              </div>
 
-            {/* Kelas */}
-            <div className="space-y-1">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider ml-1">Kelas</label>
-              <select 
-                value={selectedClass} 
-                onChange={e => setSelectedClass(e.target.value)} 
-                className="w-full px-3 py-2 border border-gray-200 rounded-xl bg-gray-50 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500"
-              >
-                <option value="Semua">Semua Kelas</option>
-                {uniqueClasses.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
+              {/* Jenis Kelamin */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider ml-1">Kategori Guru / Siswa</label>
+                <select 
+                  value={selectedGender} 
+                  onChange={e => setSelectedGender(e.target.value)} 
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl bg-gray-50 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="Semua">Semua (Ikhwan & Akhwat)</option>
+                  <option value="Ikhwan">Ikhwan (L)</option>
+                  <option value="Akhwat">Akhwat (P)</option>
+                </select>
+              </div>
 
-            {/* Guru Pengampu */}
-            <div className="space-y-1">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider ml-1">Guru Pengampu</label>
-              <select 
-                value={selectedTeacher} 
-                onChange={e => setSelectedTeacher(e.target.value)} 
-                className="w-full px-3 py-2 border border-gray-200 rounded-xl bg-gray-50 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500"
-              >
-                <option value="Semua">Semua Guru</option>
-                {teachers.map(t => (
-                  <option key={t.id} value={t.id}>{t.nickname || t.name}</option>
-                ))}
-              </select>
-            </div>
+              {/* Kelas */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider ml-1">Kelas</label>
+                <select 
+                  value={selectedClass} 
+                  onChange={e => setSelectedClass(e.target.value)} 
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl bg-gray-50 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="Semua">Semua Kelas</option>
+                  {uniqueClasses.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
 
-            {/* Search */}
-            <div className="space-y-1">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider ml-1">Cari Nama Siswa</label>
-              <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
-                <input 
-                  type="text" 
-                  placeholder="Ketik nama siswa..." 
-                  value={searchTerm} 
-                  onChange={e => setSearchTerm(e.target.value)} 
-                  className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-xl bg-gray-50 text-xs font-bold focus:ring-2 focus:ring-emerald-500 outline-none" 
-                />
+              {/* Guru Pengampu */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider ml-1">Guru Pengampu</label>
+                <select 
+                  value={selectedTeacher} 
+                  onChange={e => setSelectedTeacher(e.target.value)} 
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl bg-gray-50 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="Semua">Semua Guru</option>
+                  {teachers.map(t => (
+                    <option key={t.id} value={t.id}>{t.nickname || t.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Search */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider ml-1">Cari Nama Siswa</label>
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                  <input 
+                    type="text" 
+                    placeholder="Ketik nama siswa..." 
+                    value={searchTerm} 
+                    onChange={e => setSearchTerm(e.target.value)} 
+                    className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-xl bg-gray-50 text-xs font-bold focus:ring-2 focus:ring-emerald-500 outline-none" 
+                  />
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* SECTION 2 : RINGKASAN PER KELAS & ACCORDION VIEW */}
@@ -1547,7 +1556,7 @@ export const MonitoringSetoranSabak: React.FC = () => {
             {/* Modal Header */}
             <div className="px-6 py-5 bg-emerald-800 text-white flex justify-between items-center shrink-0">
               <div>
-                <h3 className="text-lg font-black tracking-tight uppercase">Riwayat Setoran Sabak</h3>
+                <h3 className="text-lg font-black tracking-tight uppercase">Riwayat Setoran Sabaq</h3>
                 <p className="text-xs text-emerald-200 font-bold uppercase tracking-wider">{historyStudent.name} • {historyStudent.className}</p>
               </div>
               <button 
@@ -1567,7 +1576,7 @@ export const MonitoringSetoranSabak: React.FC = () => {
                   <span className="bg-emerald-100 px-2.5 py-1 rounded-lg uppercase">{historyStudent.currentProgress || 'Belum Ada'}</span>
                 </div>
                 <div className="text-xs font-bold text-teal-900">
-                  <span className="text-gray-400 font-medium mr-1 uppercase">Total Setoran Sabak:</span>
+                  <span className="text-gray-400 font-medium mr-1 uppercase">Total Setoran Sabaq:</span>
                   <span className="bg-teal-100 px-2.5 py-1 rounded-lg uppercase text-teal-800">{historyRecords.length} Catatan</span>
                 </div>
               </div>
@@ -1621,7 +1630,7 @@ export const MonitoringSetoranSabak: React.FC = () => {
                 </div>
               ) : (
                 <div className="py-16 text-center text-gray-400 italic font-bold uppercase tracking-wider">
-                  Belum ada riwayat setoran sabak untuk siswa ini
+                  Belum ada riwayat setoran sabaq untuk siswa ini
                 </div>
               )}
             </div>

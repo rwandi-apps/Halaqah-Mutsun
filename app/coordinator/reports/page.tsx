@@ -136,7 +136,7 @@ export default function CoordinatorReportsPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-2xl font-black text-gray-900 tracking-tight uppercase">Pantau Laporan</h2>
-          <p className="text-gray-500 text-sm">Supervisi real-time capaian laporan bulanan, semester, dan setoran sabak seluruh siswa.</p>
+          <p className="text-gray-500 text-sm">Supervisi real-time capaian laporan bulanan, semester, dan setoran sabaq seluruh siswa.</p>
         </div>
       </div>
 
@@ -160,7 +160,7 @@ export default function CoordinatorReportsPage() {
               : 'border-transparent text-gray-400 hover:text-gray-600'
           }`}
         >
-          Monitoring Setoran Sabak
+          Monitoring Setoran Sabaq
         </button>
       </div>
 

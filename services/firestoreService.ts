@@ -680,24 +680,32 @@ export const getAllStudents = async (): Promise<Student[]> => {
 export const addStudent = async (student: Omit<Student, 'id' | 'attendance' | 'behaviorScore'>): Promise<Student> => {
   if (!db) throw new Error("Firestore not initialized");
   const level = extractClassLevel(student.className);
+  const status = student.status || 'Aktif';
+  const isMutasiOrAlumni = status === 'Mutasi/Keluar' || status === 'Mutasi' || status === 'Alumni/Lulus';
+  const finalTeacherId = isMutasiOrAlumni ? '' : student.teacherId;
+
   // Default Attendance & Behavior set to 0 (Not yet rated)
   const docRef = await addDoc(collection(db, 'siswa'), { 
     ...student, 
+    teacherId: finalTeacherId,
     classLevel: level, 
     attendance: 0, 
     behaviorScore: 0, 
-    status: student.status || 'Aktif',
+    status,
     totalHafalan: { juz: 0, pages: 0, lines: 0 },
     currentProgress: 'Belum Ada',
     createdAt: serverTimestamp() 
   });
-  return { id: docRef.id, ...student, classLevel: level, attendance: 0, behaviorScore: 0, status: student.status || 'Aktif', createdAt: new Date().toISOString() } as Student;
+  return { id: docRef.id, ...student, teacherId: finalTeacherId, classLevel: level, attendance: 0, behaviorScore: 0, status, createdAt: new Date().toISOString() } as Student;
 };
 
 export const updateStudent = async (id: string, data: Partial<Student>): Promise<void> => {
   if (!db) throw new Error("Firestore not initialized");
   const docRef = doc(db, 'siswa', id);
   const updateData = { ...data };
+  if (updateData.status === 'Mutasi/Keluar' || updateData.status === 'Mutasi' || updateData.status === 'Alumni/Lulus') {
+    updateData.teacherId = '';
+  }
   if (data.className) {
     (updateData as any).classLevel = extractClassLevel(data.className);
   }

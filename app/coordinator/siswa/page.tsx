@@ -91,6 +91,9 @@ export default function CoordinatorSiswaPage() {
         const level = extractClassLevel(value);
         next.memorizationTarget = getAutomaticTargetLabel(level);
       }
+      if (name === 'status' && (value === 'Mutasi/Keluar' || value === 'Alumni/Lulus')) {
+        next.teacherId = '';
+      }
       return next;
     });
   };
@@ -114,13 +117,14 @@ export default function CoordinatorSiswaPage() {
   const handleOpenEditModal = (student: Student) => {
     setEditingId(student.id);
     const level = extractClassLevel(student.className);
+    const isInactiveStatus = student.status === 'Mutasi/Keluar' || student.status === 'Alumni/Lulus';
     setFormData({
       name: student.name,
       nis: student.nis || '',
       nisn: student.nisn || '',
       className: student.className,
       gender: student.gender || getStudentGender(student),
-      teacherId: student.teacherId,
+      teacherId: isInactiveStatus ? '' : student.teacherId,
       memorizationTarget: getAutomaticTargetLabel(level),
       currentProgress: student.currentProgress,
       status: student.status || 'Aktif'
@@ -130,8 +134,15 @@ export default function CoordinatorSiswaPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.className || !formData.teacherId) {
-      alert("Mohon lengkapi data wajib (Nama, Kelas, Guru)");
+    if (!formData.name || !formData.className) {
+      alert("Mohon lengkapi data wajib (Nama dan Kelas)");
+      return;
+    }
+
+    const isMutasiOrAlumni = formData.status === 'Mutasi/Keluar' || formData.status === 'Alumni/Lulus';
+
+    if (!isMutasiOrAlumni && !formData.teacherId) {
+      alert("Mohon pilih Guru Pembimbing (Halaqah) untuk siswa aktif.");
       return;
     }
 
@@ -141,6 +152,7 @@ export default function CoordinatorSiswaPage() {
       const finalTarget = getAutomaticTargetLabel(level);
       const dataToSave = {
         ...formData,
+        teacherId: isMutasiOrAlumni ? '' : formData.teacherId,
         memorizationTarget: finalTarget
       };
 
@@ -320,7 +332,7 @@ export default function CoordinatorSiswaPage() {
           <div>
             <p className="font-bold text-amber-950 mb-0.5">💡 Solusi Terkait Murid Keluar / Mutasi</p>
             <p className="leading-relaxed text-amber-800 font-medium">
-              Siswa yang keluar di tengah tahun ajaran <strong>tidak disarankan untuk dihapus permanen</strong> dari sistem agar seluruh arsip setoran sabak, jurnal bulanan, dan rapor semester terdahulu mereka tidak ikut hilang. Cukup ganti Status Keaktifannya menjadi <strong>"Mutasi / Keluar"</strong>. Mereka otomatis disembunyikan dari daftar bimbingan harian guru agar tidak membingungkan, namun riwayat akademisnya tetap aman tersimpan di basis data sekolah.
+              Siswa yang keluar di tengah tahun ajaran <strong>tidak disarankan untuk dihapus permanen</strong> dari sistem agar seluruh arsip setoran sabaq, jurnal bulanan, dan rapor semester terdahulu mereka tidak ikut hilang. Cukup ganti Status Keaktifannya menjadi <strong>"Mutasi / Keluar"</strong>. Mereka otomatis disembunyikan dari daftar bimbingan harian guru agar tidak membingungkan, namun riwayat akademisnya tetap aman tersimpan di basis data sekolah.
             </p>
           </div>
         </div>
@@ -514,10 +526,19 @@ export default function CoordinatorSiswaPage() {
                     name="teacherId"
                     value={formData.teacherId}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none bg-white"
-                    required
+                    className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none ${
+                      formData.status === 'Mutasi/Keluar' || formData.status === 'Alumni/Lulus' ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-white'
+                    }`}
+                    required={formData.status === 'Aktif'}
+                    disabled={formData.status === 'Mutasi/Keluar' || formData.status === 'Alumni/Lulus'}
                   >
-                    <option value="">Pilih Guru...</option>
+                    <option value="">
+                      {formData.status === 'Mutasi/Keluar' 
+                        ? '(Kosong - Siswa Mutasi)' 
+                        : formData.status === 'Alumni/Lulus' 
+                        ? '(Kosong - Alumni)' 
+                        : 'Pilih Guru...'}
+                    </option>
                     {teachers
                       .filter(t => isHalaqahTeacher(t) && (t.status !== 'Nonaktif' || t.id === formData.teacherId))
                       .map(t => (
@@ -527,6 +548,11 @@ export default function CoordinatorSiswaPage() {
                       ))
                     }
                   </select>
+                  {(formData.status === 'Mutasi/Keluar' || formData.status === 'Alumni/Lulus') && (
+                    <p className="text-[10px] text-amber-600 mt-1 font-medium">
+                      💡 Siswa dengan status {formData.status === 'Mutasi/Keluar' ? 'Mutasi / Keluar' : 'Alumni / Lulus'} otomatis dikosongkan dari guru pembimbing.
+                    </p>
+                  )}
                 </div>
               </div>
 
