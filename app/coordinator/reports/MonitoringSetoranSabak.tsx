@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Student, SetoranSabak, User } from '../../../types';
-import { getStudentGender } from '../../../services/sdqTargets';
+import { getStudentGender, extractClassLevel } from '../../../services/sdqTargets';
 import { 
   getAllTeachers, 
   subscribeToAllStudents, 
@@ -361,6 +361,12 @@ export const MonitoringSetoranSabak: React.FC = () => {
 
   // Summary Metrics for Header
   const metrics = useMemo(() => {
+    const sabaqTargetStudents = filteredStudents.filter(s => extractClassLevel(s.className) !== 1);
+    const grade1Students = filteredStudents.filter(s => extractClassLevel(s.className) === 1);
+
+    const isOnlyGrade1Selected = selectedClass !== 'Semua' && extractClassLevel(selectedClass) === 1;
+    const activeTargetList = isOnlyGrade1Selected ? grade1Students : sabaqTargetStudents;
+
     let totalStudents = filteredStudents.length;
     let totalSetoransThisWeek = 0;
     let studentsDepositedCount = 0;
@@ -368,26 +374,41 @@ export const MonitoringSetoranSabak: React.FC = () => {
     filteredStudents.forEach(s => {
       const weekly = sabakInSelectedWeekByStudent[s.id] || [];
       totalSetoransThisWeek += weekly.length;
+    });
+
+    activeTargetList.forEach(s => {
+      const weekly = sabakInSelectedWeekByStudent[s.id] || [];
       if (weekly.length > 0) {
         studentsDepositedCount++;
       }
     });
 
-    const percentageSchool = totalStudents > 0 ? Math.round((studentsDepositedCount / totalStudents) * 100) : 0;
+    const targetStudentCount = activeTargetList.length;
+    const percentageSchool = targetStudentCount > 0 ? Math.round((studentsDepositedCount / targetStudentCount) * 100) : 0;
 
     return {
       totalStudents,
+      sabaqTargetStudentsCount: sabaqTargetStudents.length,
+      grade1StudentsCount: grade1Students.length,
+      targetStudentCount,
       totalSetoransThisWeek,
       studentsDepositedCount,
-      studentsNotYetDepositedCount: totalStudents - studentsDepositedCount,
-      percentageSchool
+      studentsNotYetDepositedCount: targetStudentCount - studentsDepositedCount,
+      percentageSchool,
+      isOnlyGrade1Selected
     };
-  }, [filteredStudents, sabakInSelectedWeekByStudent]);
+  }, [filteredStudents, sabakInSelectedWeekByStudent, selectedClass]);
 
   // Previous Week Metrics for Weekly Trend
   const previousMetrics = useMemo(() => {
     let studentsDepositedPrev = 0;
-    filteredStudents.forEach(s => {
+    const sabaqTargetStudents = filteredStudents.filter(s => extractClassLevel(s.className) !== 1);
+    const isOnlyGrade1Selected = selectedClass !== 'Semua' && extractClassLevel(selectedClass) === 1;
+    const activeTargetList = isOnlyGrade1Selected 
+      ? filteredStudents.filter(s => extractClassLevel(s.className) === 1) 
+      : sabaqTargetStudents;
+
+    activeTargetList.forEach(s => {
       const prevWeekly = sabakInPreviousWeekByStudent[s.id] || [];
       if (prevWeekly.length > 0) {
         studentsDepositedPrev++;
@@ -397,7 +418,7 @@ export const MonitoringSetoranSabak: React.FC = () => {
     return {
       studentsDepositedCount: studentsDepositedPrev
     };
-  }, [filteredStudents, sabakInPreviousWeekByStudent]);
+  }, [filteredStudents, sabakInPreviousWeekByStudent, selectedClass]);
 
   // Trend Calculations
   const trendData = useMemo(() => {
@@ -458,6 +479,9 @@ export const MonitoringSetoranSabak: React.FC = () => {
     const perfList: HalaqahPerf[] = [];
 
     hierarchicalData.forEach(clsGroup => {
+      // Kelas 1 berada pada tahap Pra-Sabaq / Iqra, sehingga tidak diikutsertakan dalam kompetisi ranking Sabaq
+      if (extractClassLevel(clsGroup.className) === 1) return;
+
       clsGroup.halaqahs.forEach(hal => {
         if (hal.students.length === 0) return;
 
@@ -563,10 +587,10 @@ export const MonitoringSetoranSabak: React.FC = () => {
     }
 
     const weekLabel = selectedWeek.label;
-    const { totalStudents, studentsDepositedCount, percentageSchool } = metrics;
+    const { targetStudentCount, studentsDepositedCount, percentageSchool } = metrics;
     const { topHalaqah, topGrowth } = appreciationCards;
 
-    let sentence = `Alhamdulillah, pada ${weekLabel}, sebanyak ${studentsDepositedCount} dari ${totalStudents} siswa (${percentageSchool}%) telah aktif menyetorkan sabaq. `;
+    let sentence = `Alhamdulillah, pada ${weekLabel}, sebanyak ${studentsDepositedCount} dari ${targetStudentCount} siswa target Sabaq (${percentageSchool}%) telah aktif menyetorkan sabaq. `;
 
     if (percentageSchool >= TARGET_SEKOLAH_PERCENT) {
       sentence += `Capaian sekolah telah berhasil mencapai target ${TARGET_SEKOLAH_PERCENT}%. Barakallahu fiikum! `;
@@ -684,6 +708,24 @@ export const MonitoringSetoranSabak: React.FC = () => {
         </div>
       </div>
 
+      {/* Notice Banner Target Sabaq Kelas 1 */}
+      <div className="bg-sky-50 border border-sky-200/90 text-sky-950 px-5 py-3.5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs font-semibold shadow-xs">
+        <div className="flex items-center gap-2.5">
+          <span className="px-2.5 py-1 rounded-lg bg-sky-700 text-white font-black text-[10px] uppercase tracking-wider shrink-0">
+            Target Sabaq SDQ
+          </span>
+          <span className="text-sky-900 leading-relaxed">
+            {metrics.isOnlyGrade1Selected ? (
+              <strong>Siswa Kelas 1 berada pada tahap Pra-Sabaq / Iqra (Belum wajib target Sabaq Pekanan). Catatan setoran bersifat opsional / pengayaan.</strong>
+            ) : (
+              <span>
+                Persentase Target Sabaq ({TARGET_SEKOLAH_PERCENT}%) difokuskan untuk <strong>Kelas 2 - 6 ({metrics.sabaqTargetStudentsCount} siswa)</strong>. Kelas 1 ({metrics.grade1StudentsCount} siswa) berada pada tahap Pra-Sabaq / Iqra.
+              </span>
+            )}
+          </span>
+        </div>
+      </div>
+
       {/* TAMPILAN HEADER : KPI STATS CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Siswa */}
@@ -692,8 +734,10 @@ export const MonitoringSetoranSabak: React.FC = () => {
             <Users size={22} />
           </div>
           <div>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider leading-none mb-1">Total Siswa</p>
-            <p className="text-2xl font-black text-gray-800 leading-none">{metrics.totalStudents} <span className="text-xs text-gray-400 font-bold">Ananda</span></p>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider leading-none mb-1">
+              {metrics.isOnlyGrade1Selected ? 'Total Siswa (Kelas 1)' : 'Siswa Target Sabaq (K2-K6)'}
+            </p>
+            <p className="text-2xl font-black text-gray-800 leading-none">{metrics.targetStudentCount} <span className="text-xs text-gray-400 font-bold">Ananda</span></p>
           </div>
         </div>
 
@@ -721,7 +765,7 @@ export const MonitoringSetoranSabak: React.FC = () => {
               </span>
             </div>
             <p className="text-xl font-black text-emerald-700 leading-none">
-              {metrics.studentsDepositedCount} <span className="text-xs text-gray-400 font-medium">dari {metrics.totalStudents} siswa</span>
+              {metrics.studentsDepositedCount} <span className="text-xs text-gray-400 font-medium">dari {metrics.targetStudentCount} siswa</span>
             </p>
           </div>
         </div>
@@ -742,7 +786,7 @@ export const MonitoringSetoranSabak: React.FC = () => {
               {metrics.percentageSchool >= TARGET_SEKOLAH_PERCENT ? 'Tercapai 🎉' : 'Selisih ' + (TARGET_SEKOLAH_PERCENT - metrics.percentageSchool) + '%'}
             </p>
             <p className="text-[10px] text-gray-400 font-semibold mt-1">
-              Belum setor: {metrics.studentsNotYetDepositedCount} siswa ({metrics.totalStudents > 0 ? Math.round((metrics.studentsNotYetDepositedCount / metrics.totalStudents) * 100) : 0}%)
+              Belum setor: {metrics.studentsNotYetDepositedCount} siswa ({metrics.targetStudentCount > 0 ? Math.round((metrics.studentsNotYetDepositedCount / metrics.targetStudentCount) * 100) : 0}%)
             </p>
           </div>
         </div>
@@ -1142,6 +1186,7 @@ export const MonitoringSetoranSabak: React.FC = () => {
           <div className="space-y-4">
             {hierarchicalData.map((classGroup) => {
               const isClassExpanded = !!expandedClasses[classGroup.className];
+              const isGrade1 = extractClassLevel(classGroup.className) === 1;
               const classStudentsCount = classGroup.halaqahs.reduce((sum, h) => sum + h.students.length, 0);
               const classAlreadyCount = classGroup.halaqahs.reduce((sum, h) => sum + h.alreadyDepositedCount, 0);
               const classPct = classStudentsCount > 0 ? Math.round((classAlreadyCount / classStudentsCount) * 100) : 0;
@@ -1149,7 +1194,10 @@ export const MonitoringSetoranSabak: React.FC = () => {
               // Progress bar color rules: Hijau >= 80%, Kuning 50-79%, Merah < 50%
               let progressBarColor = "bg-rose-500";
               let badgeBgColor = "bg-rose-50 text-rose-700 border-rose-200";
-              if (classPct >= 80) {
+              if (isGrade1) {
+                progressBarColor = "bg-sky-500";
+                badgeBgColor = "bg-sky-50 text-sky-800 border-sky-200";
+              } else if (classPct >= 80) {
                 progressBarColor = "bg-emerald-500";
                 badgeBgColor = "bg-emerald-50 text-emerald-800 border-emerald-200";
               } else if (classPct >= 50) {
@@ -1169,11 +1217,20 @@ export const MonitoringSetoranSabak: React.FC = () => {
                   >
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-2xl bg-emerald-100/70 text-emerald-800 flex items-center justify-center font-bold shrink-0">
+                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold shrink-0 ${
+                          isGrade1 ? 'bg-sky-100/80 text-sky-800' : 'bg-emerald-100/70 text-emerald-800'
+                        }`}>
                           <BookOpen size={20} />
                         </div>
                         <div>
-                          <h3 className="text-base font-black text-gray-900 tracking-tight">{classGroup.className}</h3>
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-base font-black text-gray-900 tracking-tight">{classGroup.className}</h3>
+                            {isGrade1 && (
+                              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-sky-100 text-sky-800 border border-sky-200">
+                                Pra-Sabaq / Iqra
+                              </span>
+                            )}
+                          </div>
                           <p className="text-[11px] font-bold text-gray-400">
                             {classGroup.halaqahs.length} Halaqah • {classStudentsCount} Siswa
                           </p>
@@ -1182,7 +1239,11 @@ export const MonitoringSetoranSabak: React.FC = () => {
 
                       <div className="flex items-center gap-3 self-stretch sm:self-auto justify-between sm:justify-end">
                         <div className={`px-3 py-1 rounded-xl text-xs font-extrabold border ${badgeBgColor}`}>
-                          {classAlreadyCount} dari {classStudentsCount} siswa sudah setor ({classPct}%)
+                          {isGrade1 ? (
+                            <span>Pra-Sabaq • {classAlreadyCount}/{classStudentsCount} siswa setor opsional</span>
+                          ) : (
+                            <span>{classAlreadyCount} dari {classStudentsCount} siswa sudah setor ({classPct}%)</span>
+                          )}
                         </div>
                         <button
                           type="button"
@@ -1202,7 +1263,7 @@ export const MonitoringSetoranSabak: React.FC = () => {
                         />
                       </div>
                       <div className="flex justify-between items-center text-[10px] font-bold text-gray-400">
-                        <span>Progress Setoran Kelas</span>
+                        <span>{isGrade1 ? 'Aktivitas Setoran Opsional' : 'Progress Setoran Kelas'}</span>
                         <span className="font-extrabold text-gray-700">[{ '█'.repeat(Math.round(classPct / 10)) }{ '░'.repeat(10 - Math.round(classPct / 10)) }] {classPct}%</span>
                       </div>
                     </div>
@@ -1211,6 +1272,13 @@ export const MonitoringSetoranSabak: React.FC = () => {
                   {/* Class Accordion Body (Halaqah List) */}
                   {isClassExpanded && (
                     <div className="p-5 sm:p-6 bg-gray-50/40 border-t border-gray-100 space-y-4">
+                      {isGrade1 && (
+                        <div className="bg-sky-50 border border-sky-200 rounded-2xl p-3.5 text-xs text-sky-950 font-medium flex items-center gap-2.5 shadow-2xs">
+                          <span className="px-2.5 py-1 rounded-lg bg-sky-700 text-white font-bold text-[10px] uppercase shrink-0">Tahap Pra-Sabaq</span>
+                          <span>Ananda Kelas 1 berfokus pada kelancaran Iqra & Tilawah. Belum ada target wajib Setoran Sabaq Pekanan. Pencatatan Sabaq di bawah bersifat opsional/pengayaan.</span>
+                        </div>
+                      )}
+
                       <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
                         Daftar Halaqah dalam {classGroup.className}:
                       </p>
@@ -1226,9 +1294,11 @@ export const MonitoringSetoranSabak: React.FC = () => {
                         const halAvgSetoran = halaqah.students.length > 0 ? (halTotalSetorans / halaqah.students.length) : 0;
                         const halIntensityPct = halaqah.students.length > 0 ? Math.min(100, Math.round((halTotalSetorans / (halaqah.students.length * 5)) * 100)) : 0;
 
-                        let halBarColor = "bg-rose-500";
-                        if (halPct >= 80) halBarColor = "bg-emerald-500";
-                        else if (halPct >= 50) halBarColor = "bg-amber-500";
+                        let halBarColor = isGrade1 ? "bg-sky-500" : "bg-rose-500";
+                        if (!isGrade1) {
+                          if (halPct >= 80) halBarColor = "bg-emerald-500";
+                          else if (halPct >= 50) halBarColor = "bg-amber-500";
+                        }
 
                         return (
                           <div 
@@ -1239,13 +1309,13 @@ export const MonitoringSetoranSabak: React.FC = () => {
                             <div className="p-4 sm:p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-gray-50">
                               <div className="space-y-1 flex-1">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-emerald-600 font-bold">▶</span>
+                                  <span className={isGrade1 ? "text-sky-600 font-bold" : "text-emerald-600 font-bold"}>▶</span>
                                   <h4 className="text-sm font-black text-gray-800">
                                     Halaqah {halaqah.teacherName}
                                   </h4>
                                 </div>
                                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold text-gray-600 pl-5">
-                                  <span>Partisipasi: {halaqah.alreadyDepositedCount}/{halaqah.students.length} siswa ({halPct}%)</span>
+                                  <span>{isGrade1 ? 'Partisipasi (Opsional):' : 'Partisipasi:'} {halaqah.alreadyDepositedCount}/{halaqah.students.length} siswa ({halPct}%)</span>
                                   <span className="text-emerald-800 bg-emerald-50/90 px-2 py-0.5 rounded border border-emerald-100 font-extrabold text-[11px]">
                                     ⚡ Intensitas: {halAvgSetoran.toFixed(1)}x / 5 hari KBM ({halIntensityPct}%)
                                   </span>
@@ -1315,14 +1385,20 @@ export const MonitoringSetoranSabak: React.FC = () => {
                                                     {isDepositedThisWeek ? (
                                                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" title="Sudah setor minggu ini" />
                                                     ) : (
-                                                      <span className="w-2.5 h-2.5 rounded-full bg-rose-400 shrink-0" title="Belum setor minggu ini" />
+                                                      <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${isGrade1 ? 'bg-sky-400' : 'bg-rose-400'}`} title={isGrade1 ? 'Tahap Pra-Sabaq' : 'Belum setor minggu ini'} />
                                                     )}
                                                     <span className="font-bold text-gray-900 uppercase">{student.name}</span>
                                                     
                                                     {!isDepositedThisWeek && (
-                                                      <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 border border-rose-100">
-                                                        Belum Setor
-                                                      </span>
+                                                      isGrade1 ? (
+                                                        <span className="text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-sky-50 text-sky-700 border border-sky-200">
+                                                          Pra-Sabaq
+                                                        </span>
+                                                      ) : (
+                                                        <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 border border-rose-100">
+                                                          Belum Setor
+                                                        </span>
+                                                      )
                                                     )}
                                                   </div>
                                                 </td>
