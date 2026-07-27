@@ -174,16 +174,9 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
 
         let rawSabaq = '-';
 
-        // Ambil data sabaq terakhir dari kolom tahfizh.individual
+        // Ambil data sabaq terakhir hanya dari kolom tahfizh.individual (jika tidak ada maka '-')
         if (tahfizhIndiv && tahfizhIndiv !== '-' && tahfizhIndiv !== 'Belum Ada' && tahfizhIndiv.trim() !== '') {
           rawSabaq = tahfizhIndiv;
-        } else if (
-          student.currentProgress && 
-          student.currentProgress !== 'Belum Ada' && 
-          student.currentProgress !== '-' &&
-          student.currentProgress !== tilawahIndiv
-        ) {
-          rawSabaq = student.currentProgress;
         } else {
           rawSabaq = '-';
         }
