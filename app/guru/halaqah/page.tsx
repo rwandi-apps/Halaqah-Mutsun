@@ -7,6 +7,7 @@ import {
   subscribeToAllSetoranSabak 
 } from '../../../services/firestoreService';
 import { QURAN_MAPPING } from '../../../services/quranMapping';
+import { QURAN_FULL_MAP } from '../../../services/tahfizh/quranFullData';
 import { extractClassLevel } from '../../../services/sdqTargets';
 import { Button } from '../../../components/Button';
 import { 
@@ -121,21 +122,55 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
     return trimmed;
   };
 
-  // Helper: Tentukan Juz berdasarkan string
+  // Helper: Tentukan Juz berdasarkan string (misal: "Al-Jinn: 3" -> "Juz 29")
   const getJuzFromString = (str: string) => {
-    if (!str || str === '-' || str === '') return '-';
-    const match = str.match(/^(.*?)[:\d]/);
-    const surahName = match ? match[1].trim() : str.trim();
-    const cleanName = surahName.toLowerCase().replace(/['`’]/g, "'");
-    const entry = QURAN_MAPPING.find(q => q.surah.toLowerCase().replace(/['`’]/g, "'") === cleanName);
-    if (!entry) return str;
-    const p = entry.page;
-    if (p >= 582) return "Juz 30";
-    if (p >= 562) return "Juz 29";
-    if (p >= 542) return "Juz 28";
-    if (p >= 522) return "Juz 27";
-    if (p >= 502) return "Juz 26";
-    return `Juz ${Math.ceil(p / 20)}`;
+    if (!str || str === '-' || str === 'Belum Ada' || str.trim() === '') return '-';
+    const clean = str.trim();
+
+    // Jika sudah format Juz X (misal "Juz 29" atau "Juz 29: 15")
+    const juzMatch = clean.match(/^Juz\s*(\d+)/i);
+    if (juzMatch) {
+      return `Juz ${juzMatch[1]}`;
+    }
+
+    // Jika Iqra
+    if (clean.toLowerCase().startsWith('iqra')) {
+      return clean;
+    }
+
+    // Ambil nama surat dan ayat (misal "Al-Jinn: 3", "Al-Jinn", "Al-Jinn 3")
+    let surahName = clean;
+    let ayahNum = 1;
+
+    const colonMatch = clean.match(/^(.+?)\s*[:\-–]\s*(\d+)/i);
+    if (colonMatch) {
+      surahName = colonMatch[1].trim();
+      ayahNum = parseInt(colonMatch[2].trim(), 10) || 1;
+    } else {
+      const spaceMatch = clean.match(/^(.+?)\s+(\d+)$/i);
+      if (spaceMatch && !spaceMatch[1].toLowerCase().startsWith('juz')) {
+        surahName = spaceMatch[1].trim();
+        ayahNum = parseInt(spaceMatch[2].trim(), 10) || 1;
+      }
+    }
+
+    const cleanSurah = surahName.toLowerCase().replace(/['`’‘]/g, "'").trim();
+    const entry = QURAN_MAPPING.find(q => q.surah.toLowerCase().replace(/['`’‘]/g, "'").trim() === cleanSurah);
+    if (!entry) return clean;
+
+    let page = entry.page;
+    const key = `${entry.surah}:${ayahNum}`;
+    if (QURAN_FULL_MAP && QURAN_FULL_MAP[key]) {
+      if (QURAN_FULL_MAP[key].juz) {
+        return `Juz ${QURAN_FULL_MAP[key].juz}`;
+      }
+      page = QURAN_FULL_MAP[key].page;
+    }
+
+    if (page <= 21) return "Juz 1";
+    if (page >= 582) return "Juz 30";
+    const juzNum = 2 + Math.floor((page - 22) / 20);
+    return `Juz ${Math.min(30, Math.max(1, juzNum))}`;
   };
 
   const loadData = async () => {
@@ -186,7 +221,7 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
 
         const currentJuzDisplay = (sabaqDisplay !== '-') 
           ? getJuzFromString(sabaqDisplay)
-          : ((student.currentProgress && student.currentProgress !== tilawahIndiv && student.currentProgress !== 'Belum Ada') ? student.currentProgress : "-");
+          : ((student.currentProgress && student.currentProgress !== tilawahIndiv && student.currentProgress !== 'Belum Ada') ? getJuzFromString(student.currentProgress) : "-");
 
         return {
           ...student,
