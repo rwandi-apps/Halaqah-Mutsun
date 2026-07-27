@@ -99,7 +99,9 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
   }, [isOpen, student.id]);
   const [ayatDari, setAyatDari] = useState<number>(1);
   const [ayatSampai, setAyatSampai] = useState<number>(1);
-  const [status, setStatus] = useState<'Tuntas' | 'Belum Tuntas'>('Tuntas');
+  const [jumlahBaris, setJumlahBaris] = useState<number>(10);
+  const [hariSetor, setHariSetor] = useState<string[]>(['Sen']);
+  const [targetBaris, setTargetBaris] = useState<number>(student.targetBaris || 10);
   const [catatan, setCatatan] = useState<string>('');
 
   // Delete confirmation states
@@ -201,6 +203,9 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
     setIsSubmitting(true);
     try {
       const guruNama = currentUser.nickname || currentUser.name || "Guru";
+      const isTargetAchieved = jumlahBaris >= targetBaris;
+      const status: 'Tuntas' | 'Belum Tuntas' = isTargetAchieved ? 'Tuntas' : 'Belum Tuntas';
+
       const payload = {
         tanggal,
         guruId: currentUser.id,
@@ -212,6 +217,9 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
         surah: selectedSurah,
         ayatDari: dari,
         ayatSampai: sampai,
+        jumlahBaris: Number(jumlahBaris) || 0,
+        hariSetor,
+        targetBaris,
         status,
         catatan: catatan.trim()
       };

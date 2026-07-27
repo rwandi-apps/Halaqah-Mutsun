@@ -39,6 +39,7 @@ export interface Student {
   behaviorScore: number;
   progress: number;
   status?: 'Aktif' | 'Mutasi/Keluar' | 'Alumni/Lulus';
+  targetBaris?: number;
 }
 
 // Collection: halaqah_teacher_history
@@ -180,6 +181,9 @@ export interface SetoranSabak {
   surah: string;
   ayatDari: number;
   ayatSampai: number;
+  jumlahBaris?: number;
+  hariSetor?: string[];
+  targetBaris?: number;
   status: 'Tuntas' | 'Belum Tuntas';
   catatan?: string;
   createdAt?: any;
