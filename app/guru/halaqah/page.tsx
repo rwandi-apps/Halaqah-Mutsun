@@ -221,7 +221,7 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
 
         const currentJuzDisplay = (sabaqDisplay !== '-') 
           ? getJuzFromString(sabaqDisplay)
-          : ((student.currentProgress && student.currentProgress !== tilawahIndiv && student.currentProgress !== 'Belum Ada') ? getJuzFromString(student.currentProgress) : "-");
+          : '-';
 
         return {
           ...student,
