@@ -166,18 +166,6 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
     }
   }, [existingSetoranThisWeek, latestSetoranFromPrevWeek, student.id, student.sabaqDisplay]);
 
-  // Recalculate estimated lines when Surah, Ayat Dari, or Ayat Sampai change
-  const handleAyatChange = (newDari: number, newSampai: number, currentSurah = surah) => {
-    setAyatDari(newDari);
-    setAyatSampai(newSampai);
-    const calculated = calculateHafalan(currentSurah, newDari, currentSurah, newSampai).totalLines;
-    if (calculated > 0) {
-      setJumlahBaris(calculated);
-    } else if (newSampai >= newDari) {
-      setJumlahBaris(newSampai - newDari + 1);
-    }
-  };
-
   const handleSurahSelect = (newSurah: string) => {
     setSurah(newSurah);
     const q = QURAN_MAPPING.find(m => m.surah.toLowerCase() === newSurah.toLowerCase());
@@ -387,10 +375,12 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
                 type="number" 
                 min="1" 
                 max={maxAyah}
-                value={ayatDari}
+                value={ayatDari === 0 ? '' : ayatDari}
                 onChange={(e) => {
-                  const val = parseInt(e.target.value, 10) || 1;
-                  handleAyatChange(val, Math.max(val, ayatSampai));
+                  const val = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
+                  if (!isNaN(val)) {
+                    setAyatDari(val);
+                  }
                 }}
                 className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none text-center shadow-2xs"
               />
@@ -399,12 +389,14 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
               <span className="text-[11px] font-semibold text-gray-600 block mb-1">Sampai</span>
               <input 
                 type="number" 
-                min={ayatDari} 
+                min="1" 
                 max={maxAyah}
-                value={ayatSampai}
+                value={ayatSampai === 0 ? '' : ayatSampai}
                 onChange={(e) => {
-                  const val = parseInt(e.target.value, 10) || ayatDari;
-                  handleAyatChange(ayatDari, val);
+                  const val = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
+                  if (!isNaN(val)) {
+                    setAyatSampai(val);
+                  }
                 }}
                 className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none text-center shadow-2xs"
               />
@@ -425,8 +417,13 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
                 type="number" 
                 min="0" 
                 max="500"
-                value={jumlahBaris}
-                onChange={(e) => setJumlahBaris(parseInt(e.target.value, 10) || 0)}
+                value={jumlahBaris === 0 ? '' : jumlahBaris}
+                onChange={(e) => {
+                  const val = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
+                  if (!isNaN(val)) {
+                    setJumlahBaris(val);
+                  }
+                }}
                 className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-base font-black text-emerald-900 focus:ring-2 focus:ring-emerald-500 outline-none shadow-2xs pr-16"
               />
               <span className="absolute right-3 text-xs font-bold text-gray-400 pointer-events-none">
