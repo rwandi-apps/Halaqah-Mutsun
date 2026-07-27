@@ -13,7 +13,6 @@ import {
   Search, 
   BookOpen, 
   Calendar, 
-  Sparkles, 
   CheckCircle2, 
   Target, 
   UserCheck, 
@@ -306,7 +305,7 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
             onClick={() => setActiveTab('input')}
             className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all hover:shadow self-start sm:self-auto"
           >
-            <Sparkles size={16} />
+            <BookOpen size={16} />
             Input Setoran Sabaq
           </button>
         </div>
@@ -497,34 +496,23 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
                    </span>
                 </div>
 
-                <div className="pt-2 space-y-2">
-                   <button 
-                     type="button"
-                     className="w-full text-xs font-bold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 shadow-xs transition-colors"
-                     onClick={() => {
-                       setActiveTab('input');
-                       setActiveCardIndex(idx);
-                       setTimeout(() => {
-                         const cardElem = document.getElementById(`student-sabaq-card-${idx}`);
-                         if (cardElem) {
-                           cardElem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                         }
-                       }, 100);
-                     }}
-                   >
-                     <Sparkles size={14} />
-                     Input Setoran Sabaq
-                   </button>
-                   
+                <div className="flex justify-between items-center">
+                   <span className="text-gray-500 font-medium">Tilawah Terakhir</span>
+                   <span className="text-gray-900 font-bold text-right truncate max-w-[160px]" title={student.tilawahDisplay}>
+                     {student.tilawahDisplay || '-'}
+                   </span>
+                </div>
+
+                <div className="pt-2">
                    <Button 
                      variant="outline" 
-                     className="w-full text-xs font-medium text-gray-700 hover:bg-gray-50 py-1.5 h-auto flex items-center justify-center gap-1.5 rounded-xl border-gray-200"
+                     className="w-full text-xs font-bold border-emerald-600 text-emerald-700 hover:bg-emerald-50 py-2 h-auto flex items-center justify-center gap-1.5 rounded-xl"
                      onClick={() => {
                        setSelectedStudent(student);
                        setIsModalOpen(true);
                      }}
                    >
-                     <BookOpen size={13} className="text-gray-500" />
+                     <BookOpen size={14} />
                      Detail & Riwayat Setoran
                    </Button>
                 </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
-import { Check, Edit3, Save, ArrowDown, Target, Sparkles, BookOpen, Clock, Calendar } from 'lucide-react';
+import { Check, Edit3, Save, ArrowDown, Target, BookOpen, Clock, Calendar } from 'lucide-react';
 import { Student, SetoranSabak, User } from '../types';
 import { QURAN_MAPPING, calculateHafalan } from '../services/quranMapping';
 import { addSetoranSabak, updateSetoranSabak, updateStudent } from '../services/firestoreService';
