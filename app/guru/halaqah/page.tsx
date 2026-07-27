@@ -169,46 +169,23 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
            hafalanDisplay = parts.length > 0 ? parts.join(' ') : "0 Juz";
         }
 
-        const classLvl = extractClassLevel(student.className);
         const tahfizhIndiv = latest?.tahfizh?.individual;
         const tilawahIndiv = latest?.tilawah?.individual;
 
         let rawSabaq = '-';
 
-        if (classLvl === 1) {
-          rawSabaq = (student.currentProgress && student.currentProgress !== 'Belum Ada' && student.currentProgress !== '-')
-            ? student.currentProgress
-            : (tahfizhIndiv || tilawahIndiv || '-');
-        } else if (classLvl === 2) {
-          if (tahfizhIndiv && tahfizhIndiv !== '-' && tahfizhIndiv !== 'Belum Ada' && tahfizhIndiv.trim() !== '') {
-            rawSabaq = tahfizhIndiv;
-          } else if (
-            student.currentProgress && 
-            student.currentProgress !== 'Belum Ada' && 
-            student.currentProgress !== '-' &&
-            student.currentProgress !== tilawahIndiv &&
-            !student.currentProgress.toLowerCase().startsWith('iqra') &&
-            !student.currentProgress.toLowerCase().startsWith('juz') &&
-            !student.currentProgress.toLowerCase().startsWith('tilawah') &&
-            student.currentProgress.includes(':')
-          ) {
-            rawSabaq = student.currentProgress;
-          } else {
-            rawSabaq = '-';
-          }
+        // Ambil data sabaq terakhir dari kolom tahfizh.individual
+        if (tahfizhIndiv && tahfizhIndiv !== '-' && tahfizhIndiv !== 'Belum Ada' && tahfizhIndiv.trim() !== '') {
+          rawSabaq = tahfizhIndiv;
+        } else if (
+          student.currentProgress && 
+          student.currentProgress !== 'Belum Ada' && 
+          student.currentProgress !== '-' &&
+          student.currentProgress !== tilawahIndiv
+        ) {
+          rawSabaq = student.currentProgress;
         } else {
-          if (tahfizhIndiv && tahfizhIndiv !== '-' && tahfizhIndiv !== 'Belum Ada' && tahfizhIndiv.trim() !== '') {
-            rawSabaq = tahfizhIndiv;
-          } else if (
-            student.currentProgress && 
-            student.currentProgress !== 'Belum Ada' && 
-            student.currentProgress !== '-' &&
-            student.currentProgress !== tilawahIndiv
-          ) {
-            rawSabaq = student.currentProgress;
-          } else {
-            rawSabaq = '-';
-          }
+          rawSabaq = '-';
         }
 
         let sabaqDisplay = formatSabaqTerakhir(rawSabaq);
