@@ -36,6 +36,86 @@ interface StudentWithStats extends Student {
   currentJuzDisplay?: string;
 }
 
+// Helper to generate weeks for a given date's month
+interface WeekOption {
+  id: string;
+  label: string;
+  shortLabel: string;
+  startDate: Date;
+  endDate: Date;
+  defaultDate: string;
+}
+
+const getMonthWeeksOptions = (baseDateStr: string): WeekOption[] => {
+  const baseDate = new Date(baseDateStr || new Date());
+  const year = baseDate.getFullYear();
+  const month = baseDate.getMonth(); // 0-indexed
+  
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+  const monthName = monthNames[month];
+
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+
+  const weeks: WeekOption[] = [];
+  let currentStart = new Date(firstDay);
+  let weekNum = 1;
+
+  while (currentStart <= lastDay) {
+    let currentEnd = new Date(currentStart);
+    const dayOfWeek = currentEnd.getDay(); // 0 = Sun, 1 = Mon ...
+    const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
+    currentEnd.setDate(currentEnd.getDate() + daysUntilSunday);
+    
+    if (currentEnd > lastDay) {
+      currentEnd = new Date(lastDay);
+    }
+
+    const startFormatted = `${currentStart.getDate()} ${monthName}`;
+    const endFormatted = `${currentEnd.getDate()} ${monthName} ${year}`;
+    
+    // Pick default date for this week (e.g. Friday if available, else start/end date)
+    const defaultDateInWeek = new Date(currentStart);
+    const startDay = currentStart.getDay();
+    if (startDay <= 5) {
+      defaultDateInWeek.setDate(currentStart.getDate() + (5 - startDay));
+    }
+    if (defaultDateInWeek > currentEnd) {
+      defaultDateInWeek.setTime(currentEnd.getTime());
+    }
+
+    const isoDateStr = `${defaultDateInWeek.getFullYear()}-${String(defaultDateInWeek.getMonth() + 1).padStart(2, '0')}-${String(defaultDateInWeek.getDate()).padStart(2, '0')}`;
+
+    weeks.push({
+      id: `${year}-${month + 1}-W${weekNum}`,
+      label: `Pekan ${weekNum} (${startFormatted} - ${endFormatted})`,
+      shortLabel: `Pekan ${weekNum}`,
+      startDate: new Date(currentStart.getFullYear(), currentStart.getMonth(), currentStart.getDate(), 0, 0, 0),
+      endDate: new Date(currentEnd.getFullYear(), currentEnd.getMonth(), currentEnd.getDate(), 23, 59, 59),
+      defaultDate: isoDateStr
+    });
+
+    const nextStart = new Date(currentEnd);
+    nextStart.setDate(nextStart.getDate() + 1);
+    currentStart = nextStart;
+    weekNum++;
+  }
+
+  return weeks;
+};
+
+const isDateInWeek = (dateStr: string, startDate: Date, endDate: Date): boolean => {
+  if (!dateStr) return false;
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return false;
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1;
+  const day = parseInt(parts[2], 10);
+  const d = new Date(year, month, day, 12, 0, 0);
+  const t = d.getTime();
+  return t >= startDate.getTime() && t <= endDate.getTime();
+};
+
 export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProps) {
   const navigate = useNavigate();
   const [students, setStudents] = useState<StudentWithStats[]>([]);
@@ -257,6 +337,10 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
     setFilteredStudents(filtered);
   }, [search, students]);
 
+  // Pekan options calculated from current selected date
+  const monthWeeks = React.useMemo(() => getMonthWeeksOptions(tanggal), [tanggal.slice(0, 7)]);
+  const currentWeek = monthWeeks.find(w => isDateInWeek(tanggal, w.startDate, w.endDate)) || monthWeeks[monthWeeks.length - 1] || monthWeeks[0];
+
   // Handle "Simpan & Berikutnya" transition
   const handleNextCard = (currentIndex: number) => {
     const nextIdx = currentIndex + 1;
@@ -269,14 +353,27 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
     }
   };
 
-  // Helper to find existing setoran for student on current date
+  // Helper to find existing setoran for student on current week/date
   const getExistingSetoranThisWeek = (studentId: string): SetoranSabak | null => {
+    if (currentWeek) {
+      const match = allSetoranHistory.find(s => 
+        s.siswaId === studentId && 
+        isDateInWeek(s.tanggal, currentWeek.startDate, currentWeek.endDate)
+      );
+      if (match) return match;
+    }
     return allSetoranHistory.find(s => s.siswaId === studentId && s.tanggal === tanggal) || null;
   };
 
   // Helper to find latest setoran from previous week
   const getLatestSetoranFromPrevWeek = (studentId: string): SetoranSabak | null => {
-    const prevs = allSetoranHistory.filter(s => s.siswaId === studentId && s.tanggal !== tanggal);
+    const prevs = allSetoranHistory.filter(s => {
+      if (s.siswaId !== studentId) return false;
+      if (currentWeek) {
+        return !isDateInWeek(s.tanggal, currentWeek.startDate, currentWeek.endDate);
+      }
+      return s.tanggal !== tanggal;
+    });
     return prevs.length > 0 ? prevs[0] : null;
   };
 
@@ -356,16 +453,38 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
         <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-4">
           <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
             
-            {/* Tanggal Setoran Picker */}
-            <div className="flex items-center gap-2">
-              <Calendar size={18} className="text-emerald-600 shrink-0" />
-              <label className="text-xs font-bold text-gray-700 whitespace-nowrap">Tanggal Setoran:</label>
-              <input 
-                type="date"
-                value={tanggal}
-                onChange={(e) => setTanggal(e.target.value)}
-                className="bg-gray-50 border border-gray-300 rounded-xl px-3 py-1.5 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none"
-              />
+            {/* Pekan Setoran & Tanggal Picker */}
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Calendar size={18} className="text-emerald-600 shrink-0" />
+                <label className="text-xs font-bold text-gray-700 whitespace-nowrap">Pekan Setoran:</label>
+                <select
+                  value={currentWeek?.id || ''}
+                  onChange={(e) => {
+                    const selectedW = monthWeeks.find(w => w.id === e.target.value);
+                    if (selectedW) {
+                      setTanggal(selectedW.defaultDate);
+                    }
+                  }}
+                  className="bg-gray-50 border border-gray-300 rounded-xl px-3 py-1.5 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none cursor-pointer"
+                >
+                  {monthWeeks.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                <span className="font-medium">Tanggal:</span>
+                <input 
+                  type="date"
+                  value={tanggal}
+                  onChange={(e) => setTanggal(e.target.value)}
+                  className="bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1 text-xs font-bold text-gray-800 focus:ring-1 focus:ring-emerald-500 outline-none"
+                />
+              </div>
             </div>
 
             {/* Search Box */}
