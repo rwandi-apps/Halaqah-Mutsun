@@ -43,8 +43,8 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
-  // Tab State: 'input' = Input Setoran Sabaq Pekanan, 'list' = Daftar Siswa & Detail
-  const [activeTab, setActiveTab] = useState<'input' | 'list'>('input');
+  // Tab State: 'list' = Default Daftar Siswa & Progress, 'input' = Input Setoran Sabaq Pekanan
+  const [activeTab, setActiveTab] = useState<'list' | 'input'>('list');
 
   // Input Setoran Pekanan controls
   const [tanggal, setTanggal] = useState<string>(() => new Date().toISOString().split('T')[0]);
@@ -288,45 +288,64 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
     <div className="space-y-6 max-w-5xl mx-auto pb-16 animate-in fade-in duration-200">
       
       {/* HEADER SECTION */}
-      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="p-2 bg-emerald-100 text-emerald-800 rounded-xl font-bold">
-              <BookOpen size={20} />
-            </span>
-            <h2 className="text-2xl font-black text-gray-900 tracking-tight">Input Setoran Sabaq</h2>
+      {activeTab === 'list' ? (
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="p-2 bg-emerald-100 text-emerald-800 rounded-xl font-bold">
+                <Users size={20} />
+              </span>
+              <h2 className="text-2xl font-black text-gray-900 tracking-tight">Halaqah Saya</h2>
+            </div>
+            <p className="text-gray-500 text-xs md:text-sm mt-1 font-medium">
+              Pantau progress hafalan dan sabaq siswa halaqah secara real-time.
+            </p>
           </div>
-          <p className="text-gray-500 text-xs md:text-sm mt-1 font-medium">
-            Catat setoran sabaq mingguan seluruh siswa halaqah dengan cepat dan akurat.
-          </p>
-        </div>
 
-        {/* TAB TOGGLE */}
-        <div className="flex items-center bg-gray-100 p-1 rounded-xl border border-gray-200 self-start md:self-auto">
           <button
             onClick={() => setActiveTab('input')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-              activeTab === 'input' 
-                ? 'bg-emerald-600 text-white shadow-xs' 
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
+            className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all hover:shadow self-start sm:self-auto"
           >
-            <Sparkles size={14} />
-            Input Pekanan
-          </button>
-          <button
-            onClick={() => setActiveTab('list')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-              activeTab === 'list' 
-                ? 'bg-emerald-600 text-white shadow-xs' 
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <Users size={14} />
-            Daftar Siswa
+            <Sparkles size={16} />
+            Input Setoran Sabaq
           </button>
         </div>
-      </div>
+      ) : (
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
+          <div>
+            <button
+              onClick={() => setActiveTab('list')}
+              className="text-xs font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-1 mb-2 transition-colors"
+            >
+              ← Kembali ke Progress Halaqah
+            </button>
+            <div className="flex items-center gap-2">
+              <span className="p-2 bg-emerald-100 text-emerald-800 rounded-xl font-bold">
+                <BookOpen size={20} />
+              </span>
+              <h2 className="text-2xl font-black text-gray-900 tracking-tight">Input Setoran Sabaq Pekanan</h2>
+            </div>
+            <p className="text-gray-500 text-xs md:text-sm mt-1 font-medium">
+              Catat setoran sabaq mingguan seluruh siswa halaqah dengan cepat dan akurat.
+            </p>
+          </div>
+
+          <div className="flex items-center bg-gray-100 p-1 rounded-xl border border-gray-200 self-start sm:self-auto">
+            <button
+              onClick={() => setActiveTab('list')}
+              className="px-3.5 py-1.5 rounded-lg text-xs font-bold text-gray-600 hover:text-gray-900 transition-all"
+            >
+              Daftar Progress
+            </button>
+            <button
+              onClick={() => setActiveTab('input')}
+              className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-xs transition-all"
+            >
+              Form Setoran
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* FILTER & STATS BAR (FOR INPUT PEKANAN TAB) */}
       {activeTab === 'input' && (
@@ -431,7 +450,7 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
 
         /* TAB 2: DAFTAR & DETAIL SISWA (OVERVIEW GRID) */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredStudents.map((student) => (
+          {filteredStudents.map((student, idx) => (
             <div key={student.id} className="bg-white rounded-2xl shadow-xs border border-gray-200 p-6 hover:shadow-md transition-all border-t-4 border-t-emerald-600">
               <div className="flex justify-between items-start mb-5">
                 <div className="flex gap-3 w-full overflow-hidden">
@@ -478,16 +497,34 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
                    </span>
                 </div>
 
-                <div className="pt-2">
+                <div className="pt-2 space-y-2">
+                   <button 
+                     type="button"
+                     className="w-full text-xs font-bold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 shadow-xs transition-colors"
+                     onClick={() => {
+                       setActiveTab('input');
+                       setActiveCardIndex(idx);
+                       setTimeout(() => {
+                         const cardElem = document.getElementById(`student-sabaq-card-${idx}`);
+                         if (cardElem) {
+                           cardElem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                         }
+                       }, 100);
+                     }}
+                   >
+                     <Sparkles size={14} />
+                     Input Setoran Sabaq
+                   </button>
+                   
                    <Button 
                      variant="outline" 
-                     className="w-full text-xs font-bold border-emerald-600 text-emerald-700 hover:bg-emerald-50 py-2 h-auto flex items-center justify-center gap-1.5 rounded-xl"
+                     className="w-full text-xs font-medium text-gray-700 hover:bg-gray-50 py-1.5 h-auto flex items-center justify-center gap-1.5 rounded-xl border-gray-200"
                      onClick={() => {
                        setSelectedStudent(student);
                        setIsModalOpen(true);
                      }}
                    >
-                     <BookOpen size={14} />
+                     <BookOpen size={13} className="text-gray-500" />
                      Detail & Riwayat Setoran
                    </Button>
                 </div>
