@@ -47,7 +47,7 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
   const [ayatDari, setAyatDari] = useState<number>(1);
   const [ayatSampai, setAyatSampai] = useState<number>(1);
   const [jumlahBaris, setJumlahBaris] = useState<number>(10);
-  const [selectedHari, setSelectedHari] = useState<string[]>(['Sen']);
+  const [selectedHari, setSelectedHari] = useState<string[]>([]);
   const [catatan, setCatatan] = useState<string>('');
 
   // UI state
@@ -81,7 +81,7 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
         const lines = calculateHafalan(existingSetoranThisWeek.surah, existingSetoranThisWeek.ayatDari, existingSetoranThisWeek.surah, existingSetoranThisWeek.ayatSampai).totalLines;
         setJumlahBaris(lines > 0 ? lines : (existingSetoranThisWeek.ayatSampai - existingSetoranThisWeek.ayatDari + 1));
       }
-      setSelectedHari(existingSetoranThisWeek.hariSetor || ['Sen']);
+      setSelectedHari(existingSetoranThisWeek.hariSetor || []);
       setCatatan(existingSetoranThisWeek.catatan || '');
       if (existingSetoranThisWeek.targetBaris) {
         setTargetBaris(existingSetoranThisWeek.targetBaris);
@@ -118,7 +118,7 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
       
       const calc = calculateHafalan(nextSurah, nextStartAyat, nextSurah, defaultEndAyat).totalLines;
       setJumlahBaris(calc > 0 ? calc : (defaultEndAyat - nextStartAyat + 1));
-      setSelectedHari(['Sen']);
+      setSelectedHari([]);
       setCatatan('');
       setIsSaved(false);
       setSavedDocId(null);
@@ -149,7 +149,7 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
         setAyatSampai(7);
         setJumlahBaris(7);
       }
-      setSelectedHari(['Sen']);
+      setSelectedHari([]);
       setCatatan('');
       setIsSaved(false);
       setSavedDocId(null);
@@ -159,7 +159,7 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
       setAyatDari(1);
       setAyatSampai(7);
       setJumlahBaris(7);
-      setSelectedHari(['Sen']);
+      setSelectedHari([]);
       setCatatan('');
       setIsSaved(false);
       setSavedDocId(null);
@@ -193,7 +193,6 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
   // Toggle day selection
   const toggleHari = (day: string) => {
     if (selectedHari.includes(day)) {
-      if (selectedHari.length === 1) return; // keep at least 1 day
       setSelectedHari(selectedHari.filter(d => d !== day));
     } else {
       setSelectedHari([...selectedHari, day]);
