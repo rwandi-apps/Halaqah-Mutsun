@@ -182,19 +182,19 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
         {/* TOTAL SISWA */}
         <div 
           style={{ background: 'linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%)' }}
-          className="relative p-6 rounded-[20px] shadow-[0_8px_24px_rgba(15,23,42,0.08)] hover:shadow-[0_16px_32px_rgba(15,23,42,0.12)] hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer overflow-hidden border-0 text-white group flex flex-col justify-between min-h-[135px]"
+          className="relative p-4 sm:p-5 rounded-[20px] shadow-[0_8px_24px_rgba(15,23,42,0.08)] hover:shadow-[0_16px_32px_rgba(15,23,42,0.12)] hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer overflow-hidden border-0 text-white group flex flex-col justify-between min-h-[108px]"
         >
           <div className="flex justify-between items-start">
             <p className="text-xs font-semibold uppercase tracking-[1px] text-white/90">
               TOTAL SISWA
             </p>
-            <Users size={32} className="text-white/20 transition-transform duration-300 group-hover:scale-110 shrink-0" />
+            <Users size={28} className="text-white/20 transition-transform duration-300 group-hover:scale-110 shrink-0" />
           </div>
-          <div className="mt-4">
+          <div className="mt-2.5">
             <p className="text-4xl sm:text-[44px] lg:text-[48px] font-extrabold text-white leading-none">
               {metrics.total}
             </p>
@@ -204,15 +204,15 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
         {/* TERCAPAI */}
         <div 
           style={{ background: 'linear-gradient(135deg, #5EEAD4 0%, #2DD4BF 100%)' }}
-          className="relative p-6 rounded-[20px] shadow-[0_8px_24px_rgba(15,23,42,0.08)] hover:shadow-[0_16px_32px_rgba(15,23,42,0.12)] hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer overflow-hidden border-0 text-white group flex flex-col justify-between min-h-[135px]"
+          className="relative p-4 sm:p-5 rounded-[20px] shadow-[0_8px_24px_rgba(15,23,42,0.08)] hover:shadow-[0_16px_32px_rgba(15,23,42,0.12)] hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer overflow-hidden border-0 text-white group flex flex-col justify-between min-h-[108px]"
         >
           <div className="flex justify-between items-start">
             <p className="text-xs font-semibold uppercase tracking-[1px] text-white/90">
               TERCAPAI
             </p>
-            <CheckCircle2 size={32} className="text-white/20 transition-transform duration-300 group-hover:scale-110 shrink-0" />
+            <CheckCircle2 size={28} className="text-white/20 transition-transform duration-300 group-hover:scale-110 shrink-0" />
           </div>
-          <div className="mt-4">
+          <div className="mt-2.5">
             <p className="text-4xl sm:text-[44px] lg:text-[48px] font-extrabold text-white leading-none">
               {metrics.completed}
             </p>
@@ -222,15 +222,15 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
         {/* ON TRACK */}
         <div 
           style={{ background: 'linear-gradient(135deg, #FCD34D 0%, #F59E0B 100%)' }}
-          className="relative p-6 rounded-[20px] shadow-[0_8px_24px_rgba(15,23,42,0.08)] hover:shadow-[0_16px_32px_rgba(15,23,42,0.12)] hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer overflow-hidden border-0 text-white group flex flex-col justify-between min-h-[135px]"
+          className="relative p-4 sm:p-5 rounded-[20px] shadow-[0_8px_24px_rgba(15,23,42,0.08)] hover:shadow-[0_16px_32px_rgba(15,23,42,0.12)] hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer overflow-hidden border-0 text-white group flex flex-col justify-between min-h-[108px]"
         >
           <div className="flex justify-between items-start">
             <p className="text-xs font-semibold uppercase tracking-[1px] text-white/90">
               ON TRACK
             </p>
-            <TrendingUp size={32} className="text-white/20 transition-transform duration-300 group-hover:scale-110 shrink-0" />
+            <TrendingUp size={28} className="text-white/20 transition-transform duration-300 group-hover:scale-110 shrink-0" />
           </div>
-          <div className="mt-4">
+          <div className="mt-2.5">
             <p className="text-4xl sm:text-[44px] lg:text-[48px] font-extrabold text-white leading-none">
               {metrics.onTrack}
             </p>
@@ -240,15 +240,15 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
         {/* PERHATIAN */}
         <div 
           style={{ background: 'linear-gradient(135deg, #FB7185 0%, #F43F5E 100%)' }}
-          className="relative p-6 rounded-[20px] shadow-[0_8px_24px_rgba(15,23,42,0.08)] hover:shadow-[0_16px_32px_rgba(15,23,42,0.12)] hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer overflow-hidden border-0 text-white group flex flex-col justify-between min-h-[135px]"
+          className="relative p-4 sm:p-5 rounded-[20px] shadow-[0_8px_24px_rgba(15,23,42,0.08)] hover:shadow-[0_16px_32px_rgba(15,23,42,0.12)] hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer overflow-hidden border-0 text-white group flex flex-col justify-between min-h-[108px]"
         >
           <div className="flex justify-between items-start">
             <p className="text-xs font-semibold uppercase tracking-[1px] text-white/90">
               PERHATIAN
             </p>
-            <AlertTriangle size={32} className="text-white/20 transition-transform duration-300 group-hover:scale-110 shrink-0" />
+            <AlertTriangle size={28} className="text-white/20 transition-transform duration-300 group-hover:scale-110 shrink-0" />
           </div>
-          <div className="mt-4">
+          <div className="mt-2.5">
             <p className="text-4xl sm:text-[44px] lg:text-[48px] font-extrabold text-white leading-none">
               {metrics.needsAttention}
             </p>
