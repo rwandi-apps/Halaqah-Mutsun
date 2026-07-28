@@ -191,7 +191,7 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
   // Form State
   const [reportType, setReportType] = useState('Laporan Bulanan');
   const [studentId, setStudentId] = useState('');
-  const [academicYear, setAcademicYear] = useState('2025/2026');
+  const [academicYear, setAcademicYear] = useState('2026/2027');
   const [month, setMonth] = useState('Desember');
   
   const [tahfizhIndiv, setTahfizhIndiv] = useState({ fs: '', fv: '' as any, ts: '', tv: '' as any, hal: 0 as number | string, baris: 0 as number | string });
@@ -319,7 +319,7 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
       const r = state.reportData;
       setStudentId(r.studentId);
       setMonth(r.month);
-      setAcademicYear(r.academicYear || '2025/2026');
+      setAcademicYear(r.academicYear || '2026/2027');
       setReportType(r.type);
       setAttendance(r.attendance || 100);
       setBehaviorScore(r.behaviorScore || 10);
@@ -568,7 +568,7 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4 border-t border-gray-50">
             <div className="space-y-4">
               <h4 className="text-xs font-bold text-emerald-700 flex items-center gap-2"><Book size={16} /> Tahfizh Individu</h4>
-              <InputRow label="DARI" badge={formatResult(tahfizhIndiv.hal, tahfizhIndiv.baris)}>
+              <InputRow label="DARI">
                 <SourceSelect value={tahfizhIndiv.fs} onChange={(v) => updateTahfizhIndiv({ fs: v, ts: v })} method="Al-Quran" />
                 <CounterInput label="Ayat" value={tahfizhIndiv.fv} onChange={(v) => updateTahfizhIndiv({ fv: v, tv: v })} />
               </InputRow>
@@ -587,7 +587,7 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
                 <button onClick={() => updateTilawahIndiv({ method: 'Al-Quran' })} className={`flex-1 py-1 text-[9px] font-bold rounded-lg ${tilawahIndiv.method === 'Al-Quran' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'}`}>AL-QUR'AN</button>
                 <button onClick={() => updateTilawahIndiv({ method: 'Iqra' })} className={`flex-1 py-1 text-[9px] font-bold rounded-lg ${tilawahIndiv.method === 'Iqra' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'}`}>IQRA'</button>
               </div>
-              <InputRow label="DARI" badge={formatResult(tilawahIndiv.hal, tilawahIndiv.baris, tilawahIndiv.method)}>
+              <InputRow label="DARI">
                 <SourceSelect value={tilawahIndiv.fs} onChange={(v) => updateTilawahIndiv({ fs: v, ts: v })} method={tilawahIndiv.method} />
                 <CounterInput label={tilawahIndiv.method === 'Al-Quran' ? 'Ayat' : 'Hal'} value={tilawahIndiv.fv} onChange={(v) => updateTilawahIndiv({ fv: v, tv: v })} />
               </InputRow>
