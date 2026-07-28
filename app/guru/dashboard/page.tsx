@@ -186,7 +186,7 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         {/* TOTAL SISWA */}
         <div 
-          style={{ background: 'linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%)' }}
+          style={{ background: 'linear-gradient(135deg, #64748B 0%, #334155 100%)' }}
           className="relative p-4 sm:p-5 rounded-[20px] shadow-[0_8px_24px_rgba(15,23,42,0.08)] hover:shadow-[0_16px_32px_rgba(15,23,42,0.12)] hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer overflow-hidden border-0 text-white group flex flex-col justify-between min-h-[108px]"
         >
           <div className="flex justify-between items-start">
