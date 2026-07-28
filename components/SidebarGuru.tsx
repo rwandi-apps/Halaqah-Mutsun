@@ -40,7 +40,7 @@ export const SidebarGuru: React.FC<SidebarProps> = ({ onLogout, onCloseMobile })
   ];
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-30 w-64 bg-gradient-to-b from-emerald-600 via-teal-700 to-emerald-900 text-white flex flex-col h-screen overflow-hidden shadow-2xl">
+    <aside className="fixed inset-y-0 left-0 z-30 w-64 bg-gradient-to-br from-emerald-500 via-teal-600 to-emerald-700 text-white flex flex-col h-screen overflow-hidden shadow-2xl">
       {/* HEADER */}
       <div className="h-20 flex items-center justify-center px-5 shrink-0 border-b border-white/15 bg-white/10 backdrop-blur-xs">
         <div className="flex items-center gap-3">
