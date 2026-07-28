@@ -194,8 +194,8 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
   const [academicYear, setAcademicYear] = useState('2025/2026');
   const [month, setMonth] = useState('Desember');
   
-  const [tahfizhIndiv, setTahfizhIndiv] = useState({ fs: '', fv: '' as any, ts: '', tv: '' as any });
-  const [tilawahIndiv, setTilawahIndiv] = useState({ method: 'Al-Quran' as 'Al-Quran' | 'Iqra', fs: '', fv: '' as any, ts: '', tv: '' as any });
+  const [tahfizhIndiv, setTahfizhIndiv] = useState({ fs: '', fv: '' as any, ts: '', tv: '' as any, hal: 0 as number | string, baris: 0 as number | string });
+  const [tilawahIndiv, setTilawahIndiv] = useState({ method: 'Al-Quran' as 'Al-Quran' | 'Iqra', fs: '', fv: '' as any, ts: '', tv: '' as any, hal: 0 as number | string, baris: 0 as number | string });
   const [tahfizhKlas, setTahfizhKlas] = useState({ fs: '', fv: '' as any, ts: '', tv: '' as any });
   const [tilawahKlas, setTilawahKlas] = useState({ method: 'Al-Quran' as 'Al-Quran' | 'Iqra', fs: '', fv: '' as any, ts: '', tv: '' as any });
   
@@ -277,6 +277,65 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
     }
   };
 
+  const parseResultToHalBaris = (resultStr: string | undefined) => {
+    if (!resultStr || resultStr === '-') return { hal: 0, baris: 0 };
+    let hal = 0;
+    let baris = 0;
+    const halMatch = resultStr.match(/(\d+)\s*(Hal|H\b)/i);
+    if (halMatch) hal = parseInt(halMatch[1], 10) || 0;
+    const barisMatch = resultStr.match(/(\d+)\s*(Baris|B\b)/i);
+    if (barisMatch) baris = parseInt(barisMatch[1], 10) || 0;
+    return { hal, baris };
+  };
+
+  const formatResult = (hal: number | string, baris: number | string, method?: string) => {
+    const h = safeNum(hal);
+    const b = safeNum(baris);
+    if (h === 0 && b === 0) return "-";
+    if (method === 'Iqra') {
+      if (h > 0 && b > 0) return `${h} Hal ${b} Baris`;
+      if (h > 0) return `${h} Hal`;
+      if (b > 0) return `${b} Baris`;
+      return "-";
+    }
+    if (h > 0 && b > 0) return `${h} Hal ${b} Baris`;
+    if (h > 0) return `${h} Hal`;
+    if (b > 0) return `${b} Baris`;
+    return "-";
+  };
+
+  const updateTahfizhIndiv = (fields: Partial<typeof tahfizhIndiv>) => {
+    setTahfizhIndiv(prev => {
+      const next = { ...prev, ...fields };
+      if ('fs' in fields || 'fv' in fields || 'ts' in fields || 'tv' in fields) {
+        if (next.fs && next.ts) {
+          const res = SDQQuranEngine.calculate(next.fs, safeNum(next.fv), next.ts, safeNum(next.tv), 'tahfizh');
+          if (res.valid) {
+            next.hal = res.pages;
+            next.baris = res.lines;
+          }
+        }
+      }
+      return next;
+    });
+  };
+
+  const updateTilawahIndiv = (fields: Partial<typeof tilawahIndiv>) => {
+    setTilawahIndiv(prev => {
+      const next = { ...prev, ...fields };
+      if ('fs' in fields || 'fv' in fields || 'ts' in fields || 'tv' in fields || 'method' in fields) {
+        if (next.fs && next.ts) {
+          const res = SDQQuranEngine.calculate(next.fs, safeNum(next.fv), next.ts, safeNum(next.tv), 'tilawah');
+          if (res.valid) {
+            next.hal = res.pages;
+            next.baris = res.lines;
+          }
+        }
+      }
+      return next;
+    });
+  };
+
   // 3. Handle Navigation State (Mode Edit dari Luar)
   useEffect(() => {
     const state = location.state as { editReportId?: string, reportData?: Report, studentId?: string };
@@ -293,9 +352,11 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
       setBaselinePages(r.totalHafalan?.pages || 0);
       setBaselineLines(r.totalHafalan?.lines || 0);
 
-      // Decompose Ranges
-      setTahfizhIndiv(decomposeRange(r.tahfizh.individual));
-      setTilawahIndiv({ ...decomposeRange(r.tilawah.individual), method: r.tilawah.method as any || 'Al-Quran' });
+      // Decompose Ranges & Parse Result
+      const parsedTf = parseResultToHalBaris(r.tahfizh.result);
+      const parsedTl = parseResultToHalBaris(r.tilawah.result);
+      setTahfizhIndiv({ ...decomposeRange(r.tahfizh.individual), hal: parsedTf.hal, baris: parsedTf.baris });
+      setTilawahIndiv({ ...decomposeRange(r.tilawah.individual), method: r.tilawah.method as any || 'Al-Quran', hal: parsedTl.hal, baris: parsedTl.baris });
       setTahfizhKlas(decomposeRange(r.tahfizh.classical));
       setTilawahKlas({ ...decomposeRange(r.tilawah.classical), method: r.tilawah.method as any || 'Al-Quran' });
 
@@ -319,8 +380,10 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
 
   // Fungsi untuk memuat data dari duplikat yang ditemukan
   const loadFromExisting = (rep: Report) => {
-    setTahfizhIndiv(decomposeRange(rep.tahfizh.individual));
-    setTilawahIndiv({ ...decomposeRange(rep.tilawah.individual), method: rep.tilawah.method as any || 'Al-Quran' });
+    const parsedTf = parseResultToHalBaris(rep.tahfizh.result);
+    const parsedTl = parseResultToHalBaris(rep.tilawah.result);
+    setTahfizhIndiv({ ...decomposeRange(rep.tahfizh.individual), hal: parsedTf.hal, baris: parsedTf.baris });
+    setTilawahIndiv({ ...decomposeRange(rep.tilawah.individual), method: rep.tilawah.method as any || 'Al-Quran', hal: parsedTl.hal, baris: parsedTl.baris });
     setAttendance(rep.attendance || 100);
     setBehaviorScore(rep.behaviorScore || 10);
     setNotes(rep.notes || '');
@@ -350,8 +413,8 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
 
     setIsSaving(true);
     try {
-      const tfRes = getResultText(tahfizhIndiv, 'Al-Quran', 'tahfizh');
-      const tlRes = getResultText(tilawahIndiv, tilawahIndiv.method, 'tilawah');
+      const tfRes = formatResult(tahfizhIndiv.hal, tahfizhIndiv.baris);
+      const tlRes = formatResult(tilawahIndiv.hal, tilawahIndiv.baris, tilawahIndiv.method);
       
       const fmt = (s: string, v: any) => (s ? `${s}: ${v === '' ? '-' : v}` : '-');
       const makeRange = (data: any) => (!data.fs && !data.ts ? '-' : `${fmt(data.fs, data.fv)} - ${fmt(data.ts, data.tv)}`);
@@ -379,8 +442,8 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
       // Reset after success if not intentional multi-edit
       if (!isEditMode) {
         setStudentId('');
-        setTahfizhIndiv({ fs: '', fv: '', ts: '', tv: '' });
-        setTilawahIndiv({ method: 'Al-Quran', fs: '', fv: '', ts: '', tv: '' });
+        setTahfizhIndiv({ fs: '', fv: '', ts: '', tv: '', hal: 0, baris: 0 });
+        setTilawahIndiv({ method: 'Al-Quran', fs: '', fv: '', ts: '', tv: '', hal: 0, baris: 0 });
         setNotes('');
       } else {
         setIsEditMode(false);
@@ -529,25 +592,36 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4 border-t border-gray-50">
             <div className="space-y-4">
               <h4 className="text-xs font-bold text-emerald-700 flex items-center gap-2"><Book size={16} /> Tahfizh Individu</h4>
-              <InputRow label="DARI" badge={getResultText(tahfizhIndiv, 'Al-Quran', 'tahfizh')}>
-                <SourceSelect value={tahfizhIndiv.fs} onChange={(v) => setTahfizhIndiv({...tahfizhIndiv, fs: v, ts: v})} method="Al-Quran" />
-                <CounterInput label="Ayat" value={tahfizhIndiv.fv} onChange={(v) => setTahfizhIndiv({...tahfizhIndiv, fv: v, tv: v})} />
+              <InputRow label="DARI" badge={formatResult(tahfizhIndiv.hal, tahfizhIndiv.baris)}>
+                <SourceSelect value={tahfizhIndiv.fs} onChange={(v) => updateTahfizhIndiv({ fs: v, ts: v })} method="Al-Quran" />
+                <CounterInput label="Ayat" value={tahfizhIndiv.fv} onChange={(v) => updateTahfizhIndiv({ fv: v, tv: v })} />
               </InputRow>
               <InputRow label="SAMPAI">
-                <SourceSelect value={tahfizhIndiv.ts} onChange={(v) => setTahfizhIndiv({...tahfizhIndiv, ts: v})} method="Al-Quran" />
-                <CounterInput label="Ayat" value={tahfizhIndiv.tv} onChange={(v) => setTahfizhIndiv({...tahfizhIndiv, tv: v})} />
+                <SourceSelect value={tahfizhIndiv.ts} onChange={(v) => updateTahfizhIndiv({ ts: v })} method="Al-Quran" />
+                <CounterInput label="Ayat" value={tahfizhIndiv.tv} onChange={(v) => updateTahfizhIndiv({ tv: v })} />
+              </InputRow>
+              <InputRow label="TOTAL PENCAPAIAN">
+                <CounterInput label="Hal" value={tahfizhIndiv.hal} onChange={(v) => setTahfizhIndiv(prev => ({ ...prev, hal: v }))} />
+                <CounterInput label="Baris" value={tahfizhIndiv.baris} onChange={(v) => setTahfizhIndiv(prev => ({ ...prev, baris: v }))} />
               </InputRow>
             </div>
             <div className="space-y-4">
               <h4 className="text-xs font-bold text-blue-700 flex items-center gap-2"><BookOpen size={16} /> Tilawah Individu</h4>
-              <div className="flex gap-2"><button onClick={() => setTilawahIndiv({...tilawahIndiv, method: 'Al-Quran'})} className={`flex-1 py-1 text-[9px] font-bold rounded-lg ${tilawahIndiv.method === 'Al-Quran' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'}`}>AL-QUR'AN</button><button onClick={() => setTilawahIndiv({...tilawahIndiv, method: 'Iqra'})} className={`flex-1 py-1 text-[9px] font-bold rounded-lg ${tilawahIndiv.method === 'Iqra' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'}`}>IQRA'</button></div>
-              <InputRow label="DARI" badge={getResultText(tilawahIndiv, tilawahIndiv.method, 'tilawah')}>
-                <SourceSelect value={tilawahIndiv.fs} onChange={(v) => setTilawahIndiv({...tilawahIndiv, fs: v, ts: v})} method={tilawahIndiv.method} />
-                <CounterInput label={tilawahIndiv.method === 'Al-Quran' ? 'Ayat' : 'Hal'} value={tilawahIndiv.fv} onChange={(v) => setTilawahIndiv({...tilawahIndiv, fv: v, tv: v})} />
+              <div className="flex gap-2">
+                <button onClick={() => updateTilawahIndiv({ method: 'Al-Quran' })} className={`flex-1 py-1 text-[9px] font-bold rounded-lg ${tilawahIndiv.method === 'Al-Quran' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'}`}>AL-QUR'AN</button>
+                <button onClick={() => updateTilawahIndiv({ method: 'Iqra' })} className={`flex-1 py-1 text-[9px] font-bold rounded-lg ${tilawahIndiv.method === 'Iqra' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'}`}>IQRA'</button>
+              </div>
+              <InputRow label="DARI" badge={formatResult(tilawahIndiv.hal, tilawahIndiv.baris, tilawahIndiv.method)}>
+                <SourceSelect value={tilawahIndiv.fs} onChange={(v) => updateTilawahIndiv({ fs: v, ts: v })} method={tilawahIndiv.method} />
+                <CounterInput label={tilawahIndiv.method === 'Al-Quran' ? 'Ayat' : 'Hal'} value={tilawahIndiv.fv} onChange={(v) => updateTilawahIndiv({ fv: v, tv: v })} />
               </InputRow>
               <InputRow label="SAMPAI">
-                <SourceSelect value={tilawahIndiv.ts} onChange={(v) => setTilawahIndiv({...tilawahIndiv, ts: v})} method={tilawahIndiv.method} />
-                <CounterInput label={tilawahIndiv.method === 'Al-Quran' ? 'Ayat' : 'Hal'} value={tilawahIndiv.tv} onChange={(v) => setTilawahIndiv({...tilawahIndiv, tv: v})} />
+                <SourceSelect value={tilawahIndiv.ts} onChange={(v) => updateTilawahIndiv({ ts: v })} method={tilawahIndiv.method} />
+                <CounterInput label={tilawahIndiv.method === 'Al-Quran' ? 'Ayat' : 'Hal'} value={tilawahIndiv.tv} onChange={(v) => updateTilawahIndiv({ tv: v })} />
+              </InputRow>
+              <InputRow label="TOTAL PENCAPAIAN">
+                <CounterInput label="Hal" value={tilawahIndiv.hal} onChange={(v) => setTilawahIndiv(prev => ({ ...prev, hal: v }))} />
+                <CounterInput label="Baris" value={tilawahIndiv.baris} onChange={(v) => setTilawahIndiv(prev => ({ ...prev, baris: v }))} />
               </InputRow>
             </div>
           </div>
