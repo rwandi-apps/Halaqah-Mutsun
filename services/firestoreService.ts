@@ -681,7 +681,7 @@ export const addStudent = async (student: Omit<Student, 'id' | 'attendance' | 'b
   if (!db) throw new Error("Firestore not initialized");
   const level = extractClassLevel(student.className);
   const status = student.status || 'Aktif';
-  const isMutasiOrAlumni = status === 'Mutasi/Keluar' || status === 'Mutasi' || status === 'Alumni/Lulus';
+  const isMutasiOrAlumni = status === 'Mutasi/Keluar' || (status as string) === 'Mutasi' || status === 'Alumni/Lulus';
   const finalTeacherId = isMutasiOrAlumni ? '' : student.teacherId;
 
   // Default Attendance & Behavior set to 0 (Not yet rated)
@@ -703,7 +703,7 @@ export const updateStudent = async (id: string, data: Partial<Student>): Promise
   if (!db) throw new Error("Firestore not initialized");
   const docRef = doc(db, 'siswa', id);
   const updateData = { ...data };
-  if (updateData.status === 'Mutasi/Keluar' || updateData.status === 'Mutasi' || updateData.status === 'Alumni/Lulus') {
+  if (updateData.status === 'Mutasi/Keluar' || (updateData.status as string) === 'Mutasi' || updateData.status === 'Alumni/Lulus') {
     updateData.teacherId = '';
   }
   if (data.className) {

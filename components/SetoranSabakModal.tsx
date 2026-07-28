@@ -141,7 +141,6 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
     setSelectedSurah(getInitialSurah(student));
     setAyatDari(1);
     setAyatSampai(1);
-    setStatus('Tuntas');
     setCatatan('');
     setShowForm(true);
   };
@@ -152,7 +151,6 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
     setSelectedSurah(item.surah);
     setAyatDari(item.ayatDari);
     setAyatSampai(item.ayatSampai);
-    setStatus(item.status);
     setCatatan(item.catatan || '');
     setShowForm(true);
   };
