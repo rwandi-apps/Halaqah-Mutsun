@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useMemo, useId } from 'react';
 import { Button } from '../../../components/Button';
-import { Sparkles, Trophy, X, ChevronRight, Share2, Copy, Users, CheckCircle2, TrendingUp, AlertTriangle } from 'lucide-react';
+import { Sparkles, Trophy, X, ChevronRight, Share2, Copy, Users, CheckCircle2, TrendingUp, AlertCircle, AlertTriangle } from 'lucide-react';
 import { 
   subscribeToStudentsByTeacher, 
   subscribeToReportsByTeacher 
@@ -144,9 +144,10 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
   const metrics = useMemo(() => {
     const total = studentsWithProgress.length;
     const completed = studentsWithProgress.filter(s => s.progressStats.percentage >= 100).length;
-    const onTrack = studentsWithProgress.filter(s => s.progressStats.percentage >= 80 && s.progressStats.percentage < 100).length;
-    const needsAttention = studentsWithProgress.filter(s => s.progressStats.percentage < 50).length;
-    return { total, completed, onTrack, needsAttention };
+    const hampirTercapai = studentsWithProgress.filter(s => s.progressStats.percentage >= 80 && s.progressStats.percentage < 100).length;
+    const perluPeningkatan = studentsWithProgress.filter(s => s.progressStats.percentage >= 60 && s.progressStats.percentage < 80).length;
+    const perluPendampingan = studentsWithProgress.filter(s => s.progressStats.percentage < 60).length;
+    return { total, completed, hampirTercapai, perluPeningkatan, perluPendampingan };
   }, [studentsWithProgress]);
 
   const handleGenerateEvaluation = async (student: StudentWithProgress) => {
@@ -182,7 +183,7 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         {/* TOTAL SISWA */}
         <div 
           style={{ background: 'linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%)' }}
@@ -195,7 +196,7 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
             <Users size={28} className="text-white/20 transition-transform duration-300 group-hover:scale-110 shrink-0" />
           </div>
           <div className="mt-2.5">
-            <p className="text-4xl sm:text-[44px] lg:text-[48px] font-extrabold text-white leading-none">
+            <p className="text-3xl sm:text-[40px] lg:text-[44px] font-extrabold text-white leading-none">
               {metrics.total}
             </p>
           </div>
@@ -213,44 +214,62 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
             <CheckCircle2 size={28} className="text-white/20 transition-transform duration-300 group-hover:scale-110 shrink-0" />
           </div>
           <div className="mt-2.5">
-            <p className="text-4xl sm:text-[44px] lg:text-[48px] font-extrabold text-white leading-none">
+            <p className="text-3xl sm:text-[40px] lg:text-[44px] font-extrabold text-white leading-none">
               {metrics.completed}
             </p>
           </div>
         </div>
 
-        {/* ON TRACK */}
+        {/* HAMPIR TERCAPAI */}
+        <div 
+          style={{ background: 'linear-gradient(135deg, #38BDF8 0%, #0284C7 100%)' }}
+          className="relative p-4 sm:p-5 rounded-[20px] shadow-[0_8px_24px_rgba(15,23,42,0.08)] hover:shadow-[0_16px_32px_rgba(15,23,42,0.12)] hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer overflow-hidden border-0 text-white group flex flex-col justify-between min-h-[108px]"
+        >
+          <div className="flex justify-between items-start">
+            <p className="text-xs font-semibold uppercase tracking-[1px] text-white/90">
+              HAMPIR TERCAPAI
+            </p>
+            <TrendingUp size={28} className="text-white/20 transition-transform duration-300 group-hover:scale-110 shrink-0" />
+          </div>
+          <div className="mt-2.5">
+            <p className="text-3xl sm:text-[40px] lg:text-[44px] font-extrabold text-white leading-none">
+              {metrics.hampirTercapai}
+            </p>
+          </div>
+        </div>
+
+        {/* PERLU PENINGKATAN */}
         <div 
           style={{ background: 'linear-gradient(135deg, #FCD34D 0%, #F59E0B 100%)' }}
           className="relative p-4 sm:p-5 rounded-[20px] shadow-[0_8px_24px_rgba(15,23,42,0.08)] hover:shadow-[0_16px_32px_rgba(15,23,42,0.12)] hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer overflow-hidden border-0 text-white group flex flex-col justify-between min-h-[108px]"
         >
           <div className="flex justify-between items-start">
             <p className="text-xs font-semibold uppercase tracking-[1px] text-white/90">
-              ON TRACK
+              PERLU PENINGKATAN
             </p>
-            <TrendingUp size={28} className="text-white/20 transition-transform duration-300 group-hover:scale-110 shrink-0" />
+            <AlertCircle size={28} className="text-white/20 transition-transform duration-300 group-hover:scale-110 shrink-0" />
           </div>
           <div className="mt-2.5">
-            <p className="text-4xl sm:text-[44px] lg:text-[48px] font-extrabold text-white leading-none">
-              {metrics.onTrack}
+            <p className="text-3xl sm:text-[40px] lg:text-[44px] font-extrabold text-white leading-none">
+              {metrics.perluPeningkatan}
             </p>
           </div>
         </div>
 
-        {/* PERHATIAN */}
+        {/* PERLU PENDAMPINGAN */}
         <div 
           style={{ background: 'linear-gradient(135deg, #FB7185 0%, #F43F5E 100%)' }}
-          className="relative p-4 sm:p-5 rounded-[20px] shadow-[0_8px_24px_rgba(15,23,42,0.08)] hover:shadow-[0_16px_32px_rgba(15,23,42,0.12)] hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer overflow-hidden border-0 text-white group flex flex-col justify-between min-h-[108px]"
+          className="relative p-4 sm:p-5 rounded-[20px] shadow-[0_8px_24px_rgba(15,23,42,0.08)] hover:shadow-[0_16px_32px_rgba(15,23,42,0.12)] hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer overflow-hidden border-0 text-white group flex flex-col justify-between min-h-[108px] col-span-2 sm:col-span-1"
         >
           <div className="flex justify-between items-start">
             <p className="text-xs font-semibold uppercase tracking-[1px] text-white/90">
-              PERHATIAN
+              PERLU PENDAMPINGAN
             </p>
             <AlertTriangle size={28} className="text-white/20 transition-transform duration-300 group-hover:scale-110 shrink-0" />
           </div>
           <div className="mt-2.5">
-            <p className="text-4xl sm:text-[44px] lg:text-[48px] font-extrabold text-white leading-none">
-              {metrics.needsAttention}
+            <p className="text-3xl sm:text-[40px] lg:text-[44px] font-extrabold text-white leading-none">
+              {metrics.perluPendampingan}
             </p>
           </div>
         </div>
