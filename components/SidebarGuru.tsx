@@ -1,7 +1,7 @@
 
 import React, { useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, FileText, ClipboardList, BarChart2, BookOpen, LogOut, ChevronDown, BookmarkCheck, Sparkles } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, ClipboardList, BarChart2, BookOpen, LogOut, ChevronDown, BookmarkCheck } from 'lucide-react';
 import { getStoredUser } from '../services/simpleAuth';
 
 interface SidebarProps {
@@ -43,17 +43,9 @@ export const SidebarGuru: React.FC<SidebarProps> = ({ onLogout, onCloseMobile })
     <aside className="fixed inset-y-0 left-0 z-30 w-64 bg-gradient-to-br from-emerald-500 via-teal-600 to-emerald-700 text-white flex flex-col h-screen overflow-hidden shadow-2xl">
       {/* HEADER */}
       <div className="h-20 flex items-center justify-center px-5 shrink-0 border-b border-white/15 bg-white/10 backdrop-blur-xs">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-amber-400 text-emerald-950 flex items-center justify-center font-black shadow-md shrink-0">
-            <Sparkles size={18} />
-          </div>
-          <div>
-            <h1 className="text-sm font-black tracking-wider uppercase text-white leading-tight">SDQ Mutiara Sunnah</h1>
-            <span className="inline-block bg-amber-300 text-emerald-950 font-black text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider mt-0.5">
-              Portal Guru
-            </span>
-          </div>
-        </div>
+        <h1 className="text-base font-black tracking-wider uppercase text-white leading-tight text-center w-full">
+          SDQ Mutiara Sunnah
+        </h1>
       </div>
 
       {/* NAVIGATION */}
