@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useMemo, useId } from 'react';
 import { Button } from '../../../components/Button';
-import { Sparkles, Trophy, X, ChevronRight, Share2, Copy } from 'lucide-react';
+import { Sparkles, Trophy, X, ChevronRight, Share2, Copy, Users, CheckCircle2, TrendingUp, AlertTriangle } from 'lucide-react';
 import { 
   subscribeToStudentsByTeacher, 
   subscribeToReportsByTeacher 
@@ -182,22 +182,77 @@ export default function GuruDashboard({ teacherId }: GuruDashboardProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="bg-gradient-to-br from-indigo-600 to-purple-700 p-4 sm:p-6 rounded-2xl shadow-lg shadow-indigo-500/20 text-white group border border-white/10">
-          <p className="text-[9px] sm:text-[10px] font-bold text-indigo-100 uppercase tracking-widest mb-1 opacity-80">Total Siswa</p>
-          <p className="text-2xl sm:text-4xl font-black drop-shadow-sm">{metrics.total}</p>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        {/* TOTAL SISWA */}
+        <div 
+          style={{ background: 'linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%)' }}
+          className="relative p-6 rounded-[20px] shadow-[0_8px_24px_rgba(15,23,42,0.08)] hover:shadow-[0_16px_32px_rgba(15,23,42,0.12)] hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer overflow-hidden border-0 text-white group flex flex-col justify-between min-h-[135px]"
+        >
+          <div className="flex justify-between items-start">
+            <p className="text-xs font-semibold uppercase tracking-[1px] text-white/90">
+              TOTAL SISWA
+            </p>
+            <Users size={32} className="text-white/20 transition-transform duration-300 group-hover:scale-110 shrink-0" />
+          </div>
+          <div className="mt-4">
+            <p className="text-4xl sm:text-[44px] lg:text-[48px] font-extrabold text-white leading-none">
+              {metrics.total}
+            </p>
+          </div>
         </div>
-        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-4 sm:p-6 rounded-2xl shadow-lg shadow-emerald-500/20 text-white group border border-white/10">
-          <p className="text-[9px] sm:text-[10px] font-bold text-emerald-50 uppercase tracking-widest mb-1 opacity-80">Tercapai</p>
-          <p className="text-2xl sm:text-4xl font-black drop-shadow-sm">{metrics.completed}</p>
+
+        {/* TERCAPAI */}
+        <div 
+          style={{ background: 'linear-gradient(135deg, #5EEAD4 0%, #2DD4BF 100%)' }}
+          className="relative p-6 rounded-[20px] shadow-[0_8px_24px_rgba(15,23,42,0.08)] hover:shadow-[0_16px_32px_rgba(15,23,42,0.12)] hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer overflow-hidden border-0 text-white group flex flex-col justify-between min-h-[135px]"
+        >
+          <div className="flex justify-between items-start">
+            <p className="text-xs font-semibold uppercase tracking-[1px] text-white/90">
+              TERCAPAI
+            </p>
+            <CheckCircle2 size={32} className="text-white/20 transition-transform duration-300 group-hover:scale-110 shrink-0" />
+          </div>
+          <div className="mt-4">
+            <p className="text-4xl sm:text-[44px] lg:text-[48px] font-extrabold text-white leading-none">
+              {metrics.completed}
+            </p>
+          </div>
         </div>
-        <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-4 sm:p-6 rounded-2xl shadow-lg shadow-blue-500/20 text-white group border border-white/10">
-          <p className="text-[9px] sm:text-[10px] font-bold text-blue-50 uppercase tracking-widest mb-1 opacity-80">On Track</p>
-          <p className="text-2xl sm:text-4xl font-black drop-shadow-sm">{metrics.onTrack}</p>
+
+        {/* ON TRACK */}
+        <div 
+          style={{ background: 'linear-gradient(135deg, #FCD34D 0%, #F59E0B 100%)' }}
+          className="relative p-6 rounded-[20px] shadow-[0_8px_24px_rgba(15,23,42,0.08)] hover:shadow-[0_16px_32px_rgba(15,23,42,0.12)] hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer overflow-hidden border-0 text-white group flex flex-col justify-between min-h-[135px]"
+        >
+          <div className="flex justify-between items-start">
+            <p className="text-xs font-semibold uppercase tracking-[1px] text-white/90">
+              ON TRACK
+            </p>
+            <TrendingUp size={32} className="text-white/20 transition-transform duration-300 group-hover:scale-110 shrink-0" />
+          </div>
+          <div className="mt-4">
+            <p className="text-4xl sm:text-[44px] lg:text-[48px] font-extrabold text-white leading-none">
+              {metrics.onTrack}
+            </p>
+          </div>
         </div>
-        <div className="bg-gradient-to-br from-orange-500 to-rose-600 p-4 sm:p-6 rounded-2xl shadow-lg shadow-rose-500/20 text-white group border border-white/10">
-          <p className="text-[9px] sm:text-[10px] font-bold text-orange-50 uppercase tracking-widest mb-1 opacity-80">Perhatian</p>
-          <p className="text-2xl sm:text-4xl font-black drop-shadow-sm">{metrics.needsAttention}</p>
+
+        {/* PERHATIAN */}
+        <div 
+          style={{ background: 'linear-gradient(135deg, #FB7185 0%, #F43F5E 100%)' }}
+          className="relative p-6 rounded-[20px] shadow-[0_8px_24px_rgba(15,23,42,0.08)] hover:shadow-[0_16px_32px_rgba(15,23,42,0.12)] hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer overflow-hidden border-0 text-white group flex flex-col justify-between min-h-[135px]"
+        >
+          <div className="flex justify-between items-start">
+            <p className="text-xs font-semibold uppercase tracking-[1px] text-white/90">
+              PERHATIAN
+            </p>
+            <AlertTriangle size={32} className="text-white/20 transition-transform duration-300 group-hover:scale-110 shrink-0" />
+          </div>
+          <div className="mt-4">
+            <p className="text-4xl sm:text-[44px] lg:text-[48px] font-extrabold text-white leading-none">
+              {metrics.needsAttention}
+            </p>
+          </div>
         </div>
       </div>
 
