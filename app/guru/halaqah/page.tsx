@@ -253,6 +253,35 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
     return `Juz ${Math.min(30, Math.max(1, juzNum))}`;
   };
 
+  // Helper: Ambil sabaq terbaru dari allSetoranHistory, jika tidak ada baru gunakan fallback dari report
+  const getLatestSabaqForStudent = (studentId: string, fallbackTahfizhIndiv?: string): string => {
+    const studentSetorans = allSetoranHistory.filter(s => s.siswaId === studentId);
+    if (studentSetorans.length > 0) {
+      studentSetorans.sort((a, b) => {
+        const dateA = a.tanggal || '';
+        const dateB = b.tanggal || '';
+        if (dateA !== dateB) return dateB.localeCompare(dateA);
+        return (b.createdAt || '').localeCompare(a.createdAt || '');
+      });
+      const latest = studentSetorans[0];
+      if (latest && latest.surah) {
+        if (latest.surah.toLowerCase().startsWith('iqra')) {
+          return latest.surah;
+        }
+        if (latest.ayatSampai) {
+          return `${latest.surah}: ${latest.ayatSampai}`;
+        }
+        return latest.surah;
+      }
+    }
+
+    if (fallbackTahfizhIndiv && fallbackTahfizhIndiv !== '-' && fallbackTahfizhIndiv !== 'Belum Ada' && fallbackTahfizhIndiv.trim() !== '') {
+      return fallbackTahfizhIndiv;
+    }
+
+    return '-';
+  };
+
   const loadData = async () => {
     if (!teacherId) return;
     setIsLoading(true);
@@ -287,15 +316,7 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
         const tahfizhIndiv = latest?.tahfizh?.individual;
         const tilawahIndiv = latest?.tilawah?.individual;
 
-        let rawSabaq = '-';
-
-        // Ambil data sabaq terakhir hanya dari kolom tahfizh.individual (jika tidak ada maka '-')
-        if (tahfizhIndiv && tahfizhIndiv !== '-' && tahfizhIndiv !== 'Belum Ada' && tahfizhIndiv.trim() !== '') {
-          rawSabaq = tahfizhIndiv;
-        } else {
-          rawSabaq = '-';
-        }
-
+        const rawSabaq = getLatestSabaqForStudent(student.id, tahfizhIndiv);
         let sabaqDisplay = formatSabaqTerakhir(rawSabaq);
         const tilawahDisplay = getEndPart(tilawahIndiv);
 
@@ -341,10 +362,25 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
   const monthWeeks = React.useMemo(() => getMonthWeeksOptions(tanggal), [tanggal.slice(0, 7)]);
   const currentWeek = monthWeeks.find(w => isDateInWeek(tanggal, w.startDate, w.endDate)) || monthWeeks[monthWeeks.length - 1] || monthWeeks[0];
 
+  // Derive updated students array where sabaqDisplay & currentJuzDisplay react to allSetoranHistory
+  const displayStudents = useMemo(() => {
+    return filteredStudents.map(student => {
+      const rawSabaq = getLatestSabaqForStudent(student.id, student.latestReport?.tahfizh?.individual);
+      const sabaqDisplay = formatSabaqTerakhir(rawSabaq);
+      const currentJuzDisplay = (sabaqDisplay !== '-') ? getJuzFromString(sabaqDisplay) : '-';
+
+      return {
+        ...student,
+        sabaqDisplay,
+        currentJuzDisplay
+      };
+    });
+  }, [filteredStudents, allSetoranHistory]);
+
   // Handle "Simpan & Berikutnya" transition
   const handleNextCard = (currentIndex: number) => {
     const nextIdx = currentIndex + 1;
-    if (nextIdx < filteredStudents.length) {
+    if (nextIdx < displayStudents.length) {
       setActiveCardIndex(nextIdx);
       const nextCardElem = document.getElementById(`student-sabaq-card-${nextIdx}`);
       if (nextCardElem) {
@@ -378,9 +414,9 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
   };
 
   // Summary statistics for selected date
-  const totalStudentsCount = filteredStudents.length;
-  const inputtedCount = filteredStudents.filter(s => !!getExistingSetoranThisWeek(s.id)).length;
-  const targetAchievedCount = filteredStudents.filter(s => {
+  const totalStudentsCount = displayStudents.length;
+  const inputtedCount = displayStudents.filter(s => !!getExistingSetoranThisWeek(s.id)).length;
+  const targetAchievedCount = displayStudents.filter(s => {
     const rec = getExistingSetoranThisWeek(s.id);
     return rec && (rec.status === 'Tuntas' || (rec.jumlahBaris !== undefined && rec.jumlahBaris >= (rec.targetBaris || 10)));
   }).length;
@@ -453,38 +489,26 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
         <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-4">
           <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
             
-            {/* Pekan Setoran & Tanggal Picker */}
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2">
-                <Calendar size={18} className="text-emerald-600 shrink-0" />
-                <label className="text-xs font-bold text-gray-700 whitespace-nowrap">Pekan Setoran:</label>
-                <select
-                  value={currentWeek?.id || ''}
-                  onChange={(e) => {
-                    const selectedW = monthWeeks.find(w => w.id === e.target.value);
-                    if (selectedW) {
-                      setTanggal(selectedW.defaultDate);
-                    }
-                  }}
-                  className="bg-gray-50 border border-gray-300 rounded-xl px-3 py-1.5 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none cursor-pointer"
-                >
-                  {monthWeeks.map((w) => (
-                    <option key={w.id} value={w.id}>
-                      {w.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                <span className="font-medium">Tanggal:</span>
-                <input 
-                  type="date"
-                  value={tanggal}
-                  onChange={(e) => setTanggal(e.target.value)}
-                  className="bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1 text-xs font-bold text-gray-800 focus:ring-1 focus:ring-emerald-500 outline-none"
-                />
-              </div>
+            {/* Pekan Setoran Picker */}
+            <div className="flex items-center gap-2">
+              <Calendar size={18} className="text-emerald-600 shrink-0" />
+              <label className="text-xs font-bold text-gray-700 whitespace-nowrap">Pekan Setoran:</label>
+              <select
+                value={currentWeek?.id || ''}
+                onChange={(e) => {
+                  const selectedW = monthWeeks.find(w => w.id === e.target.value);
+                  if (selectedW) {
+                    setTanggal(selectedW.defaultDate);
+                  }
+                }}
+                className="bg-gray-50 border border-gray-300 rounded-xl px-3 py-1.5 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none cursor-pointer"
+              >
+                {monthWeeks.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Search Box */}
@@ -538,7 +562,7 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
         <div className="text-center py-16 bg-white rounded-2xl border border-gray-200 shadow-xs">
           <p className="text-gray-500 font-bold text-sm">Memuat data halaqah...</p>
         </div>
-      ) : filteredStudents.length === 0 ? (
+      ) : displayStudents.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-2xl border border-gray-200 shadow-xs">
           <p className="text-gray-500 font-bold text-sm">Tidak ada siswa ditemukan.</p>
         </div>
@@ -546,7 +570,7 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
         
         /* TAB 1: INPUT SETORAN SABAQ PEKANAN (CARD CAROUSEL / QUEUE) */
         <div className="space-y-6">
-          {filteredStudents.map((student, idx) => {
+          {displayStudents.map((student, idx) => {
             const existing = getExistingSetoranThisWeek(student.id);
             const prevSetoran = getLatestSetoranFromPrevWeek(student.id);
 
@@ -556,7 +580,7 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
                 ref={(el) => (cardRefs.current[idx] = el)}
                 student={student}
                 index={idx}
-                totalStudents={filteredStudents.length}
+                totalStudents={displayStudents.length}
                 currentUser={currentUser}
                 tanggal={tanggal}
                 latestSetoranFromPrevWeek={prevSetoran}
@@ -573,7 +597,7 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
 
         /* TAB 2: DAFTAR & DETAIL SISWA (OVERVIEW GRID) */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredStudents.map((student, idx) => (
+          {displayStudents.map((student, idx) => (
             <div key={student.id} className="bg-white rounded-2xl shadow-xs border border-gray-200 p-6 hover:shadow-md transition-all border-t-4 border-t-emerald-600">
               <div className="flex justify-between items-start mb-5">
                 <div className="flex gap-3 w-full overflow-hidden">

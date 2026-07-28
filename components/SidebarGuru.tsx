@@ -1,7 +1,7 @@
 
 import React, { useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, FileText, ClipboardList, BarChart2, BookOpen, LogOut, ChevronDown, BookmarkCheck } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, ClipboardList, BarChart2, BookOpen, LogOut, ChevronDown, BookmarkCheck, Sparkles } from 'lucide-react';
 import { getStoredUser } from '../services/simpleAuth';
 
 interface SidebarProps {
@@ -40,17 +40,33 @@ export const SidebarGuru: React.FC<SidebarProps> = ({ onLogout, onCloseMobile })
   ];
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-30 w-64 bg-[#0f4c75] text-white flex flex-col h-screen overflow-hidden">
-      <div className="h-20 flex items-center justify-center px-6 shrink-0 border-b border-white/10">
-        <h1 className="text-lg font-bold tracking-wide uppercase text-center w-full">SDQ Mutiara Sunnah</h1>
+    <aside className="fixed inset-y-0 left-0 z-30 w-64 bg-gradient-to-b from-emerald-600 via-teal-700 to-emerald-900 text-white flex flex-col h-screen overflow-hidden shadow-2xl">
+      {/* HEADER */}
+      <div className="h-20 flex items-center justify-center px-5 shrink-0 border-b border-white/15 bg-white/10 backdrop-blur-xs">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-amber-400 text-emerald-950 flex items-center justify-center font-black shadow-md shrink-0">
+            <Sparkles size={18} />
+          </div>
+          <div>
+            <h1 className="text-sm font-black tracking-wider uppercase text-white leading-tight">SDQ Mutiara Sunnah</h1>
+            <span className="inline-block bg-amber-300 text-emerald-950 font-black text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider mt-0.5">
+              Portal Guru
+            </span>
+          </div>
+        </div>
       </div>
-      <div className="px-4 py-2 flex-1 overflow-hidden">
+
+      {/* NAVIGATION */}
+      <div className="px-3.5 py-3 flex-1 overflow-y-auto custom-scrollbar">
         <nav className="space-y-1">
           {navItems.map((item, index) => {
             if (item.type === 'section') {
               return (
-                <div key={index} className="px-3 pt-4 pb-2">
-                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">{item.label}</p>
+                <div key={index} className="px-3 pt-3.5 pb-1">
+                  <p className="text-[10px] font-black text-amber-200/90 uppercase tracking-widest flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                    {item.label}
+                  </p>
                 </div>
               );
             }
@@ -59,22 +75,33 @@ export const SidebarGuru: React.FC<SidebarProps> = ({ onLogout, onCloseMobile })
                 key={item.to}
                 to={item.to!}
                 onClick={onCloseMobile}
-                className={({ isActive }) => `flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors mb-1 group text-white/80 hover:bg-white/10 ${isActive ? 'bg-white/10' : ''}`}
+                className={({ isActive }) => 
+                  `flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all mb-1 group text-white/90 hover:bg-white/20 hover:text-white ${
+                    isActive 
+                      ? 'bg-white/25 text-white font-extrabold shadow-sm border-l-4 border-amber-300 pl-3' 
+                      : 'font-medium hover:pl-4'
+                  }`
+                }
               >
                 <div className="flex items-center gap-3">
-                  {item.icon && <item.icon size={18} />}
-                  <span className="font-medium text-sm">{item.label}</span>
+                  {item.icon && <item.icon size={18} className="shrink-0 text-amber-200 group-hover:text-amber-300 transition-colors" />}
+                  <span className="text-xs">{item.label}</span>
                 </div>
-                {item.hasDropdown && <ChevronDown size={14} className="text-white/50" />}
+                {item.hasDropdown && <ChevronDown size={14} className="text-white/60" />}
               </NavLink>
             );
           })}
         </nav>
       </div>
-      <div className="p-4 mt-auto border-t border-white/5">
-         <button onClick={onLogout} className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-white/80 hover:bg-white/10 transition-colors">
-           <LogOut size={20} />
-           <span className="font-medium text-sm">Keluar</span>
+
+      {/* FOOTER */}
+      <div className="p-3.5 mt-auto border-t border-white/15 bg-black/10">
+         <button 
+           onClick={onLogout} 
+           className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-white/85 hover:text-white hover:bg-rose-500/80 transition-all font-bold text-xs"
+         >
+           <LogOut size={18} />
+           <span>Keluar</span>
          </button>
       </div>
     </aside>
