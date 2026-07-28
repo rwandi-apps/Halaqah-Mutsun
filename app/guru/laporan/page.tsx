@@ -305,35 +305,11 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
   };
 
   const updateTahfizhIndiv = (fields: Partial<typeof tahfizhIndiv>) => {
-    setTahfizhIndiv(prev => {
-      const next = { ...prev, ...fields };
-      if ('fs' in fields || 'fv' in fields || 'ts' in fields || 'tv' in fields) {
-        if (next.fs && next.ts) {
-          const res = SDQQuranEngine.calculate(next.fs, safeNum(next.fv), next.ts, safeNum(next.tv), 'tahfizh');
-          if (res.valid) {
-            next.hal = res.pages;
-            next.baris = res.lines;
-          }
-        }
-      }
-      return next;
-    });
+    setTahfizhIndiv(prev => ({ ...prev, ...fields }));
   };
 
   const updateTilawahIndiv = (fields: Partial<typeof tilawahIndiv>) => {
-    setTilawahIndiv(prev => {
-      const next = { ...prev, ...fields };
-      if ('fs' in fields || 'fv' in fields || 'ts' in fields || 'tv' in fields || 'method' in fields) {
-        if (next.fs && next.ts) {
-          const res = SDQQuranEngine.calculate(next.fs, safeNum(next.fv), next.ts, safeNum(next.tv), 'tilawah');
-          if (res.valid) {
-            next.hal = res.pages;
-            next.baris = res.lines;
-          }
-        }
-      }
-      return next;
-    });
+    setTilawahIndiv(prev => ({ ...prev, ...fields }));
   };
 
   // 3. Handle Navigation State (Mode Edit dari Luar)
