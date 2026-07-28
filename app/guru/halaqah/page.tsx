@@ -253,18 +253,33 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
     return `Juz ${Math.min(30, Math.max(1, juzNum))}`;
   };
 
+  // Helper safely format createdAt value to string for sorting
+  const getCreatedAtString = (val: any): string => {
+    if (!val) return '';
+    if (typeof val === 'string') return val;
+    if (typeof val === 'number') return String(val);
+    if (typeof val.toDate === 'function') {
+      try { return val.toDate().toISOString(); } catch { return ''; }
+    }
+    if (val.seconds) return new Date(val.seconds * 1000).toISOString();
+    return String(val);
+  };
+
   // Helper: Ambil sabaq terbaru dari allSetoranHistory, jika tidak ada baru gunakan fallback dari report
   const getLatestSabaqForStudent = (studentId: string, fallbackTahfizhIndiv?: string): string => {
-    const studentSetorans = allSetoranHistory.filter(s => s.siswaId === studentId);
+    if (!studentId) return '-';
+    const studentSetorans = allSetoranHistory.filter(s => s && s.siswaId === studentId);
     if (studentSetorans.length > 0) {
       studentSetorans.sort((a, b) => {
         const dateA = a.tanggal || '';
         const dateB = b.tanggal || '';
         if (dateA !== dateB) return dateB.localeCompare(dateA);
-        return (b.createdAt || '').localeCompare(a.createdAt || '');
+        const ca = getCreatedAtString(a.createdAt);
+        const cb = getCreatedAtString(b.createdAt);
+        return cb.localeCompare(ca);
       });
       const latest = studentSetorans[0];
-      if (latest && latest.surah) {
+      if (latest && latest.surah && typeof latest.surah === 'string') {
         if (latest.surah.toLowerCase().startsWith('iqra')) {
           return latest.surah;
         }
@@ -275,7 +290,7 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
       }
     }
 
-    if (fallbackTahfizhIndiv && fallbackTahfizhIndiv !== '-' && fallbackTahfizhIndiv !== 'Belum Ada' && fallbackTahfizhIndiv.trim() !== '') {
+    if (fallbackTahfizhIndiv && typeof fallbackTahfizhIndiv === 'string' && fallbackTahfizhIndiv !== '-' && fallbackTahfizhIndiv !== 'Belum Ada' && fallbackTahfizhIndiv.trim() !== '') {
       return fallbackTahfizhIndiv;
     }
 
@@ -292,8 +307,12 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
       ]);
 
       const studentsWithStats = studentsData.map(student => {
-        const studentReports = reportsData.filter(r => r.studentId === student.id);
-        studentReports.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+        const studentReports = reportsData.filter(r => r && r.studentId === student.id);
+        studentReports.sort((a, b) => {
+          const ca = getCreatedAtString(a.createdAt);
+          const cb = getCreatedAtString(b.createdAt);
+          return cb.localeCompare(ca);
+        });
         const latest = studentReports[0];
 
         let hafalanDisplay = "0 Juz";
@@ -403,14 +422,26 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
 
   // Helper to find latest setoran from previous week
   const getLatestSetoranFromPrevWeek = (studentId: string): SetoranSabak | null => {
+    if (!studentId) return null;
     const prevs = allSetoranHistory.filter(s => {
-      if (s.siswaId !== studentId) return false;
+      if (!s || s.siswaId !== studentId) return false;
       if (currentWeek) {
         return !isDateInWeek(s.tanggal, currentWeek.startDate, currentWeek.endDate);
       }
       return s.tanggal !== tanggal;
     });
-    return prevs.length > 0 ? prevs[0] : null;
+    if (prevs.length > 0) {
+      prevs.sort((a, b) => {
+        const dateA = a.tanggal || '';
+        const dateB = b.tanggal || '';
+        if (dateA !== dateB) return dateB.localeCompare(dateA);
+        const ca = getCreatedAtString(a.createdAt);
+        const cb = getCreatedAtString(b.createdAt);
+        return cb.localeCompare(ca);
+      });
+      return prevs[0];
+    }
+    return null;
   };
 
   // Summary statistics for selected date
