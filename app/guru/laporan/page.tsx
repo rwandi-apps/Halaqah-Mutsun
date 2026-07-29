@@ -604,7 +604,7 @@ const GuruLaporanPage: React.FC<GuruLaporanPageProps> = ({ teacherId = '1' }) =>
         </div>
 
         <div className="bg-emerald-50/30 p-4 rounded-xl border border-emerald-100/50">
-          <h4 className="font-bold text-emerald-800 text-xs mb-4 uppercase tracking-widest">Akumulasi Hafalan (Total Siswa)</h4>
+          <h4 className="font-bold text-emerald-800 text-xs mb-4 uppercase tracking-widest">Akumulasi Hafalan Siswa</h4>
           <div className="grid grid-cols-3 gap-2">
             <div className="text-center"><p className="text-[9px] font-bold text-emerald-600 mb-1 uppercase">Juz</p><CounterInput value={baselineJuz} onChange={setBaselineJuz} /></div>
             <div className="text-center"><p className="text-[9px] font-bold text-emerald-600 mb-1 uppercase">Hal</p><CounterInput value={baselinePages} onChange={setBaselinePages} /></div>

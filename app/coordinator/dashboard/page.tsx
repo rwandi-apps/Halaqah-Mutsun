@@ -15,6 +15,7 @@ import {
   getStudentGender
 } from '../../../services/sdqTargets';
 import { CLASS_LIST } from '../../../services/mockBackend';
+import { QURAN_SURAHS } from '../../../services/surahData';
 import { 
   Users, 
   GraduationCap, 
@@ -371,17 +372,97 @@ export default function CoordinatorDashboard() {
     });
   }, [filteredStudents, reports, academicYear, selectedMonth, targetJuz, targetIqra]);
 
-  // Sort by target achievement (percentage) descending
+  // Helper to score Quran surah achievement (higher surah number = further in Quran, e.g. Ali 'Imran > Al-Baqarah)
+  const getQuranSortScore = (progressStr: string): number => {
+    if (!progressStr || progressStr === '-' || progressStr === 'Belum Ada') return 0;
+    const norm = progressStr.toLowerCase().replace(/[^a-z0-9]/g, '');
+    let matchedSurahNum = 0;
+    for (const surah of QURAN_SURAHS) {
+      const sNorm = surah.nama.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const sNormNoAl = sNorm.replace(/^(al|at|an|asy|az|ar|ad|ab)/, '');
+      if (norm.includes(sNorm) || (sNormNoAl.length >= 3 && norm.includes(sNormNoAl))) {
+        if (surah.nomor > matchedSurahNum) {
+          matchedSurahNum = surah.nomor;
+        }
+      }
+    }
+    const numbers = progressStr.match(/\d+/g);
+    let ayatNum = 0;
+    if (numbers && numbers.length > 0) {
+      ayatNum = parseInt(numbers[numbers.length - 1], 10) || 0;
+    }
+    if (matchedSurahNum > 0) {
+      return matchedSurahNum * 1000 + ayatNum;
+    }
+    const juzMatch = progressStr.match(/juz\s*(\d+)/i);
+    if (juzMatch) {
+      const j = parseInt(juzMatch[1], 10) || 0;
+      return j * 500 + ayatNum;
+    }
+    return ayatNum;
+  };
+
+  // Helper to score Iqra jilid & page achievement
+  const getIqraSortScore = (progressStr: string): number => {
+    if (!progressStr || progressStr === '-' || progressStr === 'Belum Ada') return 0;
+    const jilidMatch = progressStr.match(/(?:iqra|jilid)\s*['`]?\s*(\d+)/i) || progressStr.match(/(\d+)/);
+    let jilid = 0;
+    if (jilidMatch) {
+      jilid = parseInt(jilidMatch[1], 10) || 0;
+    }
+    const pageMatch = progressStr.match(/(?:hal|halaman)\s*(\d+)/i);
+    let page = 0;
+    if (pageMatch) {
+      page = parseInt(pageMatch[1], 10) || 0;
+    } else {
+      const nums = progressStr.match(/\d+/g);
+      if (nums && nums.length > 1) {
+        page = parseInt(nums[1], 10) || 0;
+      }
+    }
+    return jilid * 1000 + page;
+  };
+
+  // Sort students: 1. Hafalan (paling banyak), 2. Al-Quran (paling jauh, e.g. Ali 'Imran > Al-Baqarah), 3. Iqra (jilid terbanyak)
   const sortedStudents = useMemo(() => {
     return [...studentsWithProgress].sort((a, b) => {
-      const pB = b.progressStats?.percentage ?? 0;
-      const pA = a.progressStats?.percentage ?? 0;
-      if (pB !== pA) return pB - pA;
-      // Secondary sort: current progress descending
-      const cB = b.progressStats?.current ?? 0;
-      const cA = a.progressStats?.current ?? 0;
-      if (cB !== cA) return cB - cA;
-      // Tertiary sort: name
+      const totalA = a.totalHafalan || { juz: 0, pages: 0, lines: 0 };
+      const scoreHafalanA = (Number(totalA.juz) || 0) * 10000 + (Number(totalA.pages) || 0) * 100 + (Number(totalA.lines) || 0);
+
+      const totalB = b.totalHafalan || { juz: 0, pages: 0, lines: 0 };
+      const scoreHafalanB = (Number(totalB.juz) || 0) * 10000 + (Number(totalB.pages) || 0) * 100 + (Number(totalB.lines) || 0);
+
+      const levelA = extractClassLevel(a.className);
+      const levelB = extractClassLevel(b.className);
+
+      const progStrA = a.currentProgress || '';
+      const progStrB = b.currentProgress || '';
+
+      const isIqraA = levelA === 1 && (progStrA.toLowerCase().includes('iqra') || progStrA.toLowerCase().includes('jilid'));
+      const isIqraB = levelB === 1 && (progStrB.toLowerCase().includes('iqra') || progStrB.toLowerCase().includes('jilid'));
+
+      // Category 1: Has Hafalan (or level > 1)
+      // Category 2: Al-Quran
+      // Category 3: Iqra
+      const catA = scoreHafalanA > 0 ? 1 : (!isIqraA ? 2 : 3);
+      const catB = scoreHafalanB > 0 ? 1 : (!isIqraB ? 2 : 3);
+
+      if (catA !== catB) {
+        return catA - catB;
+      }
+
+      if (catA === 1) {
+        if (scoreHafalanB !== scoreHafalanA) return scoreHafalanB - scoreHafalanA;
+      } else if (catA === 2) {
+        const qScoreA = getQuranSortScore(progStrA);
+        const qScoreB = getQuranSortScore(progStrB);
+        if (qScoreB !== qScoreA) return qScoreB - qScoreA;
+      } else if (catA === 3) {
+        const iqScoreA = getIqraSortScore(progStrA);
+        const iqScoreB = getIqraSortScore(progStrB);
+        if (iqScoreB !== iqScoreA) return iqScoreB - iqScoreA;
+      }
+
       return (a.name || '').localeCompare(b.name || '');
     });
   }, [studentsWithProgress]);
@@ -422,15 +503,9 @@ export default function CoordinatorDashboard() {
   }, [studentsWithProgress, selectedProgram]);
 
   const highestProgressStudent = useMemo(() => {
-    if (studentsWithProgress.length === 0) return null;
-    return [...studentsWithProgress].sort((a, b) => {
-      // Sort by percentage then score
-      if (b.progressStats.percentage !== a.progressStats.percentage) {
-        return b.progressStats.percentage - a.progressStats.percentage;
-      }
-      return b.progressStats.current - a.progressStats.current;
-    })[0];
-  }, [studentsWithProgress]);
+    if (sortedStudents.length === 0) return null;
+    return sortedStudents[0];
+  }, [sortedStudents]);
 
   // 4. Target Achievement Calculations
   const targetAchievedCount = useMemo(() => {
@@ -874,9 +949,16 @@ export default function CoordinatorDashboard() {
               </h3>
               <p className="text-[10px] text-purple-100 font-bold truncate opacity-90">
                 {highestProgressStudent ? (
-                  highestProgressStudent.progressStats.classLevel === 1 
-                    ? highestProgressStudent.progressStats.label 
-                    : `${highestProgressStudent.totalHafalan?.juz || 0} Juz ${highestProgressStudent.totalHafalan?.pages || 0} Hal`
+                  (() => {
+                    const h = highestProgressStudent.totalHafalan || { juz: 0, pages: 0, lines: 0 };
+                    if (Number(h.juz) > 0 || Number(h.pages) > 0) {
+                      const parts = [];
+                      if (Number(h.juz) > 0) parts.push(`${h.juz} Juz`);
+                      if (Number(h.pages) > 0) parts.push(`${h.pages} Hal`);
+                      return parts.join(' ');
+                    }
+                    return highestProgressStudent.currentProgress || highestProgressStudent.progressStats?.label || 'Belum Ada';
+                  })()
                 ) : 'Belum Ada'}
               </p>
             </div>
