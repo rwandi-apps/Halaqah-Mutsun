@@ -101,13 +101,60 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
     return QURAN_SURAHS.find(s => s.nama === surahSampaiName) || { nama: 'Al-Fatihah', jumlahAyat: 7 };
   }, [surahSampaiName]);
 
-  // Adjust ayatSampai when surahName changes to keep it valid (in single surah mode)
-  useEffect(() => {
-    if (!isMultiSurah && selectedSurahInfo) {
+  // Helper to auto-fill surah & ayat from teacher's latest setoran
+  const autoFillFromLatestSetoran = (tId: string, currentList: SetoranGuru[] = setoranList) => {
+    if (!tId) return;
+    const teacherSetorans = currentList.filter(s => s.guruId === tId);
+    if (teacherSetorans.length === 0) {
+      setSurahName('Al-Fatihah');
+      setSurahSampaiName('Al-Fatihah');
+      setIsMultiSurah(false);
       setAyatDari(1);
-      setAyatSampai(selectedSurahInfo.jumlahAyat);
+      setAyatSampai(7);
+      return;
     }
-  }, [surahName, selectedSurahInfo, isMultiSurah]);
+
+    const latest = teacherSetorans[0];
+    const lastSurahName = latest.surahSampai || latest.surah;
+    const surahInfoIndex = QURAN_SURAHS.findIndex(s => s.nama === lastSurahName);
+
+    if (surahInfoIndex === -1) {
+      setSurahName(lastSurahName);
+      setSurahSampaiName(lastSurahName);
+      setIsMultiSurah(false);
+      setAyatDari(latest.ayatSampai + 1 || 1);
+      setAyatSampai(7);
+      return;
+    }
+
+    const surahInfo = QURAN_SURAHS[surahInfoIndex];
+    const isFinishedSurah = (latest.ayatSampai >= surahInfo.jumlahAyat);
+
+    if (isFinishedSurah) {
+      const nextSurahIndex = surahInfoIndex + 1;
+      if (nextSurahIndex < QURAN_SURAHS.length) {
+        const nextSurah = QURAN_SURAHS[nextSurahIndex];
+        setSurahName(nextSurah.nama);
+        setSurahSampaiName(nextSurah.nama);
+        setIsMultiSurah(false);
+        setAyatDari(1);
+        setAyatSampai(nextSurah.jumlahAyat);
+      } else {
+        setSurahName(surahInfo.nama);
+        setSurahSampaiName(surahInfo.nama);
+        setIsMultiSurah(false);
+        setAyatDari(1);
+        setAyatSampai(surahInfo.jumlahAyat);
+      }
+    } else {
+      const nextAyat = latest.ayatSampai + 1;
+      setSurahName(surahInfo.nama);
+      setSurahSampaiName(surahInfo.nama);
+      setIsMultiSurah(false);
+      setAyatDari(nextAyat);
+      setAyatSampai(surahInfo.jumlahAyat);
+    }
+  };
 
   // Load all teachers for selection (termasuk Guru Halaqah, Guru Umum, Staff, & Admin)
   useEffect(() => {
@@ -186,6 +233,11 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
   // Open Add Modal
   const handleOpenAddModal = () => {
     resetForm();
+    const targetTeacherId = selectedTeacherId || actualTeacherId;
+    if (targetTeacherId) {
+      setSelectedTeacherId(targetTeacherId);
+      autoFillFromLatestSetoran(targetTeacherId);
+    }
     setIsModalOpen(true);
   };
 
@@ -560,7 +612,11 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
                         value={isIkhwanSelected ? selectedTeacherId : ''}
                         onChange={(e) => {
                           if (e.target.value) {
-                            setSelectedTeacherId(e.target.value);
+                            const newId = e.target.value;
+                            setSelectedTeacherId(newId);
+                            if (!editingId) {
+                              autoFillFromLatestSetoran(newId);
+                            }
                           }
                         }}
                         disabled={editingId !== null}
@@ -596,7 +652,11 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
                         value={isAkhwatSelected ? selectedTeacherId : ''}
                         onChange={(e) => {
                           if (e.target.value) {
-                            setSelectedTeacherId(e.target.value);
+                            const newId = e.target.value;
+                            setSelectedTeacherId(newId);
+                            if (!editingId) {
+                              autoFillFromLatestSetoran(newId);
+                            }
                           }
                         }}
                         disabled={editingId !== null}
@@ -687,7 +747,16 @@ export const GuruSetoranPage: React.FC<GuruSetoranPageProps> = ({ teacherId }) =
                     <label className="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1.5">Surah</label>
                     <select
                       value={surahName}
-                      onChange={(e) => setSurahName(e.target.value)}
+                      onChange={(e) => {
+                        const newSurah = e.target.value;
+                        setSurahName(newSurah);
+                        setSurahSampaiName(newSurah);
+                        const info = QURAN_SURAHS.find(s => s.nama === newSurah);
+                        if (info) {
+                          setAyatDari(1);
+                          setAyatSampai(info.jumlahAyat);
+                        }
+                      }}
                       className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c75] bg-white transition-all font-semibold"
                     >
                       {QURAN_SURAHS.map((surah) => (
