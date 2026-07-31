@@ -43,6 +43,8 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
   const [customTargetInput, setCustomTargetInput] = useState<string>(String(targetBaris));
 
   // Form Fields
+  const [noNewMemorization, setNoNewMemorization] = useState<boolean>(false);
+  const [memorizationReason, setMemorizationReason] = useState<string>('');
   const [isMultiSurah, setIsMultiSurah] = useState<boolean>(false);
   const [surah, setSurah] = useState<string>('Al-Fatihah');
   const [surahSampai, setSurahSampai] = useState<string>('Al-Fatihah');
@@ -75,18 +77,26 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
   useEffect(() => {
     if (existingSetoranThisWeek) {
       // Existing record for this date/week
-      setSurah(existingSetoranThisWeek.surah);
-      const endSur = existingSetoranThisWeek.surahSampai || existingSetoranThisWeek.surah;
+      const isNoNew = Boolean(existingSetoranThisWeek.noNewMemorization);
+      setNoNewMemorization(isNoNew);
+      setMemorizationReason(existingSetoranThisWeek.memorizationReason || '');
+      setSurah(existingSetoranThisWeek.surah || 'Al-Fatihah');
+      const endSur = existingSetoranThisWeek.surahSampai || existingSetoranThisWeek.surah || 'Al-Fatihah';
       setSurahSampai(endSur);
       setIsMultiSurah(Boolean(existingSetoranThisWeek.surahSampai && existingSetoranThisWeek.surahSampai !== existingSetoranThisWeek.surah));
-      setAyatDari(existingSetoranThisWeek.ayatDari);
-      setAyatSampai(existingSetoranThisWeek.ayatSampai);
-      if (existingSetoranThisWeek.jumlahBaris !== undefined) {
-        setJumlahBaris(existingSetoranThisWeek.jumlahBaris);
+      setAyatDari(existingSetoranThisWeek.ayatDari || 1);
+      setAyatSampai(existingSetoranThisWeek.ayatSampai || 1);
+      if (isNoNew) {
+        setJumlahBaris(0);
+        setSelectedHari([]);
       } else {
-        setJumlahBaris(10);
+        if (existingSetoranThisWeek.jumlahBaris !== undefined) {
+          setJumlahBaris(existingSetoranThisWeek.jumlahBaris);
+        } else {
+          setJumlahBaris(10);
+        }
+        setSelectedHari(existingSetoranThisWeek.hariSetor || []);
       }
-      setSelectedHari(existingSetoranThisWeek.hariSetor || []);
       setCatatan(existingSetoranThisWeek.catatan || '');
       if (existingSetoranThisWeek.targetBaris) {
         setTargetBaris(existingSetoranThisWeek.targetBaris);
@@ -96,6 +106,8 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
       setSavedDocId(existingSetoranThisWeek.id || null);
     } else if (latestSetoranFromPrevWeek) {
       // Auto-fill from previous week's setoran
+      setNoNewMemorization(false);
+      setMemorizationReason('');
       const prevStartSurah = latestSetoranFromPrevWeek.surah;
       const prevEndSurah = latestSetoranFromPrevWeek.surahSampai || prevStartSurah;
       const prevEndAyat = latestSetoranFromPrevWeek.ayatSampai;
@@ -130,6 +142,8 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
       setSavedDocId(null);
     } else if (student.sabaqDisplay && student.sabaqDisplay !== '-' && student.sabaqDisplay !== 'Belum Ada') {
       // Parse from student.sabaqDisplay (e.g. "Al-Mulk: 14")
+      setNoNewMemorization(false);
+      setMemorizationReason('');
       const match = student.sabaqDisplay.match(/^(.+?)\s*[:\-–]\s*(\d+)$/i);
       if (match) {
         const parsedSurah = match[1].trim();
@@ -166,6 +180,8 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
       setSavedDocId(null);
     } else {
       // Default initial state
+      setNoNewMemorization(false);
+      setMemorizationReason('');
       setSurah('Al-Fatihah');
       setSurahSampai('Al-Fatihah');
       setIsMultiSurah(false);
@@ -191,6 +207,7 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
 
   // Toggle day selection
   const toggleHari = (day: string) => {
+    if (noNewMemorization) return;
     if (selectedHari.includes(day)) {
       setSelectedHari(selectedHari.filter(d => d !== day));
     } else {
@@ -209,14 +226,21 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
       return;
     }
 
-    if (ayatDari <= 0 || ayatSampai <= 0) {
-      alert("Ayat harus lebih besar dari 0.");
-      return;
-    }
+    if (noNewMemorization) {
+      if (!memorizationReason.trim()) {
+        alert("Silakan pilih alasan tidak adanya setoran sabaq.");
+        return;
+      }
+    } else {
+      if (ayatDari <= 0 || ayatSampai <= 0) {
+        alert("Ayat harus lebih besar dari 0.");
+        return;
+      }
 
-    if (!isMultiSurah && ayatDari > ayatSampai) {
-      alert("Ayat Dari tidak boleh lebih besar dari Ayat Sampai.");
-      return;
+      if (!isMultiSurah && ayatDari > ayatSampai) {
+        alert("Ayat Dari tidak boleh lebih besar dari Ayat Sampai.");
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -235,10 +259,12 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
         surahSampai: targetEndSurah,
         ayatDari,
         ayatSampai,
-        jumlahBaris: Number(jumlahBaris) || 0,
-        hariSetor: selectedHari,
+        jumlahBaris: noNewMemorization ? 0 : (Number(jumlahBaris) || 0),
+        hariSetor: noNewMemorization ? [] : selectedHari,
         targetBaris,
-        status: isTargetAchieved ? 'Tuntas' : 'Belum Tuntas',
+        status: noNewMemorization ? 'Tuntas' : (isTargetAchieved ? 'Tuntas' : 'Belum Tuntas'),
+        noNewMemorization,
+        memorizationReason: noNewMemorization ? memorizationReason : null,
         catatan: catatan.trim()
       };
 
@@ -251,14 +277,20 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
       }
 
       // Update student's sabaq terakhir in Firestore
-      const progressText = isMultiSurah && surah !== targetEndSurah
-        ? `${surah} - ${targetEndSurah}: ${ayatSampai}`
-        : `${surah}: ${ayatSampai}`;
+      if (!noNewMemorization) {
+        const progressText = isMultiSurah && surah !== targetEndSurah
+          ? `${surah} - ${targetEndSurah}: ${ayatSampai}`
+          : `${surah}: ${ayatSampai}`;
 
-      await updateStudent(student.id, {
-        currentProgress: progressText,
-        targetBaris: targetBaris
-      });
+        await updateStudent(student.id, {
+          currentProgress: progressText,
+          targetBaris: targetBaris
+        });
+      } else {
+        await updateStudent(student.id, {
+          targetBaris: targetBaris
+        });
+      }
 
       setIsSaved(true);
       onSavedSuccess();
@@ -359,11 +391,53 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
         </div>
       </div>
 
+      {/* NO NEW MEMORIZATION CHECKBOX & REASON */}
+      <div className="mt-4 p-3.5 bg-amber-50/60 border border-amber-200/80 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <label className="flex items-center gap-2.5 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={noNewMemorization}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              setNoNewMemorization(checked);
+              if (checked) {
+                setJumlahBaris(0);
+                setSelectedHari([]);
+              } else {
+                setJumlahBaris(10);
+              }
+            }}
+            className="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500 cursor-pointer"
+          />
+          <span className="text-xs font-bold text-gray-800">
+            Pekan ini tidak ada setoran sabaq (hafalan baru)
+          </span>
+        </label>
+
+        {noNewMemorization && (
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-xs font-bold text-amber-900">Alasan:</span>
+            <select
+              value={memorizationReason}
+              onChange={(e) => setMemorizationReason(e.target.value)}
+              className="bg-white border border-amber-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-amber-500 outline-none shadow-2xs"
+            >
+              <option value="">-- Pilih Alasan --</option>
+              <option value="Murajaah">Murajaah</option>
+              <option value="Persiapan Tasmi'">Persiapan Tasmi'</option>
+              <option value="Persiapan Syahadah">Persiapan Syahadah</option>
+              <option value="Tasmi'">Tasmi'</option>
+              <option value="Lainnya">Lainnya</option>
+            </select>
+          </div>
+        )}
+      </div>
+
       {/* INPUT FORM BODY */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-5 mt-5">
         
         {/* INPUT 1: SETORAN SABAQ (Surat & Ayat) - 5 cols */}
-        <div className="md:col-span-5 bg-gray-50/70 p-4 rounded-xl border border-gray-100 space-y-3">
+        <div className={`md:col-span-5 bg-gray-50/70 p-4 rounded-xl border border-gray-100 space-y-3 transition-opacity ${noNewMemorization ? 'opacity-50 pointer-events-none' : ''}`}>
           <div className="flex flex-wrap items-center justify-between gap-1.5 pb-1 border-b border-gray-200/60">
             <label className="text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1">
               <BookOpen size={13} className="text-emerald-600" /> 1. Setoran Sabaq
@@ -373,6 +447,7 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
             <div className="flex items-center bg-gray-200/80 p-0.5 rounded-lg text-[10px] font-bold">
               <button
                 type="button"
+                disabled={noNewMemorization}
                 onClick={() => {
                   setIsMultiSurah(false);
                   setSurahSampai(surah);
@@ -387,6 +462,7 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
               </button>
               <button
                 type="button"
+                disabled={noNewMemorization}
                 onClick={() => {
                   setIsMultiSurah(true);
                   const endS = surahSampai || surah;
@@ -410,6 +486,7 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
                 <span className="text-[11px] font-semibold text-gray-600 block mb-1">Surat</span>
                 <select 
                   value={surah}
+                  disabled={noNewMemorization}
                   onChange={(e) => {
                     const newS = e.target.value;
                     setSurah(newS);
@@ -421,7 +498,7 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
                     setAyatDari(newDari);
                     setAyatSampai(newSampai);
                   }}
-                  className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none shadow-2xs"
+                  className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none shadow-2xs disabled:bg-gray-100 disabled:text-gray-400"
                 >
                   {QURAN_MAPPING.map(q => (
                     <option key={q.surah} value={q.surah}>
@@ -438,6 +515,7 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
                     type="number" 
                     min="1" 
                     max={maxAyahFrom}
+                    disabled={noNewMemorization}
                     value={ayatDari === 0 ? '' : ayatDari}
                     onChange={(e) => {
                       const val = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
@@ -445,7 +523,7 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
                         setAyatDari(val);
                       }
                     }}
-                    className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none text-center shadow-2xs"
+                    className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none text-center shadow-2xs disabled:bg-gray-100 disabled:text-gray-400"
                   />
                 </div>
                 <div>
@@ -454,6 +532,7 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
                     type="number" 
                     min="1" 
                     max={maxAyahFrom}
+                    disabled={noNewMemorization}
                     value={ayatSampai === 0 ? '' : ayatSampai}
                     onChange={(e) => {
                       const val = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
@@ -461,7 +540,7 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
                         setAyatSampai(val);
                       }
                     }}
-                    className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none text-center shadow-2xs"
+                    className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none text-center shadow-2xs disabled:bg-gray-100 disabled:text-gray-400"
                   />
                 </div>
               </div>
@@ -480,11 +559,12 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
                   <span className="text-[11px] font-bold text-emerald-900 block mb-1">Dari Surah</span>
                   <select 
                     value={surah}
+                    disabled={noNewMemorization}
                     onChange={(e) => {
                       const newS = e.target.value;
                       setSurah(newS);
                     }}
-                    className="w-full bg-white border border-emerald-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none shadow-2xs"
+                    className="w-full bg-white border border-emerald-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none shadow-2xs disabled:bg-gray-100 disabled:text-gray-400"
                   >
                     {QURAN_MAPPING.map(q => (
                       <option key={`from-${q.surah}`} value={q.surah}>
@@ -499,6 +579,7 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
                     type="number" 
                     min="1" 
                     max={maxAyahFrom}
+                    disabled={noNewMemorization}
                     value={ayatDari === 0 ? '' : ayatDari}
                     onChange={(e) => {
                       const val = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
@@ -506,7 +587,7 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
                         setAyatDari(val);
                       }
                     }}
-                    className="w-full bg-white border border-emerald-300 rounded-xl px-2 py-1.5 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none text-center shadow-2xs"
+                    className="w-full bg-white border border-emerald-300 rounded-xl px-2 py-1.5 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none text-center shadow-2xs disabled:bg-gray-100 disabled:text-gray-400"
                   />
                 </div>
               </div>
@@ -517,11 +598,12 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
                   <span className="text-[11px] font-bold text-emerald-900 block mb-1">Sampai Surah</span>
                   <select 
                     value={surahSampai}
+                    disabled={noNewMemorization}
                     onChange={(e) => {
                       const newS = e.target.value;
                       setSurahSampai(newS);
                     }}
-                    className="w-full bg-white border border-emerald-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none shadow-2xs"
+                    className="w-full bg-white border border-emerald-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none shadow-2xs disabled:bg-gray-100 disabled:text-gray-400"
                   >
                     {QURAN_MAPPING.map(q => (
                       <option key={`to-${q.surah}`} value={q.surah}>
@@ -536,6 +618,7 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
                     type="number" 
                     min="1" 
                     max={maxAyahTo}
+                    disabled={noNewMemorization}
                     value={ayatSampai === 0 ? '' : ayatSampai}
                     onChange={(e) => {
                       const val = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
@@ -543,7 +626,7 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
                         setAyatSampai(val);
                       }
                     }}
-                    className="w-full bg-white border border-emerald-300 rounded-xl px-2 py-1.5 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none text-center shadow-2xs"
+                    className="w-full bg-white border border-emerald-300 rounded-xl px-2 py-1.5 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none text-center shadow-2xs disabled:bg-gray-100 disabled:text-gray-400"
                   />
                 </div>
               </div>
@@ -564,14 +647,20 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
                 type="number" 
                 min="0" 
                 max="500"
-                value={jumlahBaris === 0 ? '' : jumlahBaris}
+                disabled={noNewMemorization}
+                value={noNewMemorization ? 0 : (jumlahBaris === 0 ? '' : jumlahBaris)}
                 onChange={(e) => {
+                  if (noNewMemorization) return;
                   const val = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
                   if (!isNaN(val)) {
                     setJumlahBaris(val);
                   }
                 }}
-                className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-base font-black text-emerald-900 focus:ring-2 focus:ring-emerald-500 outline-none shadow-2xs pr-16"
+                className={`w-full border rounded-xl px-3 py-2 text-base font-black outline-none shadow-2xs pr-16 ${
+                  noNewMemorization
+                    ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'bg-white border-gray-300 text-emerald-900 focus:ring-2 focus:ring-emerald-500'
+                }`}
               />
               <span className="absolute right-3 text-xs font-bold text-gray-400 pointer-events-none">
                 Baris
@@ -586,14 +675,17 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
             </label>
             <div className="flex items-center gap-1.5">
               {HARI_LIST.map(day => {
-                const isSelected = selectedHari.includes(day);
+                const isSelected = !noNewMemorization && selectedHari.includes(day);
                 return (
                   <button
                     key={day}
                     type="button"
+                    disabled={noNewMemorization}
                     onClick={() => toggleHari(day)}
                     className={`flex-1 py-1.5 px-1 rounded-lg text-xs font-bold border transition-all ${
-                      isSelected
+                      noNewMemorization
+                        ? 'bg-gray-100 border-gray-200 text-gray-300 cursor-not-allowed'
+                        : isSelected
                         ? 'bg-emerald-600 border-emerald-600 text-white shadow-xs scale-105'
                         : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-100'
                     }`}
@@ -616,7 +708,12 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
               4. Status
             </label>
             <div className="mt-0.5">
-              {isTargetAchieved ? (
+              {noNewMemorization ? (
+                <div className="bg-emerald-100 border border-emerald-300 text-emerald-900 px-3 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-2xs">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                  🟢 {memorizationReason || "Murajaah"}
+                </div>
+              ) : isTargetAchieved ? (
                 <div className="bg-emerald-100 border border-emerald-300 text-emerald-900 px-3 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-2xs">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
                   🟢 Target Tercapai
@@ -630,22 +727,28 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
             </div>
           </div>
 
-          {/* PROGRESS BAR MINGGUAN */}
-          <div>
-            <div className="flex justify-between items-center mb-1 text-xs">
-              <span className="font-bold text-gray-600">Progress Mingguan</span>
-              <span className="font-black text-emerald-800">{jumlahBaris} / {targetBaris} Baris</span>
+          {/* PROGRESS BAR MINGGUAN / DESKRIPSI TANPA SABAQ */}
+          {noNewMemorization ? (
+            <div className="mt-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50/80 p-2.5 rounded-xl border border-emerald-200/80 leading-snug">
+              Tidak ada target sabaq pekan ini.
             </div>
-            
-            <div className="w-full bg-gray-200 rounded-full h-3.5 overflow-hidden border border-gray-300/60 p-0.5">
-              <div 
-                className={`h-full rounded-full transition-all duration-500 ${
-                  isTargetAchieved ? 'bg-gradient-to-r from-emerald-500 to-teal-500' : 'bg-amber-500'
-                }`}
-                style={{ width: `${Math.min(100, Math.round((jumlahBaris / targetBaris) * 100))}%` }}
-              ></div>
+          ) : (
+            <div>
+              <div className="flex justify-between items-center mb-1 text-xs">
+                <span className="font-bold text-gray-600">Progress Mingguan</span>
+                <span className="font-black text-emerald-800">{jumlahBaris} / {targetBaris} Baris</span>
+              </div>
+              
+              <div className="w-full bg-gray-200 rounded-full h-3.5 overflow-hidden border border-gray-300/60 p-0.5">
+                <div 
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    isTargetAchieved ? 'bg-gradient-to-r from-emerald-500 to-teal-500' : 'bg-amber-500'
+                  }`}
+                  style={{ width: `${Math.min(100, Math.round((jumlahBaris / targetBaris) * 100))}%` }}
+                ></div>
+              </div>
             </div>
-          </div>
+          )}
 
         </div>
 

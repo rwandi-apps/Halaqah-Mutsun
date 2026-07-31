@@ -1468,11 +1468,17 @@ export const MonitoringSetoranSabak: React.FC<MonitoringSetoranSabakProps> = ({ 
                                                 </td>
                                                 <td className="px-5 py-3 text-center font-bold text-teal-700">
                                                   {latest ? (
-                                                    <span className="bg-teal-50 px-2.5 py-1 rounded-lg">
-                                                      {latest.surahSampai && latest.surahSampai !== latest.surah
-                                                        ? `${latest.surah} (${latest.ayatDari}) - ${latest.surahSampai} (${latest.ayatSampai})`
-                                                        : `${latest.surah}: ${latest.ayatDari}-${latest.ayatSampai}`}
-                                                    </span>
+                                                    latest.noNewMemorization ? (
+                                                      <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-lg text-xs font-bold">
+                                                        🟢 {latest.memorizationReason || "Murajaah"}
+                                                      </span>
+                                                    ) : (
+                                                      <span className="bg-teal-50 px-2.5 py-1 rounded-lg">
+                                                        {latest.surahSampai && latest.surahSampai !== latest.surah
+                                                          ? `${latest.surah} (${latest.ayatDari}) - ${latest.surahSampai} (${latest.ayatSampai})`
+                                                          : `${latest.surah}: ${latest.ayatDari}-${latest.ayatSampai}`}
+                                                      </span>
+                                                    )
                                                   ) : (
                                                     <span className="text-gray-300">-</span>
                                                   )}
@@ -1485,13 +1491,19 @@ export const MonitoringSetoranSabak: React.FC<MonitoringSetoranSabakProps> = ({ 
                                                   )}
                                                 </td>
                                                 <td className="px-5 py-3 text-center">
-                                                  <span className={`px-2.5 py-1 rounded-full text-xs font-black ${
-                                                    isDepositedThisWeek 
-                                                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
-                                                      : 'bg-rose-50 text-rose-600 border border-rose-100'
-                                                  }`}>
-                                                    {weeklySetorans.length} Setoran
-                                                  </span>
+                                                  {weeklySetorans.length > 0 && weeklySetorans[0].noNewMemorization ? (
+                                                    <span className="px-2.5 py-1 rounded-full text-xs font-black bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                                      🟢 {weeklySetorans[0].memorizationReason || "Murajaah"}
+                                                    </span>
+                                                  ) : (
+                                                    <span className={`px-2.5 py-1 rounded-full text-xs font-black ${
+                                                      isDepositedThisWeek 
+                                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
+                                                        : 'bg-rose-50 text-rose-600 border border-rose-100'
+                                                    }`}>
+                                                      {weeklySetorans.length} Setoran
+                                                    </span>
+                                                  )}
                                                 </td>
                                                 <td className="px-5 py-3 text-center">
                                                   <button
@@ -1617,12 +1629,22 @@ export const MonitoringSetoranSabak: React.FC<MonitoringSetoranSabakProps> = ({ 
                             {new Date(rec.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}
                           </td>
                           <td className="px-5 py-3.5 font-black text-emerald-700 uppercase">
-                            {rec.surahSampai && rec.surahSampai !== rec.surah ? `${rec.surah} - ${rec.surahSampai}` : rec.surah}
+                            {rec.noNewMemorization ? (
+                              <span className="text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-xs font-bold">
+                                🟢 {rec.memorizationReason || "Murajaah"}
+                              </span>
+                            ) : (
+                              rec.surahSampai && rec.surahSampai !== rec.surah ? `${rec.surah} - ${rec.surahSampai}` : rec.surah
+                            )}
                           </td>
                           <td className="px-5 py-3.5 text-center font-bold">
-                            <span className="bg-gray-100 px-2.5 py-1 rounded-lg text-gray-700">
-                              {rec.ayatDari} - {rec.ayatSampai}
-                            </span>
+                            {rec.noNewMemorization ? (
+                              <span className="text-gray-400">-</span>
+                            ) : (
+                              <span className="bg-gray-100 px-2.5 py-1 rounded-lg text-gray-700">
+                                {rec.ayatDari} - {rec.ayatSampai}
+                              </span>
+                            )}
                           </td>
                           <td className="px-5 py-3.5 text-center">
                             <span className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider ${

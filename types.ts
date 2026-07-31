@@ -186,6 +186,8 @@ export interface SetoranSabak {
   hariSetor?: string[];
   targetBaris?: number;
   status: 'Tuntas' | 'Belum Tuntas';
+  noNewMemorization?: boolean;
+  memorizationReason?: string | null;
   catatan?: string;
   createdAt?: any;
   updatedAt?: any;
