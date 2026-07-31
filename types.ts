@@ -179,6 +179,7 @@ export interface SetoranSabak {
   siswaId: string;
   namaSiswa: string;
   surah: string;
+  surahSampai?: string; // Surah akhir (opsional jika lintas surah)
   ayatDari: number;
   ayatSampai: number;
   jumlahBaris?: number;

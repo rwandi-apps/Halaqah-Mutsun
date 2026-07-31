@@ -1469,7 +1469,9 @@ export const MonitoringSetoranSabak: React.FC<MonitoringSetoranSabakProps> = ({ 
                                                 <td className="px-5 py-3 text-center font-bold text-teal-700">
                                                   {latest ? (
                                                     <span className="bg-teal-50 px-2.5 py-1 rounded-lg">
-                                                      {latest.surah}: {latest.ayatDari}-{latest.ayatSampai}
+                                                      {latest.surahSampai && latest.surahSampai !== latest.surah
+                                                        ? `${latest.surah} (${latest.ayatDari}) - ${latest.surahSampai} (${latest.ayatSampai})`
+                                                        : `${latest.surah}: ${latest.ayatDari}-${latest.ayatSampai}`}
                                                     </span>
                                                   ) : (
                                                     <span className="text-gray-300">-</span>
@@ -1614,7 +1616,9 @@ export const MonitoringSetoranSabak: React.FC<MonitoringSetoranSabakProps> = ({ 
                           <td className="px-5 py-3.5 font-bold text-gray-700">
                             {new Date(rec.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}
                           </td>
-                          <td className="px-5 py-3.5 font-black text-emerald-700 uppercase">{rec.surah}</td>
+                          <td className="px-5 py-3.5 font-black text-emerald-700 uppercase">
+                            {rec.surahSampai && rec.surahSampai !== rec.surah ? `${rec.surah} - ${rec.surahSampai}` : rec.surah}
+                          </td>
                           <td className="px-5 py-3.5 text-center font-bold">
                             <span className="bg-gray-100 px-2.5 py-1 rounded-lg text-gray-700">
                               {rec.ayatDari} - {rec.ayatSampai}

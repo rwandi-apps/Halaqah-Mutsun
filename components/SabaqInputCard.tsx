@@ -43,7 +43,9 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
   const [customTargetInput, setCustomTargetInput] = useState<string>(String(targetBaris));
 
   // Form Fields
+  const [isMultiSurah, setIsMultiSurah] = useState<boolean>(false);
   const [surah, setSurah] = useState<string>('Al-Fatihah');
+  const [surahSampai, setSurahSampai] = useState<string>('Al-Fatihah');
   const [ayatDari, setAyatDari] = useState<number>(1);
   const [ayatSampai, setAyatSampai] = useState<number>(1);
   const [jumlahBaris, setJumlahBaris] = useState<number>(10);
@@ -55,31 +57,34 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
   const [isSaved, setIsSaved] = useState<boolean>(false);
   const [savedDocId, setSavedDocId] = useState<string | null>(null);
 
-  // Max ayah for chosen surah
-  const [maxAyah, setMaxAyah] = useState<number>(7);
+  // Max ayah for chosen surahs
+  const [maxAyahFrom, setMaxAyahFrom] = useState<number>(7);
+  const [maxAyahTo, setMaxAyahTo] = useState<number>(7);
 
-  // Synchronize max ayah whenever surah changes
+  // Synchronize max ayah whenever surah or surahSampai changes
   useEffect(() => {
-    const q = QURAN_MAPPING.find(m => m.surah.toLowerCase() === surah.toLowerCase());
-    if (q) {
-      setMaxAyah(q.end);
-    } else {
-      setMaxAyah(286);
-    }
-  }, [surah]);
+    const q1 = QURAN_MAPPING.find(m => m.surah.toLowerCase() === surah.toLowerCase());
+    setMaxAyahFrom(q1 ? q1.end : 286);
+
+    const targetTo = isMultiSurah ? surahSampai : surah;
+    const q2 = QURAN_MAPPING.find(m => m.surah.toLowerCase() === targetTo.toLowerCase());
+    setMaxAyahTo(q2 ? q2.end : 286);
+  }, [surah, surahSampai, isMultiSurah]);
 
   // AUTO-FILL logic on mount or data change
   useEffect(() => {
     if (existingSetoranThisWeek) {
       // Existing record for this date/week
       setSurah(existingSetoranThisWeek.surah);
+      const endSur = existingSetoranThisWeek.surahSampai || existingSetoranThisWeek.surah;
+      setSurahSampai(endSur);
+      setIsMultiSurah(Boolean(existingSetoranThisWeek.surahSampai && existingSetoranThisWeek.surahSampai !== existingSetoranThisWeek.surah));
       setAyatDari(existingSetoranThisWeek.ayatDari);
       setAyatSampai(existingSetoranThisWeek.ayatSampai);
       if (existingSetoranThisWeek.jumlahBaris !== undefined) {
         setJumlahBaris(existingSetoranThisWeek.jumlahBaris);
       } else {
-        const lines = calculateHafalan(existingSetoranThisWeek.surah, existingSetoranThisWeek.ayatDari, existingSetoranThisWeek.surah, existingSetoranThisWeek.ayatSampai).totalLines;
-        setJumlahBaris(lines > 0 ? lines : (existingSetoranThisWeek.ayatSampai - existingSetoranThisWeek.ayatDari + 1));
+        setJumlahBaris(10);
       }
       setSelectedHari(existingSetoranThisWeek.hariSetor || []);
       setCatatan(existingSetoranThisWeek.catatan || '');
@@ -91,17 +96,18 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
       setSavedDocId(existingSetoranThisWeek.id || null);
     } else if (latestSetoranFromPrevWeek) {
       // Auto-fill from previous week's setoran
-      const prevSurah = latestSetoranFromPrevWeek.surah;
+      const prevStartSurah = latestSetoranFromPrevWeek.surah;
+      const prevEndSurah = latestSetoranFromPrevWeek.surahSampai || prevStartSurah;
       const prevEndAyat = latestSetoranFromPrevWeek.ayatSampai;
-      const q = QURAN_MAPPING.find(m => m.surah.toLowerCase() === prevSurah.toLowerCase());
+      const q = QURAN_MAPPING.find(m => m.surah.toLowerCase() === prevEndSurah.toLowerCase());
       const maxAy = q ? q.end : 286;
 
-      let nextSurah = prevSurah;
+      let nextSurah = prevEndSurah;
       let nextStartAyat = prevEndAyat + 1;
 
       if (nextStartAyat > maxAy) {
         // Find next surah in Quran order
-        const currIndex = QURAN_MAPPING.findIndex(m => m.surah.toLowerCase() === prevSurah.toLowerCase());
+        const currIndex = QURAN_MAPPING.findIndex(m => m.surah.toLowerCase() === prevEndSurah.toLowerCase());
         if (currIndex >= 0 && currIndex < QURAN_MAPPING.length - 1) {
           nextSurah = QURAN_MAPPING[currIndex + 1].surah;
           nextStartAyat = 1;
@@ -113,11 +119,11 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
       const defaultEndAyat = Math.min(nextStartAyat + 5, QURAN_MAPPING.find(m => m.surah.toLowerCase() === nextSurah.toLowerCase())?.end || 286);
       
       setSurah(nextSurah);
+      setSurahSampai(nextSurah);
+      setIsMultiSurah(false);
       setAyatDari(nextStartAyat);
       setAyatSampai(defaultEndAyat);
-      
-      const calc = calculateHafalan(nextSurah, nextStartAyat, nextSurah, defaultEndAyat).totalLines;
-      setJumlahBaris(calc > 0 ? calc : (defaultEndAyat - nextStartAyat + 1));
+      setJumlahBaris(latestSetoranFromPrevWeek.jumlahBaris || 10);
       setSelectedHari([]);
       setCatatan('');
       setIsSaved(false);
@@ -133,21 +139,26 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
           const nextAy = Math.min(parsedAyat + 1, qEntry.end);
           const endAy = Math.min(nextAy + 5, qEntry.end);
           setSurah(qEntry.surah);
+          setSurahSampai(qEntry.surah);
+          setIsMultiSurah(false);
           setAyatDari(nextAy);
           setAyatSampai(endAy);
-          const calc = calculateHafalan(qEntry.surah, nextAy, qEntry.surah, endAy).totalLines;
-          setJumlahBaris(calc > 0 ? calc : (endAy - nextAy + 1));
+          setJumlahBaris(10);
         } else {
           setSurah('Al-Fatihah');
+          setSurahSampai('Al-Fatihah');
+          setIsMultiSurah(false);
           setAyatDari(1);
           setAyatSampai(7);
-          setJumlahBaris(7);
+          setJumlahBaris(10);
         }
       } else {
         setSurah('Al-Fatihah');
+        setSurahSampai('Al-Fatihah');
+        setIsMultiSurah(false);
         setAyatDari(1);
         setAyatSampai(7);
-        setJumlahBaris(7);
+        setJumlahBaris(10);
       }
       setSelectedHari([]);
       setCatatan('');
@@ -156,15 +167,17 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
     } else {
       // Default initial state
       setSurah('Al-Fatihah');
+      setSurahSampai('Al-Fatihah');
+      setIsMultiSurah(false);
       setAyatDari(1);
       setAyatSampai(7);
-      setJumlahBaris(7);
+      setJumlahBaris(10);
       setSelectedHari([]);
       setCatatan('');
       setIsSaved(false);
       setSavedDocId(null);
     }
-  }, [existingSetoranThisWeek, latestSetoranFromPrevWeek, student.id, student.sabaqDisplay]);
+  }, [existingSetoranThisWeek, latestSetoranFromPrevWeek, student]);
 
   const handleSurahSelect = (newSurah: string) => {
     setSurah(newSurah);
@@ -174,8 +187,6 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
     const newSampai = Math.min(7, mAy);
     setAyatDari(newDari);
     setAyatSampai(newSampai);
-    const calculated = calculateHafalan(newSurah, newDari, newSurah, newSampai).totalLines;
-    setJumlahBaris(calculated > 0 ? calculated : (newSampai - newDari + 1));
   };
 
   // Toggle day selection
@@ -203,13 +214,14 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
       return;
     }
 
-    if (ayatDari > ayatSampai) {
+    if (!isMultiSurah && ayatDari > ayatSampai) {
       alert("Ayat Dari tidak boleh lebih besar dari Ayat Sampai.");
       return;
     }
 
     setIsSubmitting(true);
     try {
+      const targetEndSurah = isMultiSurah ? surahSampai : surah;
       const guruNama = currentUser.nickname || currentUser.name || "Guru";
       const payload: Omit<SetoranSabak, 'id' | 'createdAt' | 'updatedAt'> = {
         tanggal,
@@ -220,6 +232,7 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
         siswaId: student.id,
         namaSiswa: student.name,
         surah,
+        surahSampai: targetEndSurah,
         ayatDari,
         ayatSampai,
         jumlahBaris: Number(jumlahBaris) || 0,
@@ -238,8 +251,12 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
       }
 
       // Update student's sabaq terakhir in Firestore
+      const progressText = isMultiSurah && surah !== targetEndSurah
+        ? `${surah} - ${targetEndSurah}: ${ayatSampai}`
+        : `${surah}: ${ayatSampai}`;
+
       await updateStudent(student.id, {
-        currentProgress: `${surah}: ${ayatSampai}`,
+        currentProgress: progressText,
         targetBaris: targetBaris
       });
 
@@ -347,61 +364,191 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
         
         {/* INPUT 1: SETORAN SABAQ (Surat & Ayat) - 5 cols */}
         <div className="md:col-span-5 bg-gray-50/70 p-4 rounded-xl border border-gray-100 space-y-3">
-          <label className="text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1">
-            <BookOpen size={13} className="text-emerald-600" /> 1. Setoran Sabaq
-          </label>
-          
-          {/* Dropdown Surat */}
-          <div>
-            <span className="text-[11px] font-semibold text-gray-600 block mb-1">Surat</span>
-            <select 
-              value={surah}
-              onChange={(e) => handleSurahSelect(e.target.value)}
-              className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none shadow-2xs"
-            >
-              {QURAN_MAPPING.map(q => (
-                <option key={q.surah} value={q.surah}>
-                  {q.surah} ({q.end} Ayat)
-                </option>
-              ))}
-            </select>
+          <div className="flex flex-wrap items-center justify-between gap-1.5 pb-1 border-b border-gray-200/60">
+            <label className="text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1">
+              <BookOpen size={13} className="text-emerald-600" /> 1. Setoran Sabaq
+            </label>
+
+            {/* Toggle Mode */}
+            <div className="flex items-center bg-gray-200/80 p-0.5 rounded-lg text-[10px] font-bold">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMultiSurah(false);
+                  setSurahSampai(surah);
+                }}
+                className={`px-2 py-0.5 rounded-md transition-all ${
+                  !isMultiSurah
+                    ? 'bg-white text-emerald-800 shadow-2xs font-extrabold'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                1 Surah
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMultiSurah(true);
+                  const endS = surahSampai || surah;
+                  setSurahSampai(endS);
+                }}
+                className={`px-2 py-0.5 rounded-md transition-all ${
+                  isMultiSurah
+                    ? 'bg-emerald-600 text-white shadow-2xs font-extrabold'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Lintas / Banyak Surah
+              </button>
+            </div>
           </div>
 
-          {/* Ayat Dari & Sampai */}
-          <div className="grid grid-cols-2 gap-3 pt-1">
-            <div>
-              <span className="text-[11px] font-semibold text-gray-600 block mb-1">Ayat Dari</span>
-              <input 
-                type="number" 
-                min="1" 
-                max={maxAyah}
-                value={ayatDari === 0 ? '' : ayatDari}
-                onChange={(e) => {
-                  const val = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
-                  if (!isNaN(val)) {
-                    setAyatDari(val);
-                  }
-                }}
-                className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none text-center shadow-2xs"
-              />
+          {!isMultiSurah ? (
+            /* MODE SATU SURAH */
+            <div className="space-y-3">
+              <div>
+                <span className="text-[11px] font-semibold text-gray-600 block mb-1">Surat</span>
+                <select 
+                  value={surah}
+                  onChange={(e) => {
+                    const newS = e.target.value;
+                    setSurah(newS);
+                    setSurahSampai(newS);
+                    const q = QURAN_MAPPING.find(m => m.surah.toLowerCase() === newS.toLowerCase());
+                    const mAy = q ? q.end : 286;
+                    const newDari = 1;
+                    const newSampai = Math.min(7, mAy);
+                    setAyatDari(newDari);
+                    setAyatSampai(newSampai);
+                  }}
+                  className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none shadow-2xs"
+                >
+                  {QURAN_MAPPING.map(q => (
+                    <option key={q.surah} value={q.surah}>
+                      {q.surah} ({q.end} Ayat)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pt-0.5">
+                <div>
+                  <span className="text-[11px] font-semibold text-gray-600 block mb-1">Ayat Dari</span>
+                  <input 
+                    type="number" 
+                    min="1" 
+                    max={maxAyahFrom}
+                    value={ayatDari === 0 ? '' : ayatDari}
+                    onChange={(e) => {
+                      const val = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
+                      if (!isNaN(val)) {
+                        setAyatDari(val);
+                      }
+                    }}
+                    className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none text-center shadow-2xs"
+                  />
+                </div>
+                <div>
+                  <span className="text-[11px] font-semibold text-gray-600 block mb-1">Sampai</span>
+                  <input 
+                    type="number" 
+                    min="1" 
+                    max={maxAyahFrom}
+                    value={ayatSampai === 0 ? '' : ayatSampai}
+                    onChange={(e) => {
+                      const val = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
+                      if (!isNaN(val)) {
+                        setAyatSampai(val);
+                      }
+                    }}
+                    className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none text-center shadow-2xs"
+                  />
+                </div>
+              </div>
             </div>
-            <div>
-              <span className="text-[11px] font-semibold text-gray-600 block mb-1">Sampai</span>
-              <input 
-                type="number" 
-                min="1" 
-                max={maxAyah}
-                value={ayatSampai === 0 ? '' : ayatSampai}
-                onChange={(e) => {
-                  const val = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
-                  if (!isNaN(val)) {
-                    setAyatSampai(val);
-                  }
-                }}
-                className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none text-center shadow-2xs"
-              />
+          ) : (
+            /* MODE LINTAS / BANYAK SURAH */
+            <div className="space-y-2.5 bg-emerald-50/50 p-2.5 rounded-xl border border-emerald-200/70">
+              <div className="text-[10px] text-emerald-900 font-medium bg-emerald-100/70 p-2 rounded-lg flex items-center gap-1.5">
+                <span className="font-extrabold uppercase px-1.5 py-0.5 rounded bg-emerald-700 text-white text-[8px] shrink-0">Lintas Surah</span>
+                <span>Setoran beberapa surat (contoh: An-Nas s/d Al-Ikhlas)</span>
+              </div>
+
+              {/* DARI SURAH & AYAT */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="col-span-2">
+                  <span className="text-[11px] font-bold text-emerald-900 block mb-1">Dari Surah</span>
+                  <select 
+                    value={surah}
+                    onChange={(e) => {
+                      const newS = e.target.value;
+                      setSurah(newS);
+                    }}
+                    className="w-full bg-white border border-emerald-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none shadow-2xs"
+                  >
+                    {QURAN_MAPPING.map(q => (
+                      <option key={`from-${q.surah}`} value={q.surah}>
+                        {q.surah}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <span className="text-[11px] font-bold text-emerald-900 block mb-1">Ayat</span>
+                  <input 
+                    type="number" 
+                    min="1" 
+                    max={maxAyahFrom}
+                    value={ayatDari === 0 ? '' : ayatDari}
+                    onChange={(e) => {
+                      const val = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
+                      if (!isNaN(val)) {
+                        setAyatDari(val);
+                      }
+                    }}
+                    className="w-full bg-white border border-emerald-300 rounded-xl px-2 py-1.5 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none text-center shadow-2xs"
+                  />
+                </div>
+              </div>
+
+              {/* SAMPAI SURAH & AYAT */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="col-span-2">
+                  <span className="text-[11px] font-bold text-emerald-900 block mb-1">Sampai Surah</span>
+                  <select 
+                    value={surahSampai}
+                    onChange={(e) => {
+                      const newS = e.target.value;
+                      setSurahSampai(newS);
+                    }}
+                    className="w-full bg-white border border-emerald-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none shadow-2xs"
+                  >
+                    {QURAN_MAPPING.map(q => (
+                      <option key={`to-${q.surah}`} value={q.surah}>
+                        {q.surah}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <span className="text-[11px] font-bold text-emerald-900 block mb-1">Ayat</span>
+                  <input 
+                    type="number" 
+                    min="1" 
+                    max={maxAyahTo}
+                    value={ayatSampai === 0 ? '' : ayatSampai}
+                    onChange={(e) => {
+                      const val = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
+                      if (!isNaN(val)) {
+                        setAyatSampai(val);
+                      }
+                    }}
+                    className="w-full bg-white border border-emerald-300 rounded-xl px-2 py-1.5 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none text-center shadow-2xs"
+                  />
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* INPUT 2 & 3: JUMLAH BARIS & HARI SETOR - 4 cols */}
