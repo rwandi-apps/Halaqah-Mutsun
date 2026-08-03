@@ -295,7 +295,7 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           
           {/* Identitas Siswa */}
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Nama Siswa</p>
               <p className="font-bold text-gray-900 text-sm truncate" title={student.name}>{student.name}</p>
@@ -311,16 +311,6 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
             <div>
               <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Sedang Menghafal</p>
               <p className="font-semibold text-gray-800 text-sm">{student.currentJuzDisplay || "-"}</p>
-            </div>
-            <div className="col-span-2 md:col-span-1 flex items-center md:justify-end">
-              {!showForm && (
-                <Button 
-                  onClick={handleOpenAddForm}
-                  className="w-full md:w-auto bg-[#0ea5e9] hover:bg-[#0284c7] text-white text-xs font-bold py-2 px-3.5 flex items-center justify-center gap-1"
-                >
-                  <Plus size={14} /> Tambah Setoran
-                </Button>
-              )}
             </div>
           </div>
 
@@ -612,7 +602,6 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
               <div className="text-center py-12 bg-gray-50 border border-dashed border-gray-200 rounded-xl">
                 <BookOpen size={36} className="mx-auto text-gray-300 mb-2" />
                 <p className="text-gray-500 text-xs">Belum ada riwayat setoran Sabaq untuk siswa ini.</p>
-                <p className="text-gray-400 text-[10px] mt-1">Gunakan tombol "Tambah Setoran" di atas untuk mencatat setoran baru.</p>
               </div>
             )}
           </div>

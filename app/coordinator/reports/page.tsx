@@ -1,9 +1,9 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { Report, User } from '../../../types';
-import { getAllTeachers, subscribeToReportsByTeacher, isHalaqahTeacher } from '../../../services/firestoreService';
+import { Report, User, Student } from '../../../types';
+import { getAllTeachers, subscribeToReportsByTeacher, isHalaqahTeacher, subscribeToAllStudents, subscribeToAllReports } from '../../../services/firestoreService';
 import { SDQQuranEngine } from '../../../services/tahfizh/engine';
-import { Search, Loader2, AlertCircle, CheckCircle2, Filter, Calendar, Users, BookOpen, Heart, Star } from 'lucide-react';
+import { Search, Loader2, AlertCircle, CheckCircle2, Filter, Calendar, Users, BookOpen, Heart, Star, AlertTriangle, XCircle, CheckCircle, ChevronRight, Eye } from 'lucide-react';
 import { MonitoringSetoranSabak } from './MonitoringSetoranSabak';
 
 const getCurrentAcademicYear = (): string => {
@@ -77,8 +77,9 @@ const formatTotalHafalan = (total: any) => {
 export default function CoordinatorReportsPage() {
   const [activeTab, setActiveTab] = useState<'laporan' | 'sabak'>('laporan');
   const [teachers, setTeachers] = useState<User[]>([]);
-  const [reports, setReports] = useState<Report[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [allStudents, setAllStudents] = useState<Student[]>([]);
+  const [allReports, setAllReports] = useState<Report[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Filters State
   const [selectedTeacherId, setSelectedTeacherId] = useState<string>('');
@@ -87,13 +88,30 @@ export default function CoordinatorReportsPage() {
   const [filterPeriod, setFilterPeriod] = useState('Juli');
   const [searchTerm, setSearchTerm] = useState('');
   const [showNonactive, setShowNonactive] = useState(false);
+  const [summaryFilter, setSummaryFilter] = useState<'all' | 'unfilled' | 'incomplete' | 'complete'>('all');
 
-  // 1. Initial Load
+  // 1. Initial Load & Subscriptions
   useEffect(() => {
+    setIsLoading(true);
     getAllTeachers().then(data => {
       const onlyTeachers = data.filter(isHalaqahTeacher);
       setTeachers(onlyTeachers);
     });
+
+    const unsubStudents = subscribeToAllStudents(data => {
+      setAllStudents(data);
+      setIsLoading(false);
+    });
+
+    const unsubReports = subscribeToAllReports(data => {
+      setAllReports(data);
+      setIsLoading(false);
+    });
+
+    return () => {
+      unsubStudents();
+      unsubReports();
+    };
   }, []);
 
   // Filter teachers based on active/inactive status
@@ -101,42 +119,152 @@ export default function CoordinatorReportsPage() {
     return teachers.filter(t => showNonactive || t.status !== 'Nonaktif' || t.id === selectedTeacherId);
   }, [teachers, showNonactive, selectedTeacherId]);
 
-  // 2. Subscription
-  useEffect(() => {
-    if (!selectedTeacherId) {
-      setReports([]);
-      return;
-    }
-    setIsLoading(true);
-    const unsubscribe = subscribeToReportsByTeacher(selectedTeacherId, (data) => {
-      setReports(data);
-      setIsLoading(false);
-    });
-    return () => unsubscribe();
-  }, [selectedTeacherId]);
-
-  // 3. Filter Logic
-  const filteredReports = useMemo(() => {
-    return reports.filter(r => {
-      const matchesType = r.type === filterType;
-      const matchesPeriod = r.month === filterPeriod;
-      const matchesYear = r.academicYear === filterYear;
-      const matchesSearch = searchTerm === '' || r.studentName.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchesType && matchesPeriod && matchesYear && matchesSearch;
-    });
-  }, [reports, filterType, filterPeriod, filterYear, searchTerm]);
-
   const handleTypeChange = (type: string) => {
     setFilterType(type);
     setFilterPeriod(type === 'Laporan Semester' ? 'Ganjil' : 'Juli');
   };
+
+  // Compute status summary for each teacher/halaqah
+  const halaqahSummaries = useMemo(() => {
+    return filteredTeachers.map(teacher => {
+      // Find students belonging to this teacher
+      const teacherStudents = allStudents.filter(
+        s => s.teacherId === teacher.id && s.status !== 'Mutasi/Keluar' && s.status !== 'Alumni/Lulus'
+      );
+      const totalStudents = teacherStudents.length;
+
+      // Find reports for this teacher/students for selected filters
+      const teacherReports = allReports.filter(r => 
+        (r.teacherId === teacher.id || teacherStudents.some(s => s.id === r.studentId)) &&
+        r.type === filterType &&
+        r.month === filterPeriod &&
+        (r.academicYear ? r.academicYear === filterYear : true)
+      );
+
+      const reportMap = new Map<string, Report>();
+      teacherReports.forEach(r => {
+        if (r.studentId) reportMap.set(r.studentId, r);
+      });
+
+      let filledCount = 0;
+      teacherStudents.forEach(s => {
+        if (reportMap.has(s.id)) filledCount++;
+      });
+
+      const missingCount = Math.max(0, totalStudents - filledCount);
+
+      let status: 'complete' | 'incomplete' | 'unfilled' | 'empty' = 'complete';
+      if (totalStudents === 0) {
+        status = 'empty';
+      } else if (filledCount === 0) {
+        status = 'unfilled';
+      } else if (filledCount < totalStudents) {
+        status = 'incomplete';
+      } else {
+        status = 'complete';
+      }
+
+      return {
+        teacher,
+        teacherStudents,
+        teacherReports,
+        reportMap,
+        totalStudents,
+        filledCount,
+        missingCount,
+        status
+      };
+    });
+  }, [filteredTeachers, allStudents, allReports, filterType, filterPeriod, filterYear]);
+
+  // Overall statistics for dashboard
+  const summaryStats = useMemo(() => {
+    let totalHalaqah = 0;
+    let complete = 0;
+    let incomplete = 0;
+    let unfilled = 0;
+
+    halaqahSummaries.forEach(h => {
+      if (h.totalStudents > 0) {
+        totalHalaqah++;
+        if (h.status === 'complete') complete++;
+        else if (h.status === 'incomplete') incomplete++;
+        else if (h.status === 'unfilled') unfilled++;
+      }
+    });
+
+    return { totalHalaqah, complete, incomplete, unfilled };
+  }, [halaqahSummaries]);
+
+  // Filtered halaqah cards based on status tab
+  const filteredHalaqahCards = useMemo(() => {
+    return halaqahSummaries.filter(h => {
+      if (h.totalStudents === 0) return false;
+      if (summaryFilter === 'unfilled') return h.status === 'unfilled';
+      if (summaryFilter === 'incomplete') return h.status === 'incomplete';
+      if (summaryFilter === 'complete') return h.status === 'complete';
+      return true;
+    });
+  }, [halaqahSummaries, summaryFilter]);
+
+  // Display table rows (combines students with reports to highlight missing ones)
+  const tableRows = useMemo(() => {
+    if (selectedTeacherId) {
+      const summary = halaqahSummaries.find(h => h.teacher.id === selectedTeacherId);
+      if (!summary) return [];
+
+      const { teacherStudents, reportMap } = summary;
+      return teacherStudents
+        .filter(s => searchTerm === '' || s.name.toLowerCase().includes(searchTerm.toLowerCase()))
+        .map(s => {
+          const rep = reportMap.get(s.id) || null;
+          return {
+            studentId: s.id,
+            studentName: s.name,
+            totalHafalan: rep ? rep.totalHafalan : s.totalHafalan,
+            report: rep,
+            isFilled: !!rep,
+            studentObj: s
+          };
+        });
+    } else {
+      if (searchTerm.trim() !== '') {
+        return allStudents
+          .filter(s => s.status !== 'Mutasi/Keluar' && s.status !== 'Alumni/Lulus')
+          .filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()))
+          .map(s => {
+            const teacherSummary = halaqahSummaries.find(h => h.teacher.id === s.teacherId);
+            const rep = teacherSummary ? teacherSummary.reportMap.get(s.id) || null : null;
+            return {
+              studentId: s.id,
+              studentName: s.name,
+              totalHafalan: rep ? rep.totalHafalan : s.totalHafalan,
+              report: rep,
+              isFilled: !!rep,
+              studentObj: s
+            };
+          });
+      } else {
+        return allReports
+          .filter(r => r.type === filterType && r.month === filterPeriod && (r.academicYear ? r.academicYear === filterYear : true))
+          .map(r => ({
+            studentId: r.studentId,
+            studentName: r.studentName,
+            totalHafalan: r.totalHafalan,
+            report: r,
+            isFilled: true,
+            studentObj: null
+          }));
+      }
+    }
+  }, [selectedTeacherId, halaqahSummaries, allStudents, allReports, filterType, filterPeriod, filterYear, searchTerm]);
 
   return (
     <div className="space-y-6 max-full mx-auto pb-12 px-2 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-2xl font-black text-gray-900 tracking-tight uppercase">Pantau Laporan</h2>
-          <p className="text-gray-500 text-sm">Supervisi real-time capaian laporan bulanan, semester, dan setoran sabaq seluruh siswa.</p>
+          <p className="text-gray-500 text-sm">Supervisi real-time kelengkapan laporan halaqah bulanan, semester, dan setoran sabaq seluruh siswa.</p>
         </div>
       </div>
 
@@ -166,6 +294,191 @@ export default function CoordinatorReportsPage() {
 
       {activeTab === 'laporan' ? (
         <>
+          {/* STATS OVERVIEW CARDS */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-2xs">
+              <p className="text-[10px] font-black uppercase tracking-wider text-gray-400">Total Halaqah</p>
+              <div className="flex items-baseline gap-2 mt-1">
+                <span className="text-2xl font-black text-gray-900">{summaryStats.totalHalaqah}</span>
+                <span className="text-xs text-gray-500 font-medium">Kelompok</span>
+              </div>
+            </div>
+
+            <button 
+              onClick={() => setSummaryFilter('complete')}
+              className={`p-4 rounded-2xl border text-left transition-all ${
+                summaryFilter === 'complete' 
+                  ? 'bg-emerald-50 border-emerald-300 ring-2 ring-emerald-400' 
+                  : 'bg-white border-gray-100 hover:border-emerald-200'
+              }`}
+            >
+              <p className="text-[10px] font-black uppercase tracking-wider text-emerald-700 flex items-center gap-1">
+                <CheckCircle size={12} className="text-emerald-600" /> 🟢 Lengkap (100%)
+              </p>
+              <div className="flex items-baseline gap-2 mt-1">
+                <span className="text-2xl font-black text-emerald-800">{summaryStats.complete}</span>
+                <span className="text-xs text-emerald-600 font-medium">Halaqah</span>
+              </div>
+            </button>
+
+            <button 
+              onClick={() => setSummaryFilter('incomplete')}
+              className={`p-4 rounded-2xl border text-left transition-all ${
+                summaryFilter === 'incomplete' 
+                  ? 'bg-amber-50 border-amber-300 ring-2 ring-amber-400' 
+                  : 'bg-white border-gray-100 hover:border-amber-200'
+              }`}
+            >
+              <p className="text-[10px] font-black uppercase tracking-wider text-amber-700 flex items-center gap-1">
+                <AlertTriangle size={12} className="text-amber-600" /> 🟡 Belum Lengkap
+              </p>
+              <div className="flex items-baseline gap-2 mt-1">
+                <span className="text-2xl font-black text-amber-800">{summaryStats.incomplete}</span>
+                <span className="text-xs text-amber-600 font-medium">Halaqah</span>
+              </div>
+            </button>
+
+            <button 
+              onClick={() => setSummaryFilter('unfilled')}
+              className={`p-4 rounded-2xl border text-left transition-all ${
+                summaryFilter === 'unfilled' 
+                  ? 'bg-rose-50 border-rose-300 ring-2 ring-rose-400' 
+                  : 'bg-white border-gray-100 hover:border-rose-200'
+              }`}
+            >
+              <p className="text-[10px] font-black uppercase tracking-wider text-rose-700 flex items-center gap-1">
+                <XCircle size={12} className="text-rose-600" /> 🔴 Belum Isi
+              </p>
+              <div className="flex items-baseline gap-2 mt-1">
+                <span className="text-2xl font-black text-rose-800">{summaryStats.unfilled}</span>
+                <span className="text-xs text-rose-600 font-medium">Halaqah</span>
+              </div>
+            </button>
+          </div>
+
+          {/* HALAQAH MONITORING GRID */}
+          <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 space-y-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
+              <div>
+                <h3 className="text-sm font-black text-gray-900 uppercase tracking-tight flex items-center gap-2">
+                  <Users size={16} className="text-primary-600" />
+                  Status Pengisian Per Halaqah ({filterType} - {filterPeriod} {filterYear})
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Klik pada salah satu halaqah untuk melihat rincian pengisian per siswa secara langsung.
+                </p>
+              </div>
+
+              {/* FILTER TABS */}
+              <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl text-xs font-bold self-stretch sm:self-auto overflow-x-auto">
+                <button
+                  onClick={() => setSummaryFilter('all')}
+                  className={`px-3 py-1.5 rounded-lg transition-all ${summaryFilter === 'all' ? 'bg-white text-gray-900 shadow-2xs' : 'text-gray-500 hover:text-gray-900'}`}
+                >
+                  Semua ({summaryStats.totalHalaqah})
+                </button>
+                <button
+                  onClick={() => setSummaryFilter('unfilled')}
+                  className={`px-3 py-1.5 rounded-lg transition-all ${summaryFilter === 'unfilled' ? 'bg-rose-600 text-white shadow-2xs' : 'text-rose-600 hover:bg-rose-50'}`}
+                >
+                  🔴 Belum Isi ({summaryStats.unfilled})
+                </button>
+                <button
+                  onClick={() => setSummaryFilter('incomplete')}
+                  className={`px-3 py-1.5 rounded-lg transition-all ${summaryFilter === 'incomplete' ? 'bg-amber-500 text-white shadow-2xs' : 'text-amber-600 hover:bg-amber-50'}`}
+                >
+                  🟡 Belum Lengkap ({summaryStats.incomplete})
+                </button>
+                <button
+                  onClick={() => setSummaryFilter('complete')}
+                  className={`px-3 py-1.5 rounded-lg transition-all ${summaryFilter === 'complete' ? 'bg-emerald-600 text-white shadow-2xs' : 'text-emerald-600 hover:bg-emerald-50'}`}
+                >
+                  🟢 Lengkap ({summaryStats.complete})
+                </button>
+              </div>
+            </div>
+
+            {/* CARDS GRID */}
+            {filteredHalaqahCards.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                {filteredHalaqahCards.map(h => {
+                  const isSelected = selectedTeacherId === h.teacher.id;
+                  const pct = h.totalStudents > 0 ? Math.round((h.filledCount / h.totalStudents) * 100) : 0;
+
+                  return (
+                    <div 
+                      key={h.teacher.id}
+                      onClick={() => setSelectedTeacherId(isSelected ? '' : h.teacher.id)}
+                      className={`p-4 rounded-2xl border cursor-pointer transition-all duration-200 relative overflow-hidden ${
+                        isSelected 
+                          ? 'bg-primary-50/80 border-primary-500 ring-2 ring-primary-500 shadow-md' 
+                          : h.status === 'unfilled'
+                          ? 'bg-rose-50/40 border-rose-200 hover:border-rose-400 hover:shadow-2xs'
+                          : h.status === 'incomplete'
+                          ? 'bg-amber-50/40 border-amber-200 hover:border-amber-400 hover:shadow-2xs'
+                          : 'bg-white border-gray-100 hover:border-emerald-300 hover:shadow-2xs'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div>
+                          <h4 className="font-black text-gray-900 text-xs tracking-tight uppercase truncate">
+                            {h.teacher.nickname || h.teacher.name}
+                          </h4>
+                          <p className="text-[10px] font-semibold text-gray-500">
+                            {h.teacherStudents[0]?.className ? `Kelas ${h.teacherStudents[0].className}` : 'Musyrif/ah Halaqah'}
+                          </p>
+                        </div>
+
+                        {h.status === 'complete' && (
+                          <span className="bg-emerald-100 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full border border-emerald-200 shrink-0">
+                            🟢 Lengkap ({h.filledCount}/{h.totalStudents})
+                          </span>
+                        )}
+                        {h.status === 'incomplete' && (
+                          <span className="bg-amber-100 text-amber-900 text-[9px] font-black px-2 py-0.5 rounded-full border border-amber-300 shrink-0">
+                            🟡 Kurang {h.missingCount} Siswa ({h.filledCount}/{h.totalStudents})
+                          </span>
+                        )}
+                        {h.status === 'unfilled' && (
+                          <span className="bg-rose-100 text-rose-800 text-[9px] font-black px-2 py-0.5 rounded-full border border-rose-300 shrink-0">
+                            🔴 Belum Isi (0/{h.totalStudents})
+                          </span>
+                        )}
+                      </div>
+
+                      {/* PROGRESS BAR */}
+                      <div className="space-y-1 mt-3">
+                        <div className="flex justify-between text-[10px] font-bold">
+                          <span className="text-gray-500">Progres Terisi</span>
+                          <span className={h.status === 'complete' ? 'text-emerald-700' : h.status === 'incomplete' ? 'text-amber-700' : 'text-rose-700'}>
+                            {h.filledCount} / {h.totalStudents} Siswa ({pct}%)
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200/80 rounded-full h-2 overflow-hidden">
+                          <div 
+                            className={`h-full rounded-full transition-all duration-500 ${
+                              h.status === 'complete' ? 'bg-emerald-500' : h.status === 'incomplete' ? 'bg-amber-500' : 'bg-rose-500'
+                            }`}
+                            style={{ width: `${pct}%` }}
+                          ></div>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between text-[10px] font-bold text-primary-700">
+                        <span>{isSelected ? '✓ Sedang Dilihat' : 'Lihat Rincian Siswa'}</span>
+                        <ChevronRight size={14} className={`transition-transform ${isSelected ? 'rotate-90' : ''}`} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="p-8 text-center bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                <p className="text-xs font-bold text-gray-500">Tidak ada halaqah yang sesuai dengan filter kriteria ini.</p>
+              </div>
+            )}
+          </div>
+
           {/* FILTERS */}
           <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
             <div className="space-y-1.5">
@@ -173,7 +486,7 @@ export default function CoordinatorReportsPage() {
               <div className="relative">
                 <Users className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-500" size={16} />
                 <select value={selectedTeacherId} onChange={(e) => setSelectedTeacherId(e.target.value)} className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl bg-gray-50 text-xs font-bold focus:ring-2 focus:ring-primary-500 outline-none">
-                  <option value="">-- Pilih Guru --</option>
+                  <option value="">-- Semua Guru / Pilih Guru --</option>
                   {filteredTeachers.map(t => (
                     <option key={t.id} value={t.id}>
                       {t.nickname || t.name} {t.status === 'Nonaktif' ? '(Nonaktif)' : ''}
@@ -225,6 +538,11 @@ export default function CoordinatorReportsPage() {
 
           {/* TABLE */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            {!selectedTeacherId && !searchTerm && (
+              <div className="p-3 bg-blue-50/80 border-b border-blue-100 text-blue-800 text-xs font-semibold flex items-center justify-between px-6">
+                <span>💡 Menampilkan daftar laporan yang telah diisi. Pilih guru di atas atau klik kartu halaqah untuk melihat siswa yang belum diisi.</span>
+              </div>
+            )}
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse whitespace-nowrap">
                 <thead>
@@ -251,25 +569,56 @@ export default function CoordinatorReportsPage() {
                 <tbody className="divide-y divide-gray-100 text-[10px]">
                   {isLoading ? (
                     <tr><td colSpan={13} className="px-6 py-20 text-center"><Loader2 size={32} className="text-primary-500 animate-spin mx-auto" /></td></tr>
-                  ) : filteredReports.length > 0 ? (
-                    filteredReports.map((report, idx) => (
-                      <tr key={report.id} className="hover:bg-primary-50/30 transition-colors">
-                        <td className="px-3 py-4 text-center border-r font-bold text-gray-400">{idx + 1}</td>
-                        <td className="px-3 py-4 font-black text-gray-900 border-r uppercase">{report.studentName}</td>
-                        <td className="px-3 py-4 text-center border-r font-black text-primary-700 bg-primary-50/10">{formatTotalHafalan(report.totalHafalan)}</td>
-                        <td className="px-2 py-4 text-center border-r text-gray-400 italic">{formatRangeDisplay(report.tilawah.classical)}</td>
-                        <td className="px-2 py-4 text-center border-r font-bold">{formatRangeDisplay(report.tilawah.individual)}</td>
-                        <td className="px-2 py-4 text-center border-r font-black text-indigo-600 bg-indigo-50/30">{getStoredOrCalculatedResult(report, 'tilawah')}</td>
-                        <td className="px-2 py-4 text-center border-r text-gray-400 italic">{formatRangeDisplay(report.tahfizh.classical)}</td>
-                        <td className="px-2 py-4 text-center border-r font-bold">{formatRangeDisplay(report.tahfizh.individual)}</td>
-                        <td className="px-2 py-4 text-center border-r font-black text-violet-600 bg-violet-50/30">{getStoredOrCalculatedResult(report, 'tahfizh')}</td>
-                        {/* KOLOM BARU */}
-                        <td className="px-3 py-4 text-center border-r font-black text-blue-600 bg-blue-50/10">{report.attendance || 0}%</td>
-                        <td className="px-3 py-4 text-center border-r font-black text-amber-600 bg-amber-50/10">{report.behaviorScore || 0}/10</td>
-                        <td className="px-3 py-4 text-center border-r">{getStatusBadge(report)}</td>
-                        <td className="px-3 py-4 italic text-gray-500 truncate max-w-[150px]" title={report.notes}>{report.notes || "-"}</td>
-                      </tr>
-                    ))
+                  ) : tableRows.length > 0 ? (
+                    tableRows.map((row, idx) => {
+                      const report = row.report;
+
+                      if (row.isFilled && report) {
+                        return (
+                          <tr key={report.id || idx} className="hover:bg-primary-50/30 transition-colors">
+                            <td className="px-3 py-4 text-center border-r font-bold text-gray-400">{idx + 1}</td>
+                            <td className="px-3 py-4 font-black text-gray-900 border-r uppercase">{report.studentName}</td>
+                            <td className="px-3 py-4 text-center border-r font-black text-primary-700 bg-primary-50/10">{formatTotalHafalan(report.totalHafalan)}</td>
+                            <td className="px-2 py-4 text-center border-r text-gray-400 italic">{formatRangeDisplay(report.tilawah?.classical)}</td>
+                            <td className="px-2 py-4 text-center border-r font-bold">{formatRangeDisplay(report.tilawah?.individual)}</td>
+                            <td className="px-2 py-4 text-center border-r font-black text-indigo-600 bg-indigo-50/30">{getStoredOrCalculatedResult(report, 'tilawah')}</td>
+                            <td className="px-2 py-4 text-center border-r text-gray-400 italic">{formatRangeDisplay(report.tahfizh?.classical)}</td>
+                            <td className="px-2 py-4 text-center border-r font-bold">{formatRangeDisplay(report.tahfizh?.individual)}</td>
+                            <td className="px-2 py-4 text-center border-r font-black text-violet-600 bg-violet-50/30">{getStoredOrCalculatedResult(report, 'tahfizh')}</td>
+                            <td className="px-3 py-4 text-center border-r font-black text-blue-600 bg-blue-50/10">{report.attendance || 0}%</td>
+                            <td className="px-3 py-4 text-center border-r font-black text-amber-600 bg-amber-50/10">{report.behaviorScore || 0}/10</td>
+                            <td className="px-3 py-4 text-center border-r">{getStatusBadge(report)}</td>
+                            <td className="px-3 py-4 italic text-gray-500 truncate max-w-[150px]" title={report.notes}>{report.notes || "-"}</td>
+                          </tr>
+                        );
+                      } else {
+                        // Student report NOT filled
+                        return (
+                          <tr key={row.studentId || idx} className="bg-rose-50/40 hover:bg-rose-50 transition-colors">
+                            <td className="px-3 py-4 text-center border-r font-bold text-rose-400">{idx + 1}</td>
+                            <td className="px-3 py-4 font-black text-gray-900 border-r uppercase flex items-center justify-between gap-2">
+                              <span>{row.studentName}</span>
+                              <span className="text-[9px] bg-rose-200 text-rose-900 font-bold px-1.5 py-0.5 rounded">Belum Diisi</span>
+                            </td>
+                            <td className="px-3 py-4 text-center border-r font-bold text-gray-400">{formatTotalHafalan(row.totalHafalan)}</td>
+                            <td className="px-2 py-4 text-center border-r text-gray-300">-</td>
+                            <td className="px-2 py-4 text-center border-r text-gray-300">-</td>
+                            <td className="px-2 py-4 text-center border-r text-gray-300">-</td>
+                            <td className="px-2 py-4 text-center border-r text-gray-300">-</td>
+                            <td className="px-2 py-4 text-center border-r text-gray-300">-</td>
+                            <td className="px-2 py-4 text-center border-r text-gray-300">-</td>
+                            <td className="px-3 py-4 text-center border-r text-gray-300">-</td>
+                            <td className="px-3 py-4 text-center border-r text-gray-300">-</td>
+                            <td className="px-3 py-4 text-center border-r">
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-rose-100 text-rose-700 border border-rose-200 flex items-center gap-1 justify-center">
+                                <XCircle size={10}/> BELUM DIISI
+                              </span>
+                            </td>
+                            <td className="px-3 py-4 italic text-rose-500 font-semibold truncate max-w-[150px]">Laporan belum dimasukkan guru</td>
+                          </tr>
+                        );
+                      }
+                    })
                   ) : (
                     <tr><td colSpan={13} className="px-6 py-24 text-center text-gray-400 italic font-bold uppercase">Data Tidak Ditemukan</td></tr>
                   )}
