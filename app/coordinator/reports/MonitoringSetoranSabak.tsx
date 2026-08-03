@@ -133,6 +133,25 @@ const getDefaultWeek = (weeks: WeekOption[]): WeekOption | null => {
   return weeks[0];
 };
 
+const getDefaultWeekWithData = (weeks: WeekOption[], records: SetoranSabak[]): WeekOption | null => {
+  if (weeks.length === 0) return null;
+
+  if (records && records.length > 0) {
+    // Cari semua pekan yang sudah memiliki data setoran sabak
+    const weeksWithData = weeks.filter(w => 
+      records.some(rec => isDateInWeek(rec.tanggal, w.startDate, w.endDate))
+    );
+
+    if (weeksWithData.length > 0) {
+      // Ambil pekan paling baru (paling akhir di array chronologis) yang memiliki data
+      return weeksWithData[weeksWithData.length - 1];
+    }
+  }
+
+  // Jika belum ada data sama sekali di seluruh pekan, gunakan pekan kalender saat ini sebagai default
+  return getDefaultWeek(weeks);
+};
+
 const DEFAULT_COORDINATOR_NOTE = "Alhamdulillah terdapat peningkatan setoran pada beberapa halaqah kelas 3. Jazakumullahu khairan kepada seluruh guru yang telah konsisten melakukan mutabaah dan pendampingan. Mari bersama-sama membantu halaqah yang masih memerlukan dukungan agar seluruh ananda mendapatkan layanan terbaik.";
 
 interface MonitoringSetoranSabakProps {
@@ -222,13 +241,18 @@ export const MonitoringSetoranSabak: React.FC<MonitoringSetoranSabakProps> = ({ 
     return getWeeksForAcademicYear(selectedYear);
   }, [selectedYear]);
 
-  // Update selected week default when academic year changes
+  // Ref to track if user manually changed week in UI
+  const isUserSelectedWeek = React.useRef(false);
+
+  // Update selected week default when academic year or sabak records change
   useEffect(() => {
-    if (weekOptions.length > 0) {
-      const def = getDefaultWeek(weekOptions);
-      setSelectedWeek(def);
+    if (weekOptions.length > 0 && !isUserSelectedWeek.current) {
+      const def = getDefaultWeekWithData(weekOptions, sabakRecords);
+      if (def) {
+        setSelectedWeek(def);
+      }
     }
-  }, [weekOptions]);
+  }, [weekOptions, sabakRecords]);
 
   // Index of current selected week
   const selectedWeekIndex = useMemo(() => {
@@ -1140,7 +1164,10 @@ export const MonitoringSetoranSabak: React.FC<MonitoringSetoranSabakProps> = ({ 
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider ml-1">Tahun Ajaran</label>
                 <select 
                   value={selectedYear} 
-                  onChange={e => setSelectedYear(e.target.value)} 
+                  onChange={e => {
+                    isUserSelectedWeek.current = false;
+                    setSelectedYear(e.target.value);
+                  }} 
                   className="w-full px-3 py-2 border border-gray-200 rounded-xl bg-gray-50 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500"
                 >
                   {ACADEMIC_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
@@ -1154,7 +1181,10 @@ export const MonitoringSetoranSabak: React.FC<MonitoringSetoranSabakProps> = ({ 
                   value={selectedWeek ? selectedWeek.id : ''} 
                   onChange={e => {
                     const found = weekOptions.find(w => w.id === e.target.value);
-                    if (found) setSelectedWeek(found);
+                    if (found) {
+                      isUserSelectedWeek.current = true;
+                      setSelectedWeek(found);
+                    }
                   }} 
                   className="w-full px-3 py-2 border border-gray-200 rounded-xl bg-gray-50 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500"
                 >
