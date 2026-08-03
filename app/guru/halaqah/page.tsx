@@ -36,71 +36,88 @@ interface StudentWithStats extends Student {
   currentJuzDisplay?: string;
 }
 
-// Helper to generate weeks for a given date's month
+const INITIAL_AY = (() => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth(); // 0-11
+  if (month >= 6) { // July onwards
+    return `${year}/${year + 1}`;
+  } else {
+    return `${year - 1}/${year}`;
+  }
+})();
+
+const ACADEMIC_YEARS = ["2024/2025", "2025/2026", "2026/2027"];
+if (!ACADEMIC_YEARS.includes(INITIAL_AY)) {
+  ACADEMIC_YEARS.push(INITIAL_AY);
+}
+
+const getWeekNumber = (d: Date): number => {
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  return Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+};
+
+// Helper to generate weeks for academic year
 interface WeekOption {
   id: string;
   label: string;
-  shortLabel: string;
+  shortLabel?: string;
   startDate: Date;
   endDate: Date;
   defaultDate: string;
 }
 
-const getMonthWeeksOptions = (baseDateStr: string): WeekOption[] => {
-  const baseDate = new Date(baseDateStr || new Date());
-  const year = baseDate.getFullYear();
-  const month = baseDate.getMonth(); // 0-indexed
+const getWeeksForAcademicYear = (academicYear: string): WeekOption[] => {
+  const [startYearStr, endYearStr] = academicYear.split('/');
+  const startYear = parseInt(startYearStr) || 2025;
+  const endYear = parseInt(endYearStr) || 2026;
   
-  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-  const monthName = monthNames[month];
-
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
-
   const weeks: WeekOption[] = [];
-  let currentStart = new Date(firstDay);
+  let current = new Date(startYear, 6, 1); // July 1st
+  const endLimit = new Date(endYear, 5, 30, 23, 59, 59); // June 30th
+  
+  const day = current.getDay();
+  const diff = current.getDate() - day + (day === 0 ? -6 : 1);
+  current.setDate(diff);
+  current.setHours(0, 0, 0, 0);
+  
   let weekNum = 1;
-
-  while (currentStart <= lastDay) {
-    let currentEnd = new Date(currentStart);
-    const dayOfWeek = currentEnd.getDay(); // 0 = Sun, 1 = Mon ...
-    const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
-    currentEnd.setDate(currentEnd.getDate() + daysUntilSunday);
+  while (current <= endLimit) {
+    const start = new Date(current);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
     
-    if (currentEnd > lastDay) {
-      currentEnd = new Date(lastDay);
-    }
-
-    const startFormatted = `${currentStart.getDate()} ${monthName}`;
-    const endFormatted = `${currentEnd.getDate()} ${monthName} ${year}`;
+    const startStr = start.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+    const endStr = end.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
     
-    // Pick default date for this week (e.g. Friday if available, else start/end date)
-    const defaultDateInWeek = new Date(currentStart);
-    const startDay = currentStart.getDay();
-    if (startDay <= 5) {
-      defaultDateInWeek.setDate(currentStart.getDate() + (5 - startDay));
+    // Default date within week (e.g. Friday if available, else start/end date)
+    const defaultD = new Date(start);
+    const sDay = start.getDay();
+    if (sDay <= 5) {
+      defaultD.setDate(start.getDate() + (5 - sDay));
     }
-    if (defaultDateInWeek > currentEnd) {
-      defaultDateInWeek.setTime(currentEnd.getTime());
+    if (defaultD > end) {
+      defaultD.setTime(end.getTime());
     }
-
-    const isoDateStr = `${defaultDateInWeek.getFullYear()}-${String(defaultDateInWeek.getMonth() + 1).padStart(2, '0')}-${String(defaultDateInWeek.getDate()).padStart(2, '0')}`;
+    const defaultDateStr = `${defaultD.getFullYear()}-${String(defaultD.getMonth() + 1).padStart(2, '0')}-${String(defaultD.getDate()).padStart(2, '0')}`;
 
     weeks.push({
-      id: `${year}-${month + 1}-W${weekNum}`,
-      label: `Pekan ${weekNum} (${startFormatted} - ${endFormatted})`,
+      id: `${start.getFullYear()}-W${getWeekNumber(start)}`,
+      label: `Pekan ${weekNum} (${startStr} - ${endStr})`,
       shortLabel: `Pekan ${weekNum}`,
-      startDate: new Date(currentStart.getFullYear(), currentStart.getMonth(), currentStart.getDate(), 0, 0, 0),
-      endDate: new Date(currentEnd.getFullYear(), currentEnd.getMonth(), currentEnd.getDate(), 23, 59, 59),
-      defaultDate: isoDateStr
+      startDate: start,
+      endDate: end,
+      defaultDate: defaultDateStr
     });
-
-    const nextStart = new Date(currentEnd);
-    nextStart.setDate(nextStart.getDate() + 1);
-    currentStart = nextStart;
+    
+    current.setDate(current.getDate() + 7);
     weekNum++;
   }
-
+  
   return weeks;
 };
 
@@ -116,6 +133,36 @@ const isDateInWeek = (dateStr: string, startDate: Date, endDate: Date): boolean 
   return t >= startDate.getTime() && t <= endDate.getTime();
 };
 
+const getDefaultWeek = (weeks: WeekOption[]): WeekOption | null => {
+  if (weeks.length === 0) return null;
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+  const t = today.getTime();
+  const found = weeks.find(w => t >= w.startDate.getTime() && t <= w.endDate.getTime());
+  if (found) return found;
+  
+  if (t > weeks[weeks.length - 1].endDate.getTime()) {
+    return weeks[weeks.length - 1];
+  }
+  return weeks[0];
+};
+
+const getDefaultWeekWithData = (weeks: WeekOption[], records: SetoranSabak[]): WeekOption | null => {
+  if (weeks.length === 0) return null;
+
+  if (records && records.length > 0) {
+    const weeksWithData = weeks.filter(w => 
+      records.some(rec => isDateInWeek(rec.tanggal, w.startDate, w.endDate))
+    );
+
+    if (weeksWithData.length > 0) {
+      return weeksWithData[weeksWithData.length - 1];
+    }
+  }
+
+  return getDefaultWeek(weeks);
+};
+
 export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProps) {
   const navigate = useNavigate();
   const [students, setStudents] = useState<StudentWithStats[]>([]);
@@ -127,6 +174,9 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
   const [activeTab, setActiveTab] = useState<'list' | 'input'>('list');
 
   // Input Setoran Pekanan controls
+  const [selectedYear, setSelectedYear] = useState<string>(INITIAL_AY);
+  const [selectedWeek, setSelectedWeek] = useState<WeekOption | null>(null);
+  const isUserSelectedWeek = useRef(false);
   const [tanggal, setTanggal] = useState<string>(() => new Date().toISOString().split('T')[0]);
   const [allSetoranHistory, setAllSetoranHistory] = useState<SetoranSabak[]>([]);
   const [activeCardIndex, setActiveCardIndex] = useState<number>(0);
@@ -377,9 +427,21 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
     setFilteredStudents(filtered);
   }, [search, students]);
 
-  // Pekan options calculated from current selected date
-  const monthWeeks = React.useMemo(() => getMonthWeeksOptions(tanggal), [tanggal.slice(0, 7)]);
-  const currentWeek = monthWeeks.find(w => isDateInWeek(tanggal, w.startDate, w.endDate)) || monthWeeks[monthWeeks.length - 1] || monthWeeks[0];
+  // Academic year week options matching coordinator logic
+  const academicWeeks = useMemo(() => getWeeksForAcademicYear(selectedYear), [selectedYear]);
+
+  // Update selected week default when academic year or setoran history changes
+  useEffect(() => {
+    if (academicWeeks.length > 0 && !isUserSelectedWeek.current) {
+      const def = getDefaultWeekWithData(academicWeeks, allSetoranHistory);
+      if (def) {
+        setSelectedWeek(def);
+        setTanggal(def.defaultDate);
+      }
+    }
+  }, [academicWeeks, allSetoranHistory]);
+
+  const currentWeek = selectedWeek || getDefaultWeek(academicWeeks);
 
   // Derive updated students array where sabaqDisplay & currentJuzDisplay react to allSetoranHistory
   const displayStudents = useMemo(() => {
@@ -521,25 +583,45 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
           <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
             
             {/* Pekan Setoran Picker */}
-            <div className="flex items-center gap-2">
-              <Calendar size={18} className="text-emerald-600 shrink-0" />
-              <label className="text-xs font-bold text-gray-700 whitespace-nowrap">Pekan Setoran:</label>
-              <select
-                value={currentWeek?.id || ''}
-                onChange={(e) => {
-                  const selectedW = monthWeeks.find(w => w.id === e.target.value);
-                  if (selectedW) {
-                    setTanggal(selectedW.defaultDate);
-                  }
-                }}
-                className="bg-gray-50 border border-gray-300 rounded-xl px-3 py-1.5 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none cursor-pointer"
-              >
-                {monthWeeks.map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.label}
-                  </option>
-                ))}
-              </select>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <div className="flex items-center gap-1.5">
+                <Calendar size={18} className="text-emerald-600 shrink-0" />
+                <label className="text-xs font-bold text-gray-700 whitespace-nowrap">Tahun Ajaran:</label>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => {
+                    isUserSelectedWeek.current = false;
+                    setSelectedYear(e.target.value);
+                  }}
+                  className="bg-gray-50 border border-gray-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none cursor-pointer"
+                >
+                  {ACADEMIC_YEARS.map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <label className="text-xs font-bold text-gray-700 whitespace-nowrap">Pekan Setoran:</label>
+                <select
+                  value={currentWeek?.id || ''}
+                  onChange={(e) => {
+                    const found = academicWeeks.find(w => w.id === e.target.value);
+                    if (found) {
+                      isUserSelectedWeek.current = true;
+                      setSelectedWeek(found);
+                      setTanggal(found.defaultDate);
+                    }
+                  }}
+                  className="bg-gray-50 border border-gray-300 rounded-xl px-3 py-1.5 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none cursor-pointer max-w-xs truncate"
+                >
+                  {academicWeeks.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {/* Search Box */}
