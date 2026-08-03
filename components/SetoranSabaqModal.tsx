@@ -561,17 +561,6 @@ export const SetoranSabaqModal: React.FC<SetoranSabaqModalProps> = ({
                   Catatan pencapaian setoran sabaq berbasis pekanan (1 record per pekan).
                 </p>
               </div>
-
-              {!showForm && (
-                <Button
-                  type="button"
-                  onClick={handleOpenAddForm}
-                  className="text-xs bg-[#0f4c75] hover:bg-[#1b4f72] text-white py-2 px-3.5 flex items-center gap-1.5 rounded-lg shadow-xs font-bold self-start sm:self-auto"
-                >
-                  <Plus size={14} />
-                  Tambah Pekan Setoran
-                </Button>
-              )}
             </div>
 
             {isLoadingHistory ? (
@@ -753,7 +742,6 @@ export const SetoranSabaqModal: React.FC<SetoranSabaqModalProps> = ({
               <div className="text-center py-12 bg-gray-50 border border-dashed border-gray-200 rounded-xl">
                 <BookOpen size={36} className="mx-auto text-gray-300 mb-2" />
                 <p className="text-gray-500 text-xs font-bold">Belum ada riwayat setoran Sabaq pekanan untuk siswa ini.</p>
-                <p className="text-gray-400 text-[11px] mt-1">Klik "Tambah Pekan Setoran" di atas untuk menambahkan catatan pekanan baru.</p>
               </div>
             )}
           </div>
