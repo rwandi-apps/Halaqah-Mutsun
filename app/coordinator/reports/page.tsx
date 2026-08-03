@@ -296,62 +296,78 @@ export default function CoordinatorReportsPage() {
         <>
           {/* STATS OVERVIEW CARDS */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-2xs">
-              <p className="text-[10px] font-black uppercase tracking-wider text-gray-400">Total Halaqah</p>
-              <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-2xl font-black text-gray-900">{summaryStats.totalHalaqah}</span>
-                <span className="text-xs text-gray-500 font-medium">Kelompok</span>
+            <button 
+              onClick={() => setSummaryFilter('all')}
+              className={`p-4 rounded-2xl text-left transition-all duration-200 border shadow-sm ${
+                summaryFilter === 'all' 
+                  ? 'bg-gradient-to-br from-slate-800 to-indigo-900 text-white border-indigo-500 ring-4 ring-indigo-200' 
+                  : 'bg-gradient-to-br from-slate-700 to-indigo-800 text-white border-slate-600 hover:shadow-md hover:scale-[1.01]'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-black uppercase tracking-wider text-indigo-200">Total Halaqah</p>
+                <Users size={18} className="text-indigo-300" />
               </div>
-            </div>
+              <div className="flex items-baseline gap-2 mt-2">
+                <span className="text-3xl font-black text-white">{summaryStats.totalHalaqah}</span>
+                <span className="text-xs text-indigo-200 font-bold">Kelompok</span>
+              </div>
+            </button>
 
             <button 
               onClick={() => setSummaryFilter('complete')}
-              className={`p-4 rounded-2xl border text-left transition-all ${
+              className={`p-4 rounded-2xl text-left transition-all duration-200 border shadow-sm ${
                 summaryFilter === 'complete' 
-                  ? 'bg-emerald-50 border-emerald-300 ring-2 ring-emerald-400' 
-                  : 'bg-white border-gray-100 hover:border-emerald-200'
+                  ? 'bg-gradient-to-br from-emerald-600 to-teal-700 text-white border-emerald-500 ring-4 ring-emerald-200' 
+                  : 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white border-emerald-400 hover:shadow-md hover:scale-[1.01]'
               }`}
             >
-              <p className="text-[10px] font-black uppercase tracking-wider text-emerald-700 flex items-center gap-1">
-                <CheckCircle size={12} className="text-emerald-600" /> 🟢 Lengkap (100%)
-              </p>
-              <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-2xl font-black text-emerald-800">{summaryStats.complete}</span>
-                <span className="text-xs text-emerald-600 font-medium">Halaqah</span>
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-black uppercase tracking-wider text-emerald-100 flex items-center gap-1.5">
+                  <CheckCircle size={14} className="text-emerald-200" /> 🟢 Lengkap (100%)
+                </p>
+              </div>
+              <div className="flex items-baseline gap-2 mt-2">
+                <span className="text-3xl font-black text-white">{summaryStats.complete}</span>
+                <span className="text-xs text-emerald-100 font-bold">Halaqah</span>
               </div>
             </button>
 
             <button 
               onClick={() => setSummaryFilter('incomplete')}
-              className={`p-4 rounded-2xl border text-left transition-all ${
+              className={`p-4 rounded-2xl text-left transition-all duration-200 border shadow-sm ${
                 summaryFilter === 'incomplete' 
-                  ? 'bg-amber-50 border-amber-300 ring-2 ring-amber-400' 
-                  : 'bg-white border-gray-100 hover:border-amber-200'
+                  ? 'bg-gradient-to-br from-amber-600 to-orange-700 text-white border-amber-500 ring-4 ring-amber-200' 
+                  : 'bg-gradient-to-br from-amber-500 to-orange-600 text-white border-amber-400 hover:shadow-md hover:scale-[1.01]'
               }`}
             >
-              <p className="text-[10px] font-black uppercase tracking-wider text-amber-700 flex items-center gap-1">
-                <AlertTriangle size={12} className="text-amber-600" /> 🟡 Belum Lengkap
-              </p>
-              <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-2xl font-black text-amber-800">{summaryStats.incomplete}</span>
-                <span className="text-xs text-amber-600 font-medium">Halaqah</span>
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-black uppercase tracking-wider text-amber-100 flex items-center gap-1.5">
+                  <AlertTriangle size={14} className="text-amber-200" /> 🟡 Belum Lengkap
+                </p>
+              </div>
+              <div className="flex items-baseline gap-2 mt-2">
+                <span className="text-3xl font-black text-white">{summaryStats.incomplete}</span>
+                <span className="text-xs text-amber-100 font-bold">Halaqah</span>
               </div>
             </button>
 
             <button 
               onClick={() => setSummaryFilter('unfilled')}
-              className={`p-4 rounded-2xl border text-left transition-all ${
+              className={`p-4 rounded-2xl text-left transition-all duration-200 border shadow-sm ${
                 summaryFilter === 'unfilled' 
-                  ? 'bg-rose-50 border-rose-300 ring-2 ring-rose-400' 
-                  : 'bg-white border-gray-100 hover:border-rose-200'
+                  ? 'bg-gradient-to-br from-rose-600 to-red-700 text-white border-rose-500 ring-4 ring-rose-200' 
+                  : 'bg-gradient-to-br from-rose-500 to-red-600 text-white border-rose-400 hover:shadow-md hover:scale-[1.01]'
               }`}
             >
-              <p className="text-[10px] font-black uppercase tracking-wider text-rose-700 flex items-center gap-1">
-                <XCircle size={12} className="text-rose-600" /> 🔴 Belum Isi
-              </p>
-              <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-2xl font-black text-rose-800">{summaryStats.unfilled}</span>
-                <span className="text-xs text-rose-600 font-medium">Halaqah</span>
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-black uppercase tracking-wider text-rose-100 flex items-center gap-1.5">
+                  <XCircle size={14} className="text-rose-200" /> 🔴 Belum Isi
+                </p>
+              </div>
+              <div className="flex items-baseline gap-2 mt-2">
+                <span className="text-3xl font-black text-white">{summaryStats.unfilled}</span>
+                <span className="text-xs text-rose-100 font-bold">Halaqah</span>
               </div>
             </button>
           </div>
@@ -400,93 +416,72 @@ export default function CoordinatorReportsPage() {
 
             {/* CARDS GRID */}
             {filteredHalaqahCards.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
                 {filteredHalaqahCards.map(h => {
                   const isSelected = selectedTeacherId === h.teacher.id;
                   const pct = h.totalStudents > 0 ? Math.round((h.filledCount / h.totalStudents) * 100) : 0;
-
-                  // Dynamic color styles per status
-                  let cardStyle = "";
-                  let titleColor = "";
-                  let subtitleColor = "";
-                  let badgeStyle = "";
-                  let badgeText = "";
-                  let progressBg = "";
-                  let progressBar = "";
-                  let footerTextColor = "";
-
-                  if (h.status === 'complete') {
-                    cardStyle = "bg-gradient-to-br from-emerald-50/90 via-teal-50/40 to-emerald-100/40 border-emerald-200 border-l-4 border-l-emerald-500 hover:border-emerald-400 hover:shadow-md";
-                    titleColor = "text-emerald-950";
-                    subtitleColor = "text-emerald-700";
-                    badgeStyle = "bg-emerald-600 text-white shadow-2xs";
-                    badgeText = `🟢 Lengkap (${h.filledCount}/${h.totalStudents})`;
-                    progressBg = "bg-emerald-200/60";
-                    progressBar = "bg-emerald-500";
-                    footerTextColor = "text-emerald-800";
-                  } else if (h.status === 'incomplete') {
-                    cardStyle = "bg-gradient-to-br from-amber-50/90 via-orange-50/40 to-amber-100/40 border-amber-200 border-l-4 border-l-amber-500 hover:border-amber-400 hover:shadow-md";
-                    titleColor = "text-amber-950";
-                    subtitleColor = "text-amber-700";
-                    badgeStyle = "bg-amber-500 text-white shadow-2xs";
-                    badgeText = `🟡 Kurang ${h.missingCount} Siswa (${h.filledCount}/${h.totalStudents})`;
-                    progressBg = "bg-amber-200/60";
-                    progressBar = "bg-amber-500";
-                    footerTextColor = "text-amber-800";
-                  } else {
-                    cardStyle = "bg-gradient-to-br from-rose-50/90 via-red-50/40 to-rose-100/40 border-rose-200 border-l-4 border-l-rose-500 hover:border-rose-400 hover:shadow-md";
-                    titleColor = "text-rose-950";
-                    subtitleColor = "text-rose-700";
-                    badgeStyle = "bg-rose-600 text-white shadow-2xs";
-                    badgeText = `🔴 Belum Isi (0/${h.totalStudents})`;
-                    progressBg = "bg-rose-200/60";
-                    progressBar = "bg-rose-500";
-                    footerTextColor = "text-rose-800";
-                  }
-
-                  if (isSelected) {
-                    cardStyle += " ring-2 ring-primary-600 shadow-lg scale-[1.01]";
-                  }
 
                   return (
                     <div 
                       key={h.teacher.id}
                       onClick={() => setSelectedTeacherId(isSelected ? '' : h.teacher.id)}
-                      className={`p-4.5 rounded-2xl border cursor-pointer transition-all duration-200 relative overflow-hidden ${cardStyle}`}
+                      className={`p-4 rounded-2xl border cursor-pointer transition-all duration-200 relative overflow-hidden ${
+                        isSelected 
+                          ? 'bg-primary-50/80 border-primary-500 ring-2 ring-primary-500 shadow-md' 
+                          : h.status === 'unfilled'
+                          ? 'bg-rose-50/40 border-rose-200 hover:border-rose-400 hover:shadow-2xs'
+                          : h.status === 'incomplete'
+                          ? 'bg-amber-50/40 border-amber-200 hover:border-amber-400 hover:shadow-2xs'
+                          : 'bg-white border-gray-100 hover:border-emerald-300 hover:shadow-2xs'
+                      }`}
                     >
                       <div className="flex items-start justify-between gap-2 mb-2">
-                        <div className="min-w-0 flex-1">
-                          <h4 className={`font-black text-xs tracking-tight uppercase truncate ${titleColor}`}>
+                        <div>
+                          <h4 className="font-black text-gray-900 text-xs tracking-tight uppercase truncate">
                             {h.teacher.nickname || h.teacher.name}
                           </h4>
-                          <p className={`text-[10px] font-semibold ${subtitleColor}`}>
+                          <p className="text-[10px] font-semibold text-gray-500">
                             {h.teacherStudents[0]?.className ? `Kelas ${h.teacherStudents[0].className}` : 'Musyrif/ah Halaqah'}
                           </p>
                         </div>
 
-                        <span className={`text-[9px] font-black px-2.5 py-0.5 rounded-full shrink-0 ${badgeStyle}`}>
-                          {badgeText}
-                        </span>
+                        {h.status === 'complete' && (
+                          <span className="bg-emerald-100 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full border border-emerald-200 shrink-0">
+                            🟢 Lengkap ({h.filledCount}/{h.totalStudents})
+                          </span>
+                        )}
+                        {h.status === 'incomplete' && (
+                          <span className="bg-amber-100 text-amber-900 text-[9px] font-black px-2 py-0.5 rounded-full border border-amber-300 shrink-0">
+                            🟡 Kurang {h.missingCount} Siswa ({h.filledCount}/{h.totalStudents})
+                          </span>
+                        )}
+                        {h.status === 'unfilled' && (
+                          <span className="bg-rose-100 text-rose-800 text-[9px] font-black px-2 py-0.5 rounded-full border border-rose-300 shrink-0">
+                            🔴 Belum Isi (0/{h.totalStudents})
+                          </span>
+                        )}
                       </div>
 
                       {/* PROGRESS BAR */}
-                      <div className="space-y-1.5 mt-3">
+                      <div className="space-y-1 mt-3">
                         <div className="flex justify-between text-[10px] font-bold">
-                          <span className={subtitleColor}>Progres Terisi</span>
-                          <span className={footerTextColor}>
+                          <span className="text-gray-500">Progres Terisi</span>
+                          <span className={h.status === 'complete' ? 'text-emerald-700' : h.status === 'incomplete' ? 'text-amber-700' : 'text-rose-700'}>
                             {h.filledCount} / {h.totalStudents} Siswa ({pct}%)
                           </span>
                         </div>
-                        <div className={`w-full rounded-full h-2 overflow-hidden ${progressBg}`}>
+                        <div className="w-full bg-gray-200/80 rounded-full h-2 overflow-hidden">
                           <div 
-                            className={`h-full rounded-full transition-all duration-500 ${progressBar}`}
+                            className={`h-full rounded-full transition-all duration-500 ${
+                              h.status === 'complete' ? 'bg-emerald-500' : h.status === 'incomplete' ? 'bg-amber-500' : 'bg-rose-500'
+                            }`}
                             style={{ width: `${pct}%` }}
                           ></div>
                         </div>
                       </div>
 
-                      <div className={`mt-3 pt-2 border-t border-black/5 flex items-center justify-between text-[10px] font-bold ${footerTextColor}`}>
-                        <span>{isSelected ? '✓ Sedang Dilihat (Klik untuk Batalkan)' : 'Lihat Rincian Siswa'}</span>
+                      <div className="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between text-[10px] font-bold text-primary-700">
+                        <span>{isSelected ? '✓ Sedang Dilihat' : 'Lihat Rincian Siswa'}</span>
                         <ChevronRight size={14} className={`transition-transform ${isSelected ? 'rotate-90' : ''}`} />
                       </div>
                     </div>
