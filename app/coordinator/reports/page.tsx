@@ -4,7 +4,7 @@ import { Report, User, Student } from '../../../types';
 import { getAllTeachers, subscribeToReportsByTeacher, isHalaqahTeacher, subscribeToAllStudents, subscribeToAllReports } from '../../../services/firestoreService';
 import { SDQQuranEngine } from '../../../services/tahfizh/engine';
 import { Search, Loader2, AlertCircle, CheckCircle2, Filter, Calendar, Users, BookOpen, Heart, Star, AlertTriangle, XCircle, CheckCircle, ChevronRight, Eye } from 'lucide-react';
-import { MonitoringSetoranSabak } from './MonitoringSetoranSabak';
+import { MonitoringSetoranSabaq } from './MonitoringSetoranSabaq';
 
 const getCurrentAcademicYear = (): string => {
   const today = new Date();
@@ -75,7 +75,7 @@ const formatTotalHafalan = (total: any) => {
 // --- MAIN COMPONENT ---
 
 export default function CoordinatorReportsPage() {
-  const [activeTab, setActiveTab] = useState<'laporan' | 'sabak'>('laporan');
+  const [activeTab, setActiveTab] = useState<'laporan' | 'sabaq'>('laporan');
   const [teachers, setTeachers] = useState<User[]>([]);
   const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [allReports, setAllReports] = useState<Report[]>([]);
@@ -281,9 +281,9 @@ export default function CoordinatorReportsPage() {
           Laporan Halaqah
         </button>
         <button
-          onClick={() => setActiveTab('sabak')}
+          onClick={() => setActiveTab('sabaq')}
           className={`px-6 py-3.5 text-xs font-black uppercase tracking-wider border-b-2 transition-all duration-200 ${
-            activeTab === 'sabak'
+            activeTab === 'sabaq'
               ? 'border-primary-600 text-primary-700 font-extrabold'
               : 'border-transparent text-gray-400 hover:text-gray-600'
           }`}
@@ -644,7 +644,7 @@ export default function CoordinatorReportsPage() {
           </div>
         </>
       ) : (
-        <MonitoringSetoranSabak />
+        <MonitoringSetoranSabaq />
       )}
     </div>
   );

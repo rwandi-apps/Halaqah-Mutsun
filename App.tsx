@@ -20,7 +20,7 @@ import GuruEvaluationPage from './app/guru/evaluation/page';
 import GuruGradesPage from './app/guru/grades/page';
 import GuruRaporPage from './app/guru/rapor/page';
 import { GuruSetoranPage } from './app/guru/setoran-guru/page';
-import PublicMonitoringSabakPage from './app/public/monitoring-sabak/page';
+import PublicMonitoringSabaqPage from './app/public/monitoring-sabaq/page';
 import YayasanDashboard from './app/yayasan/dashboard/page';
 import YayasanLihatGuruPage from './app/yayasan/lihat-guru/page';
 import YayasanSetoranGuruPage from './app/yayasan/setoran-guru/page';
@@ -78,7 +78,8 @@ function App() {
     <HashRouter>
       <Routes>
         <Route path="/login" element={!user ? <LoginPage onLogin={handleLogin} /> : <Navigate to="/" replace />} />
-        <Route path="/public/monitoring-sabak" element={<PublicMonitoringSabakPage />} />
+        <Route path="/public/monitoring-sabaq" element={<PublicMonitoringSabaqPage />} />
+        <Route path="/public/monitoring-sabak" element={<Navigate to="/public/monitoring-sabaq" replace />} />
 
         <Route path="/*" element={
            <Layout user={user} onLogout={handleLogout}>

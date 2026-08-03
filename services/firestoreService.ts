@@ -18,7 +18,7 @@ import {
   writeBatch
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { User, Student, Report, Role, SubRole, SemesterReport, HalaqahEvaluation, HalaqahMonthlyReport, HalaqahTeacherHistory, SetoranSabak, SetoranGuru } from '../types';
+import { User, Student, Report, Role, SubRole, SemesterReport, HalaqahEvaluation, HalaqahMonthlyReport, HalaqahTeacherHistory, SetoranSabaq, SetoranGuru } from '../types';
 
 export const isHalaqahTeacher = (teacher: User): boolean => {
   if (!teacher) return false;
@@ -868,18 +868,19 @@ export const getLatestTeacherActivities = async (limitCount: number): Promise<an
 
 // --- SETORAN SABAQ SERVICES ---
 
-export const subscribeToSetoranSabakByStudent = (studentId: string, onUpdate: (data: SetoranSabak[]) => void): Unsubscribe => {
+export const subscribeToSetoranSabaqByStudent = (studentId: string, onUpdate: (data: SetoranSabaq[]) => void): Unsubscribe => {
   if (!db) return () => {};
-  const q = query(
-    collection(db, 'setoran_sabak'), 
-    where('siswaId', '==', studentId)
-  );
-  return onSnapshot(q, (snapshot) => {
-    const records = snapshot.docs.map(doc => ({ 
-      id: doc.id, 
-      ...doc.data() 
-    } as SetoranSabak));
-    // Sort descending by date (and secondarily by ID/createdAt) in memory to avoid needing a Firestore composite index
+  let listSabaq: SetoranSabaq[] = [];
+  let listSabak: SetoranSabaq[] = [];
+
+  const notify = () => {
+    const combined = [...listSabaq, ...listSabak];
+    // Deduplicate by ID
+    const uniqueMap = new Map<string, SetoranSabaq>();
+    combined.forEach(item => {
+      if (item.id) uniqueMap.set(item.id, item);
+    });
+    const records = Array.from(uniqueMap.values());
     records.sort((a, b) => {
       const dateA = new Date(a.tanggal).getTime();
       const dateB = new Date(b.tanggal).getTime();
@@ -887,12 +888,29 @@ export const subscribeToSetoranSabakByStudent = (studentId: string, onUpdate: (d
       return (b.id || '').localeCompare(a.id || '');
     });
     onUpdate(records);
+  };
+
+  const qSabaq = query(collection(db, 'setoran_sabaq'), where('siswaId', '==', studentId));
+  const unsubSabaq = onSnapshot(qSabaq, (snapshot) => {
+    listSabaq = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SetoranSabaq));
+    notify();
   });
+
+  const qSabak = query(collection(db, 'setoran_sabak'), where('siswaId', '==', studentId));
+  const unsubSabak = onSnapshot(qSabak, (snapshot) => {
+    listSabak = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SetoranSabaq));
+    notify();
+  });
+
+  return () => {
+    unsubSabaq();
+    unsubSabak();
+  };
 };
 
-export const addSetoranSabak = async (data: Omit<SetoranSabak, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
+export const addSetoranSabaq = async (data: Omit<SetoranSabaq, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
   if (!db) throw new Error("Firestore not initialized");
-  const docRef = await addDoc(collection(db, 'setoran_sabak'), {
+  const docRef = await addDoc(collection(db, 'setoran_sabaq'), {
     ...data,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
@@ -900,19 +918,32 @@ export const addSetoranSabak = async (data: Omit<SetoranSabak, 'id' | 'createdAt
   return docRef.id;
 };
 
-export const updateSetoranSabak = async (id: string, data: Partial<SetoranSabak>): Promise<void> => {
+export const updateSetoranSabaq = async (id: string, data: Partial<SetoranSabaq>): Promise<void> => {
   if (!db) throw new Error("Firestore not initialized");
-  const docRef = doc(db, 'setoran_sabak', id);
-  await updateDoc(docRef, {
-    ...data,
-    updatedAt: serverTimestamp()
-  });
+  try {
+    const docRef = doc(db, 'setoran_sabaq', id);
+    await updateDoc(docRef, {
+      ...data,
+      updatedAt: serverTimestamp()
+    });
+  } catch (err) {
+    const docRefOld = doc(db, 'setoran_sabak', id);
+    await updateDoc(docRefOld, {
+      ...data,
+      updatedAt: serverTimestamp()
+    });
+  }
 };
 
-export const deleteSetoranSabak = async (id: string): Promise<void> => {
+export const deleteSetoranSabaq = async (id: string): Promise<void> => {
   if (!db) throw new Error("Firestore not initialized");
-  const docRef = doc(db, 'setoran_sabak', id);
-  await deleteDoc(docRef);
+  try {
+    const docRef = doc(db, 'setoran_sabaq', id);
+    await deleteDoc(docRef);
+  } catch (err) {
+    const docRefOld = doc(db, 'setoran_sabak', id);
+    await deleteDoc(docRefOld);
+  }
 };
 
 export const subscribeToAllStudents = (onUpdate: (students: Student[]) => void): Unsubscribe => {
@@ -926,14 +957,18 @@ export const subscribeToAllStudents = (onUpdate: (students: Student[]) => void):
   });
 };
 
-export const subscribeToAllSetoranSabak = (onUpdate: (data: SetoranSabak[]) => void): Unsubscribe => {
+export const subscribeToAllSetoranSabaq = (onUpdate: (data: SetoranSabaq[]) => void): Unsubscribe => {
   if (!db) return () => {};
-  const q = query(collection(db, 'setoran_sabak'));
-  return onSnapshot(q, (snapshot) => {
-    const records = snapshot.docs.map(doc => ({ 
-      id: doc.id, 
-      ...doc.data() 
-    } as SetoranSabak));
+  let listSabaq: SetoranSabaq[] = [];
+  let listSabak: SetoranSabaq[] = [];
+
+  const notify = () => {
+    const combined = [...listSabaq, ...listSabak];
+    const uniqueMap = new Map<string, SetoranSabaq>();
+    combined.forEach(item => {
+      if (item.id) uniqueMap.set(item.id, item);
+    });
+    const records = Array.from(uniqueMap.values());
     records.sort((a, b) => {
       const dateA = new Date(a.tanggal).getTime();
       const dateB = new Date(b.tanggal).getTime();
@@ -941,7 +976,24 @@ export const subscribeToAllSetoranSabak = (onUpdate: (data: SetoranSabak[]) => v
       return (b.id || '').localeCompare(a.id || '');
     });
     onUpdate(records);
+  };
+
+  const qSabaq = query(collection(db, 'setoran_sabaq'));
+  const unsubSabaq = onSnapshot(qSabaq, (snapshot) => {
+    listSabaq = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SetoranSabaq));
+    notify();
   });
+
+  const qSabak = query(collection(db, 'setoran_sabak'));
+  const unsubSabak = onSnapshot(qSabak, (snapshot) => {
+    listSabak = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SetoranSabaq));
+    notify();
+  });
+
+  return () => {
+    unsubSabaq();
+    unsubSabak();
+  };
 };
 
 export const getAllReports = async (): Promise<Report[]> => {

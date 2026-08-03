@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Pencil, Trash2, Check, AlertCircle, Calendar, BookOpen, FileText, Loader2, Search } from 'lucide-react';
-import { Student, SetoranSabak, User } from '../types';
+import { Student, SetoranSabaq, User } from '../types';
 import { QURAN_MAPPING } from '../services/quranMapping';
 import { 
-  subscribeToSetoranSabakByStudent, 
-  addSetoranSabak, 
-  updateSetoranSabak, 
-  deleteSetoranSabak,
+  subscribeToSetoranSabaqByStudent, 
+  addSetoranSabaq, 
+  updateSetoranSabaq, 
+  deleteSetoranSabaq,
   updateStudent
 } from '../services/firestoreService';
 import { Button } from './Button';
@@ -57,22 +57,22 @@ const getInitialSurah = (studentObj: any): string => {
   return 'Al-Fatihah';
 };
 
-interface SetoranSabakModalProps {
+interface SetoranSabaqModalProps {
   isOpen: boolean;
   onClose: () => void;
-  student: Student & { totalHafalanDisplay?: string; currentJuzDisplay?: string };
+  student: Student & { totalHafalanDisplay?: string; currentJuzDisplay?: string; sabaqDisplay?: string; targetBaris?: number };
   currentUser: User | null;
   onSaveSuccess?: () => void;
 }
 
-export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
+export const SetoranSabaqModal: React.FC<SetoranSabaqModalProps> = ({
   isOpen,
   onClose,
   student,
   currentUser,
   onSaveSuccess
 }) => {
-  const [history, setHistory] = useState<SetoranSabak[]>([]);
+  const [history, setHistory] = useState<SetoranSabaq[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -83,6 +83,19 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
   const [selectedSurah, setSelectedSurah] = useState<string>(() => getInitialSurah(student));
   const [surahSearch, setSurahSearch] = useState<string>(selectedSurah);
   const [isSurahDropdownOpen, setIsSurahDropdownOpen] = useState<boolean>(false);
+
+  const [ayatDari, setAyatDari] = useState<number>(1);
+  const [ayatSampai, setAyatSampai] = useState<number>(1);
+  const [jumlahBaris, setJumlahBaris] = useState<number>(student.targetBaris || 10);
+  const [hariSetor, setHariSetor] = useState<string[]>(['Sen', 'Sel', 'Rab', 'Kam', 'Jum']);
+  const [targetBaris, setTargetBaris] = useState<number>(student.targetBaris || 10);
+  const [catatan, setCatatan] = useState<string>('');
+
+  // Delete confirmation states
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  // Dynamic max ayah based on selected surah
+  const [maxAyah, setMaxAyah] = useState<number>(7);
 
   // Keep search input in sync with selected surah when selectedSurah changes
   useEffect(() => {
@@ -97,18 +110,6 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
       setSurahSearch(initial);
     }
   }, [isOpen, student.id]);
-  const [ayatDari, setAyatDari] = useState<number>(1);
-  const [ayatSampai, setAyatSampai] = useState<number>(1);
-  const [jumlahBaris, setJumlahBaris] = useState<number>(10);
-  const [hariSetor, setHariSetor] = useState<string[]>(['Sen']);
-  const [targetBaris, setTargetBaris] = useState<number>(student.targetBaris || 10);
-  const [catatan, setCatatan] = useState<string>('');
-
-  // Delete confirmation states
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-
-  // Dynamic max ayah based on selected surah
-  const [maxAyah, setMaxAyah] = useState<number>(7);
 
   // Find max ayah for current surah
   useEffect(() => {
@@ -118,12 +119,12 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
     }
   }, [selectedSurah]);
 
-  // Subscribe to real-time setoran sabak history
+  // Subscribe to real-time setoran sabaq history
   useEffect(() => {
     if (!isOpen || !student.id) return;
 
     setIsLoadingHistory(true);
-    const unsubscribe = subscribeToSetoranSabakByStudent(student.id, (data) => {
+    const unsubscribe = subscribeToSetoranSabaqByStudent(student.id, (data) => {
       setHistory(data);
       setIsLoadingHistory(false);
     });
@@ -141,16 +142,22 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
     setSelectedSurah(getInitialSurah(student));
     setAyatDari(1);
     setAyatSampai(1);
+    setJumlahBaris(student.targetBaris || 10);
+    setHariSetor(['Sen', 'Sel', 'Rab', 'Kam', 'Jum']);
+    setTargetBaris(student.targetBaris || 10);
     setCatatan('');
     setShowForm(true);
   };
 
-  const handleOpenEditForm = (item: SetoranSabak) => {
+  const handleOpenEditForm = (item: SetoranSabaq) => {
     setEditingId(item.id || null);
     setTanggal(item.tanggal);
     setSelectedSurah(item.surah);
     setAyatDari(item.ayatDari);
     setAyatSampai(item.ayatSampai);
+    setJumlahBaris(item.jumlahBaris || 10);
+    setHariSetor(item.hariSetor || ['Sen', 'Sel', 'Rab', 'Kam', 'Jum']);
+    setTargetBaris(item.targetBaris || student.targetBaris || 10);
     setCatatan(item.catatan || '');
     setShowForm(true);
   };
@@ -223,9 +230,9 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
       };
 
       if (editingId) {
-        await updateSetoranSabak(editingId, payload);
+        await updateSetoranSabaq(editingId, payload);
       } else {
-        await addSetoranSabak(payload);
+        await addSetoranSabaq(payload);
       }
 
       // Update student's sabaq terakhir in Firestore
@@ -238,19 +245,17 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
         onSaveSuccess();
       }
 
-      // Reset form states but keep date and surah for rapid data input if desired
+      // Reset form states
       setAyatDari(sampai + 1 > maxAyah ? maxAyah : sampai + 1);
       setAyatSampai(sampai + 1 > maxAyah ? maxAyah : sampai + 1);
       setCatatan('');
       
-      // Auto-focus back to form or toggle form visibility if user wants to close it
       if (editingId) {
-        // If it was an edit, close the form
         setShowForm(false);
         setEditingId(null);
       }
     } catch (err) {
-      console.error("Error saving setoran sabak:", err);
+      console.error("Error saving setoran sabaq:", err);
       alert("Gagal menyimpan setoran. Silakan coba lagi.");
     } finally {
       setIsSubmitting(false);
@@ -264,10 +269,10 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
       return;
     }
     try {
-      await deleteSetoranSabak(id);
+      await deleteSetoranSabaq(id);
       setConfirmDeleteId(null);
     } catch (err) {
-      console.error("Error deleting setoran sabak:", err);
+      console.error("Error deleting setoran sabaq:", err);
       alert("Gagal menghapus setoran. Silakan coba lagi.");
     }
   };
@@ -279,9 +284,9 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
         {/* Header */}
         <div className="bg-gradient-to-r from-[#0f4c75] to-[#3282b8] text-white p-6 flex justify-between items-center shrink-0">
           <div>
-            <h3 className="text-xl font-bold">Input Setoran Sabaq</h3>
+            <h3 className="text-xl font-bold">Input & Detail Setoran Sabaq Pekanan</h3>
             <p className="text-white/80 text-xs mt-1">
-              Catatan setoran harian siswa untuk monitoring progres halaqah.
+              Catatan setoran sabaq pekanan siswa untuk monitoring progres halaqah.
             </p>
           </div>
           <button 
@@ -295,7 +300,7 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           
           {/* Identitas Siswa */}
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 grid grid-cols-2 md:grid-cols-5 gap-4">
             <div>
               <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Nama Siswa</p>
               <p className="font-bold text-gray-900 text-sm truncate" title={student.name}>{student.name}</p>
@@ -312,6 +317,10 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
               <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Sedang Menghafal</p>
               <p className="font-semibold text-gray-800 text-sm">{student.currentJuzDisplay || "-"}</p>
             </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Target Pekanan</p>
+              <p className="font-bold text-emerald-700 text-sm">{student.targetBaris || 10} Baris/Pekan</p>
+            </div>
           </div>
 
           {/* Form Tambah/Edit (Collapsible) */}
@@ -320,7 +329,7 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
               <div className="flex justify-between items-center border-b border-sky-100 pb-2">
                 <h4 className="font-bold text-[#0f4c75] text-sm flex items-center gap-1.5">
                   <BookOpen size={16} />
-                  {editingId ? "Edit Setoran Sabaq" : "Form Setoran Sabaq Baru"}
+                  {editingId ? "Edit Setoran Sabaq Pekanan" : "Form Setoran Sabaq Pekanan Baru"}
                 </h4>
                 <span className="text-[10px] text-sky-600 bg-sky-50 px-2 py-0.5 rounded-full font-medium">
                   Sabaq Terakhir: {student.sabaqDisplay || "-"}
@@ -329,17 +338,17 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 
-                {/* Tanggal */}
+                {/* Tanggal / Pekan */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-gray-700 flex items-center gap-1">
-                    <Calendar size={14} className="text-gray-400" /> Tanggal Setoran
+                    <Calendar size={14} className="text-gray-400" /> Pekan Tanggal
                   </label>
                   <input 
                     type="date" 
                     required
                     value={tanggal}
                     onChange={(e) => setTanggal(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#0ea5e9] outline-none bg-white"
+                    className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#0ea5e9] outline-none bg-white font-semibold"
                   />
                 </div>
 
@@ -362,13 +371,11 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
                       onBlur={() => {
                         setTimeout(() => {
                           setIsSurahDropdownOpen(false);
-                          // Revert if not exact match or find the closest match
                           const match = QURAN_MAPPING.find(q => q.surah.toLowerCase() === surahSearch.trim().toLowerCase());
                           if (match) {
                             setSelectedSurah(match.surah);
                             setSurahSearch(match.surah);
                           } else {
-                            // Reset to previous selected
                             setSurahSearch(selectedSurah);
                           }
                         }, 200);
@@ -422,7 +429,7 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
                   )}
                 </div>
 
-                {/* Ayat Range & Status */}
+                {/* Ayat Range */}
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-gray-700">Ayat Dari</label>
@@ -433,7 +440,7 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
                       max={maxAyah}
                       value={ayatDari === 0 ? '' : ayatDari}
                       onChange={(e) => setAyatDari(e.target.value === '' ? 0 : Number(e.target.value))}
-                      className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#0ea5e9] outline-none bg-white"
+                      className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#0ea5e9] outline-none bg-white font-semibold"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -445,19 +452,68 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
                       max={maxAyah}
                       value={ayatSampai === 0 ? '' : ayatSampai}
                       onChange={(e) => setAyatSampai(e.target.value === '' ? 0 : Number(e.target.value))}
-                      className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#0ea5e9] outline-none bg-white"
+                      className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#0ea5e9] outline-none bg-white font-semibold"
                     />
+                  </div>
+                </div>
+              </div>
+
+              {/* Capaian Baris & Hari Setor */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-700">Capaian Baris (Pekan Ini)</label>
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="number" 
+                      required
+                      min={0}
+                      value={jumlahBaris}
+                      onChange={(e) => setJumlahBaris(Number(e.target.value))}
+                      className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#0ea5e9] outline-none bg-white font-bold text-gray-900"
+                    />
+                    <span className="text-xs text-gray-500 font-semibold whitespace-nowrap">/ {targetBaris} Target Baris</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-700">Hari Setor Dalam Pekan Ini</label>
+                  <div className="flex gap-1.5 pt-0.5">
+                    {['Sen', 'Sel', 'Rab', 'Kam', 'Jum'].map((day) => {
+                      const isSelected = hariSetor.includes(day);
+                      return (
+                        <button
+                          key={day}
+                          type="button"
+                          onClick={() => {
+                            if (isSelected) {
+                              if (hariSetor.length > 1) {
+                                setHariSetor(hariSetor.filter(h => h !== day));
+                              }
+                            } else {
+                              setHariSetor([...hariSetor, day]);
+                            }
+                          }}
+                          className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                            isSelected
+                              ? 'bg-sky-600 text-white shadow-xs'
+                              : 'bg-white text-gray-400 border border-gray-200 hover:bg-gray-50'
+                          }`}
+                        >
+                          {day}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-gray-700 flex items-center gap-1">
-                  <FileText size={14} className="text-gray-400" /> Catatan Tambahan (Opsional)
+                  <FileText size={14} className="text-gray-400" /> Catatan Pekanan (Opsional)
                 </label>
                 <input 
                   type="text" 
-                  placeholder="Contoh: Lancar, tajwid perlu ditingkatkan, dll."
+                  placeholder="Contoh: Sangat lancar, tajwid makhraj konsisten, dll."
                   value={catatan}
                   onChange={(e) => setCatatan(e.target.value)}
                   className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#0ea5e9] outline-none bg-white"
@@ -469,139 +525,235 @@ export const SetoranSabakModal: React.FC<SetoranSabakModalProps> = ({
                   type="button" 
                   variant="outline" 
                   onClick={handleCancelForm}
-                  className="text-xs py-2 px-4 border-gray-300 text-gray-700 hover:bg-gray-100"
+                  className="text-xs py-2 px-4 border-gray-300 text-gray-700 hover:bg-gray-100 font-bold"
                 >
                   Batal
                 </Button>
                 <Button 
                   type="submit" 
                   disabled={isSubmitting}
-                  className="text-xs bg-[#0f4c75] hover:bg-[#1b4f72] text-white py-2 px-5 flex items-center gap-1"
+                  className="text-xs bg-[#0f4c75] hover:bg-[#1b4f72] text-white py-2 px-5 flex items-center gap-1 font-bold"
                 >
                   {isSubmitting ? (
                     <>
                       <Loader2 size={14} className="animate-spin" /> Menyimpan...
                     </>
                   ) : (
-                    "Simpan Setoran"
+                    "Simpan Setoran Pekanan"
                   )}
                 </Button>
               </div>
             </form>
           )}
 
-          {/* Riwayat Setoran */}
-          <div className="space-y-3">
-            <h4 className="font-bold text-gray-800 text-sm flex items-center gap-2">
-              <span>Riwayat Setoran Sabaq</span>
-              <span className="text-xs font-normal text-gray-500">
-                ({history.length} setoran tercatat)
-              </span>
-            </h4>
+          {/* Riwayat Setoran Sabaq Pekanan */}
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-100 pb-3">
+              <div>
+                <h4 className="font-bold text-gray-900 text-base flex items-center gap-2">
+                  <BookOpen size={18} className="text-[#0f4c75]" />
+                  <span>Riwayat Setoran Sabaq Pekanan</span>
+                  <span className="text-xs font-bold text-[#0e7490] bg-cyan-50 border border-cyan-100 px-2.5 py-0.5 rounded-full">
+                    {history.length} Pekan Recorded
+                  </span>
+                </h4>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Catatan pencapaian setoran sabaq berbasis pekanan (1 record per pekan).
+                </p>
+              </div>
+
+              {!showForm && (
+                <Button
+                  type="button"
+                  onClick={handleOpenAddForm}
+                  className="text-xs bg-[#0f4c75] hover:bg-[#1b4f72] text-white py-2 px-3.5 flex items-center gap-1.5 rounded-lg shadow-xs font-bold self-start sm:self-auto"
+                >
+                  <Plus size={14} />
+                  Tambah Pekan Setoran
+                </Button>
+              )}
+            </div>
 
             {isLoadingHistory ? (
               <div className="text-center py-12 text-gray-400 flex flex-col items-center gap-2">
                 <Loader2 size={24} className="animate-spin text-gray-400" />
-                <span className="text-xs">Memuat riwayat setoran...</span>
+                <span className="text-xs font-semibold">Memuat riwayat setoran pekanan...</span>
               </div>
             ) : history.length > 0 ? (
-              <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse text-left text-xs text-gray-500">
-                    <thead className="bg-gray-50 text-[10px] uppercase tracking-wider text-gray-500 font-bold border-b border-gray-200">
-                      <tr>
-                        <th className="px-6 py-3 font-semibold">Tanggal Setoran</th>
-                        <th className="px-6 py-3 font-semibold">Surah</th>
-                        <th className="px-6 py-3 font-semibold">Ayat</th>
-                        <th className="px-6 py-3 font-semibold">Status</th>
-                        <th className="px-6 py-3 font-semibold">Catatan</th>
-                        <th className="px-6 py-3 font-semibold text-right">Aksi</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {history.map((item) => (
-                        <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                          <td className="px-6 py-3.5 font-medium text-gray-900 whitespace-nowrap">
-                            {new Date(item.tanggal).toLocaleDateString('id-ID', {
-                              weekday: 'long',
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric'
-                            })}
-                          </td>
-                          <td className="px-6 py-3.5 font-semibold text-gray-800 whitespace-nowrap">
-                            {item.surah}
-                          </td>
-                          <td className="px-6 py-3.5 font-medium text-gray-700 whitespace-nowrap">
-                            Ayat {item.ayatDari} - {item.ayatSampai}
-                          </td>
-                          <td className="px-6 py-3.5 whitespace-nowrap">
-                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                              item.status === 'Tuntas' 
+              <div className="space-y-3">
+                {history.map((item, index) => {
+                  const isCompleted = item.status === 'Tuntas';
+                  const isNoNew = item.noNewMemorization;
+                  const target = item.targetBaris || student.targetBaris || 10;
+                  const achieved = item.jumlahBaris || 0;
+                  const pct = Math.min(100, Math.round((achieved / target) * 100));
+
+                  const formattedDate = new Date(item.tanggal).toLocaleDateString('id-ID', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                  });
+
+                  const allDays = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum'];
+
+                  return (
+                    <div 
+                      key={item.id || index}
+                      className="bg-white border border-gray-200 hover:border-sky-300 rounded-xl p-4 shadow-2xs hover:shadow-md transition-all space-y-3"
+                    >
+                      {/* Card Header: Week Info, Status & Actions */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 pb-2.5">
+                        <div className="flex items-center gap-2">
+                          <span className="flex items-center gap-1.5 text-xs font-black text-gray-800 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+                            <Calendar size={13} className="text-[#0f4c75]" />
+                            Pekan: {formattedDate}
+                          </span>
+
+                          {isNoNew ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                              🟢 {item.memorizationReason || "Murajaah"}
+                            </span>
+                          ) : (
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                              isCompleted 
                                 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
                                 : 'bg-amber-50 text-amber-700 border border-amber-200'
                             }`}>
-                              {item.status === 'Tuntas' ? (
-                                <Check size={10} className="stroke-[3]" />
-                              ) : (
-                                <AlertCircle size={10} className="stroke-[3]" />
-                              )}
+                              {isCompleted ? <Check size={12} className="stroke-[3]" /> : <AlertCircle size={12} className="stroke-[3]" />}
                               {item.status}
                             </span>
-                          </td>
-                          <td className="px-6 py-3.5 max-w-[200px] truncate text-gray-600" title={item.catatan}>
-                            {item.catatan || "-"}
-                          </td>
-                          <td className="px-6 py-3.5 whitespace-nowrap text-right">
-                            {confirmDeleteId === item.id ? (
-                              <div className="flex justify-end gap-1.5 items-center">
-                                <span className="text-[10px] text-red-600 font-bold">Hapus?</span>
-                                <button
-                                  type="button"
-                                  onClick={() => handleDelete(item.id!)}
-                                  className="text-xs bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded-md transition-colors"
+                          )}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-2">
+                          {confirmDeleteId === item.id ? (
+                            <div className="flex items-center gap-1.5 bg-red-50 p-1 rounded-lg border border-red-200">
+                              <span className="text-[10px] text-red-600 font-bold px-1">Yakin hapus?</span>
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(item.id!)}
+                                className="text-xs bg-red-600 hover:bg-red-700 text-white font-bold py-0.5 px-2 rounded transition-colors"
+                              >
+                                Ya
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setConfirmDeleteId(null)}
+                                className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 py-0.5 px-2 rounded transition-colors"
+                              >
+                                Batal
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEditForm(item)}
+                                className="p-1.5 text-gray-500 hover:text-[#0ea5e9] hover:bg-sky-50 rounded-lg transition-colors flex items-center gap-1 text-xs font-semibold"
+                                title="Edit Pekan Setoran"
+                              >
+                                <Pencil size={14} />
+                                <span className="hidden sm:inline">Edit</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setConfirmDeleteId(item.id || null)}
+                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Hapus Pekan Setoran"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Card Body: Surah/Ayat Range & Baris Target */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+                        {/* Column 1: Surah & Ayat */}
+                        <div className="md:col-span-2 space-y-1">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Pencapaian Surah & Ayat</p>
+                          {isNoNew ? (
+                            <p className="text-sm font-semibold text-gray-500 italic">
+                              Tidak ada penambahan hafalan pekan ini ({item.memorizationReason || 'Murajaah'})
+                            </p>
+                          ) : (
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-extrabold text-gray-900 text-sm">
+                                {item.surah}
+                                {item.surahSampai && item.surahSampai !== item.surah ? ` — ${item.surahSampai}` : ''}
+                              </span>
+                              <span className="text-xs font-bold bg-sky-100 text-sky-800 px-2 py-0.5 rounded-md">
+                                Ayat {item.ayatDari} - {item.ayatSampai}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Column 2: Baris Meter */}
+                        <div className="bg-slate-50 border border-slate-100 rounded-lg p-2.5 space-y-1">
+                          <div className="flex justify-between items-center text-xs font-bold">
+                            <span className="text-gray-500">Capaian Baris:</span>
+                            <span className={pct >= 100 ? 'text-emerald-700' : 'text-amber-700'}>
+                              {achieved} / {target} Baris ({pct}%)
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                            <div 
+                              className={`h-full transition-all duration-300 ${pct >= 100 ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Hari Setor Badges & Notes */}
+                      <div className="pt-1 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs border-t border-slate-100">
+                        {/* Hari Setor Chips */}
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-bold text-gray-400 uppercase">Hari Setor:</span>
+                          <div className="flex gap-1">
+                            {allDays.map((day) => {
+                              const active = item.hariSetor?.includes(day);
+                              return (
+                                <span
+                                  key={day}
+                                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                                    active
+                                      ? 'bg-sky-600 text-white font-black'
+                                      : 'bg-gray-100 text-gray-400'
+                                  }`}
                                 >
-                                  Ya
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setConfirmDeleteId(null)}
-                                  className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 py-1 px-2 rounded-md transition-colors"
-                                >
-                                  Batal
-                                </button>
-                              </div>
-                            ) : (
-                              <div className="flex justify-end gap-1.5">
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenEditForm(item)}
-                                  className="p-1 text-gray-400 hover:text-[#0ea5e9] rounded transition-colors"
-                                  title="Edit Setoran"
-                                >
-                                  <Pencil size={15} />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setConfirmDeleteId(item.id || null)}
-                                  className="p-1 text-gray-400 hover:text-red-600 rounded transition-colors"
-                                  title="Hapus Setoran"
-                                >
-                                  <Trash2 size={15} />
-                                </button>
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                                  {day}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Guru & Note */}
+                        <div className="flex items-center gap-3 text-gray-500 text-xs">
+                          {item.catatan && (
+                            <span className="italic max-w-[250px] truncate text-gray-600" title={item.catatan}>
+                              💬 "{item.catatan}"
+                            </span>
+                          )}
+                          <span className="text-[11px] font-semibold text-gray-400">
+                            Guru: {item.guruNama || 'Guru'}
+                          </span>
+                        </div>
+                      </div>
+
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-12 bg-gray-50 border border-dashed border-gray-200 rounded-xl">
                 <BookOpen size={36} className="mx-auto text-gray-300 mb-2" />
-                <p className="text-gray-500 text-xs">Belum ada riwayat setoran Sabaq untuk siswa ini.</p>
+                <p className="text-gray-500 text-xs font-bold">Belum ada riwayat setoran Sabaq pekanan untuk siswa ini.</p>
+                <p className="text-gray-400 text-[11px] mt-1">Klik "Tambah Pekan Setoran" di atas untuk menambahkan catatan pekanan baru.</p>
               </div>
             )}
           </div>

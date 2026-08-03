@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { Check, Edit3, Save, ArrowDown, Target, BookOpen, Clock, Calendar } from 'lucide-react';
-import { Student, SetoranSabak, User } from '../types';
+import { Student, SetoranSabaq, User } from '../types';
 import { QURAN_MAPPING, calculateHafalan } from '../services/quranMapping';
-import { addSetoranSabak, updateSetoranSabak, updateStudent } from '../services/firestoreService';
+import { addSetoranSabaq, updateSetoranSabaq, updateStudent } from '../services/firestoreService';
 
 const HARI_LIST = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum'];
 
@@ -16,8 +16,8 @@ export interface SabaqInputCardProps {
   totalStudents: number;
   currentUser: User | null;
   tanggal: string; // YYYY-MM-DD
-  latestSetoranFromPrevWeek?: SetoranSabak | null;
-  existingSetoranThisWeek?: SetoranSabak | null;
+  latestSetoranFromPrevWeek?: SetoranSabaq | null;
+  existingSetoranThisWeek?: SetoranSabaq | null;
   onSavedSuccess: () => void;
   onNextCard?: (currentIndex: number) => void;
   isActive?: boolean;
@@ -247,7 +247,7 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
     try {
       const targetEndSurah = isMultiSurah ? surahSampai : surah;
       const guruNama = currentUser.nickname || currentUser.name || "Guru";
-      const payload: Omit<SetoranSabak, 'id' | 'createdAt' | 'updatedAt'> = {
+      const payload: Omit<SetoranSabaq, 'id' | 'createdAt' | 'updatedAt'> = {
         tanggal,
         guruId: currentUser.id,
         guruNama,
@@ -270,9 +270,9 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
 
       let docId = savedDocId;
       if (docId) {
-        await updateSetoranSabak(docId, payload);
+        await updateSetoranSabaq(docId, payload);
       } else {
-        docId = await addSetoranSabak(payload);
+        docId = await addSetoranSabaq(payload);
         setSavedDocId(docId);
       }
 

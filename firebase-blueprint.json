@@ -28,7 +28,7 @@
       },
       "required": ["name", "email", "role"]
     },
-    "SetoranSabak": {
+    "SetoranSabaq": {
       "title": "Setoran Sabaq",
       "description": "Pencatatan setoran hafalan harian sabaq siswa",
       "type": "object",
@@ -73,9 +73,13 @@
       "schema": "User",
       "description": "Koleksi data guru dan pengurus"
     },
-    "/setoran_sabak/{setoranId}": {
-      "schema": "SetoranSabak",
+    "/setoran_sabaq/{setoranId}": {
+      "schema": "SetoranSabaq",
       "description": "Koleksi catatan setoran sabaq harian siswa"
+    },
+    "/setoran_sabak/{setoranId}": {
+      "schema": "SetoranSabaq",
+      "description": "Koleksi catatan setoran sabaq harian siswa (legacy)"
     }
   }
 }

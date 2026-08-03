@@ -168,8 +168,8 @@ export interface SemesterReport {
   createdAt?: string;
 }
 
-// Collection: setoran_sabak
-export interface SetoranSabak {
+// Collection: setoran_sabaq
+export interface SetoranSabaq {
   id?: string;
   tanggal: string; // YYYY-MM-DD
   guruId: string;

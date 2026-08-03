@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Student, SetoranSabak, User } from '../../../types';
+import { Student, SetoranSabaq, User } from '../../../types';
 import { getStudentGender, extractClassLevel } from '../../../services/sdqTargets';
 import { 
   getAllTeachers, 
   subscribeToAllStudents, 
-  subscribeToAllSetoranSabak,
+  subscribeToAllSetoranSabaq,
   isHalaqahTeacher
 } from '../../../services/firestoreService';
 import { 
@@ -12,6 +12,7 @@ import {
   Loader2, 
   AlertCircle, 
   CheckCircle2, 
+  Check,
   Calendar, 
   Users, 
   BookOpen, 
@@ -133,11 +134,11 @@ const getDefaultWeek = (weeks: WeekOption[]): WeekOption | null => {
   return weeks[0];
 };
 
-const getDefaultWeekWithData = (weeks: WeekOption[], records: SetoranSabak[]): WeekOption | null => {
+const getDefaultWeekWithData = (weeks: WeekOption[], records: SetoranSabaq[]): WeekOption | null => {
   if (weeks.length === 0) return null;
 
   if (records && records.length > 0) {
-    // Cari semua pekan yang sudah memiliki data setoran sabak
+    // Cari semua pekan yang sudah memiliki data setoran sabaq
     const weeksWithData = weeks.filter(w => 
       records.some(rec => isDateInWeek(rec.tanggal, w.startDate, w.endDate))
     );
@@ -154,14 +155,14 @@ const getDefaultWeekWithData = (weeks: WeekOption[], records: SetoranSabak[]): W
 
 const DEFAULT_COORDINATOR_NOTE = "Alhamdulillah terdapat peningkatan setoran pada beberapa halaqah kelas 3. Jazakumullahu khairan kepada seluruh guru yang telah konsisten melakukan mutabaah dan pendampingan. Mari bersama-sama membantu halaqah yang masih memerlukan dukungan agar seluruh ananda mendapatkan layanan terbaik.";
 
-interface MonitoringSetoranSabakProps {
+interface MonitoringSetoranSabaqProps {
   isPublic?: boolean;
 }
 
-export const MonitoringSetoranSabak: React.FC<MonitoringSetoranSabakProps> = ({ isPublic = false }) => {
+export const MonitoringSetoranSabaq: React.FC<MonitoringSetoranSabaqProps> = ({ isPublic = false }) => {
   const [teachers, setTeachers] = useState<User[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
-  const [sabakRecords, setSabakRecords] = useState<SetoranSabak[]>([]);
+  const [sabaqRecords, setSabaqRecords] = useState<SetoranSabaq[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Filters state
@@ -174,7 +175,7 @@ export const MonitoringSetoranSabak: React.FC<MonitoringSetoranSabakProps> = ({ 
   const [shareCopied, setShareCopied] = useState(false);
 
   const handleCopyShareLink = () => {
-    const url = `${window.location.origin}${window.location.pathname}#/public/monitoring-sabak`;
+    const url = `${window.location.origin}${window.location.pathname}#/public/monitoring-sabaq`;
     navigator.clipboard.writeText(url).then(() => {
       setShareCopied(true);
       setTimeout(() => setShareCopied(false), 3000);
@@ -206,7 +207,7 @@ export const MonitoringSetoranSabak: React.FC<MonitoringSetoranSabakProps> = ({ 
 
   // History modal state
   const [historyStudent, setHistoryStudent] = useState<Student | null>(null);
-  const [historyRecords, setHistoryRecords] = useState<SetoranSabak[]>([]);
+  const [historyRecords, setHistoryRecords] = useState<SetoranSabaq[]>([]);
 
   // Page index state for paginating students in a selected halaqah
   const [halaqahPage, setHalaqahPage] = useState<Record<string, number>>({});
@@ -218,21 +219,21 @@ export const MonitoringSetoranSabak: React.FC<MonitoringSetoranSabakProps> = ({ 
     });
   }, []);
 
-  // 2. Real-time Subscriptions to Students and Sabak Records
+  // 2. Real-time Subscriptions to Students and Sabaq Records
   useEffect(() => {
     setIsLoading(true);
     const unsubStudents = subscribeToAllStudents((data) => {
       setStudents(data);
     });
 
-    const unsubSabak = subscribeToAllSetoranSabak((data) => {
-      setSabakRecords(data);
+    const unsubSabaq = subscribeToAllSetoranSabaq((data) => {
+      setSabaqRecords(data);
       setIsLoading(false);
     });
 
     return () => {
       unsubStudents();
-      unsubSabak();
+      unsubSabaq();
     };
   }, []);
 
@@ -244,15 +245,15 @@ export const MonitoringSetoranSabak: React.FC<MonitoringSetoranSabakProps> = ({ 
   // Ref to track if user manually changed week in UI
   const isUserSelectedWeek = React.useRef(false);
 
-  // Update selected week default when academic year or sabak records change
+  // Update selected week default when academic year or sabaq records change
   useEffect(() => {
     if (weekOptions.length > 0 && !isUserSelectedWeek.current) {
-      const def = getDefaultWeekWithData(weekOptions, sabakRecords);
+      const def = getDefaultWeekWithData(weekOptions, sabaqRecords);
       if (def) {
         setSelectedWeek(def);
       }
     }
-  }, [weekOptions, sabakRecords]);
+  }, [weekOptions, sabaqRecords]);
 
   // Index of current selected week
   const selectedWeekIndex = useMemo(() => {
@@ -317,12 +318,12 @@ export const MonitoringSetoranSabak: React.FC<MonitoringSetoranSabakProps> = ({ 
     });
   }, [students, selectedGender, selectedClass, selectedTeacher, searchTerm, teacherMap]);
 
-  // Map of Student ID -> array of setoran_sabak records in the selected week
-  const sabakInSelectedWeekByStudent = useMemo(() => {
-    const map: Record<string, SetoranSabak[]> = {};
+  // Map of Student ID -> array of setoran_sabaq records in the selected week
+  const sabaqInSelectedWeekByStudent = useMemo(() => {
+    const map: Record<string, SetoranSabaq[]> = {};
     if (!selectedWeek) return map;
 
-    sabakRecords.forEach(rec => {
+    sabaqRecords.forEach(rec => {
       if (isDateInWeek(rec.tanggal, selectedWeek.startDate, selectedWeek.endDate)) {
         if (!map[rec.siswaId]) {
           map[rec.siswaId] = [];
@@ -331,14 +332,14 @@ export const MonitoringSetoranSabak: React.FC<MonitoringSetoranSabakProps> = ({ 
       }
     });
     return map;
-  }, [sabakRecords, selectedWeek]);
+  }, [sabaqRecords, selectedWeek]);
 
-  // Map of Student ID -> array of setoran_sabak records in the previous week
-  const sabakInPreviousWeekByStudent = useMemo(() => {
-    const map: Record<string, SetoranSabak[]> = {};
+  // Map of Student ID -> array of setoran_sabaq records in the previous week
+  const sabaqInPreviousWeekByStudent = useMemo(() => {
+    const map: Record<string, SetoranSabaq[]> = {};
     if (!previousWeekOption) return map;
 
-    sabakRecords.forEach(rec => {
+    sabaqRecords.forEach(rec => {
       if (isDateInWeek(rec.tanggal, previousWeekOption.startDate, previousWeekOption.endDate)) {
         if (!map[rec.siswaId]) {
           map[rec.siswaId] = [];
@@ -347,18 +348,18 @@ export const MonitoringSetoranSabak: React.FC<MonitoringSetoranSabakProps> = ({ 
       }
     });
     return map;
-  }, [sabakRecords, previousWeekOption]);
+  }, [sabaqRecords, previousWeekOption]);
 
-  // Map of Student ID -> latest setoran_sabak record (entire history)
-  const latestSabakByStudent = useMemo(() => {
-    const map: Record<string, SetoranSabak> = {};
-    sabakRecords.forEach(rec => {
+  // Map of Student ID -> latest setoran_sabaq record (entire history)
+  const latestSabaqByStudent = useMemo(() => {
+    const map: Record<string, SetoranSabaq> = {};
+    sabaqRecords.forEach(rec => {
       if (!map[rec.siswaId]) {
         map[rec.siswaId] = rec;
       }
     });
     return map;
-  }, [sabakRecords]);
+  }, [sabaqRecords]);
 
   // Grouped Data: Kelas -> Halaqah (Teacher) -> Students
   const hierarchicalData = useMemo(() => {
@@ -402,7 +403,7 @@ export const MonitoringSetoranSabak: React.FC<MonitoringSetoranSabakProps> = ({ 
 
       groups[cls].halaqahs[tId].students.push(student);
 
-      const weeklySetorans = sabakInSelectedWeekByStudent[student.id] || [];
+      const weeklySetorans = sabaqInSelectedWeekByStudent[student.id] || [];
       if (weeklySetorans.length > 0) {
         groups[cls].halaqahs[tId].alreadyDepositedCount++;
       } else {
@@ -416,7 +417,7 @@ export const MonitoringSetoranSabak: React.FC<MonitoringSetoranSabakProps> = ({ 
         halaqahs: Object.values(g.halaqahs).sort((a, b) => a.teacherName.localeCompare(b.teacherName))
       }))
       .sort((a, b) => a.className.localeCompare(b.className));
-  }, [filteredStudents, teacherMap, sabakInSelectedWeekByStudent]);
+  }, [filteredStudents, teacherMap, sabaqInSelectedWeekByStudent]);
 
   // Summary Metrics for Header
   const metrics = useMemo(() => {
@@ -431,12 +432,12 @@ export const MonitoringSetoranSabak: React.FC<MonitoringSetoranSabakProps> = ({ 
     let studentsDepositedCount = 0;
 
     filteredStudents.forEach(s => {
-      const weekly = sabakInSelectedWeekByStudent[s.id] || [];
+      const weekly = sabaqInSelectedWeekByStudent[s.id] || [];
       totalSetoransThisWeek += weekly.length;
     });
 
     activeTargetList.forEach(s => {
-      const weekly = sabakInSelectedWeekByStudent[s.id] || [];
+      const weekly = sabaqInSelectedWeekByStudent[s.id] || [];
       if (weekly.length > 0) {
         studentsDepositedCount++;
       }
@@ -456,7 +457,7 @@ export const MonitoringSetoranSabak: React.FC<MonitoringSetoranSabakProps> = ({ 
       percentageSchool,
       isOnlyGrade1Selected
     };
-  }, [filteredStudents, sabakInSelectedWeekByStudent, selectedClass]);
+  }, [filteredStudents, sabaqInSelectedWeekByStudent, selectedClass]);
 
   // Previous Week Metrics for Weekly Trend
   const previousMetrics = useMemo(() => {
@@ -468,7 +469,7 @@ export const MonitoringSetoranSabak: React.FC<MonitoringSetoranSabakProps> = ({ 
       : sabaqTargetStudents;
 
     activeTargetList.forEach(s => {
-      const prevWeekly = sabakInPreviousWeekByStudent[s.id] || [];
+      const prevWeekly = sabaqInPreviousWeekByStudent[s.id] || [];
       if (prevWeekly.length > 0) {
         studentsDepositedPrev++;
       }
@@ -477,7 +478,7 @@ export const MonitoringSetoranSabak: React.FC<MonitoringSetoranSabakProps> = ({ 
     return {
       studentsDepositedCount: studentsDepositedPrev
     };
-  }, [filteredStudents, sabakInPreviousWeekByStudent, selectedClass]);
+  }, [filteredStudents, sabaqInPreviousWeekByStudent, selectedClass]);
 
   // Trend Calculations
   const trendData = useMemo(() => {
@@ -549,10 +550,10 @@ export const MonitoringSetoranSabak: React.FC<MonitoringSetoranSabakProps> = ({ 
         let prevAlready = 0;
 
         hal.students.forEach(s => {
-          const currentWeekly = sabakInSelectedWeekByStudent[s.id] || [];
+          const currentWeekly = sabaqInSelectedWeekByStudent[s.id] || [];
           totalSetorans += currentWeekly.length;
 
-          const prevWeekly = sabakInPreviousWeekByStudent[s.id] || [];
+          const prevWeekly = sabaqInPreviousWeekByStudent[s.id] || [];
           prevTotalSetorans += prevWeekly.length;
           if (prevWeekly.length > 0) {
             prevAlready++;
@@ -637,7 +638,7 @@ export const MonitoringSetoranSabak: React.FC<MonitoringSetoranSabakProps> = ({ 
       topGrowth,
       topConsistency
     };
-  }, [hierarchicalData, sabakInSelectedWeekByStudent, sabakInPreviousWeekByStudent]);
+  }, [hierarchicalData, sabaqInSelectedWeekByStudent, sabaqInPreviousWeekByStudent]);
 
   // Generator Otomatis Pesan Koordinator berdasarkan Data Pekan Ini
   const autoGeneratedNote = useMemo(() => {
@@ -719,7 +720,7 @@ export const MonitoringSetoranSabak: React.FC<MonitoringSetoranSabakProps> = ({ 
   // Handle open student history modal
   const handleOpenHistory = (student: Student) => {
     setHistoryStudent(student);
-    const history = sabakRecords.filter(r => r.siswaId === student.id);
+    const history = sabaqRecords.filter(r => r.siswaId === student.id);
     setHistoryRecords(history);
   };
 
@@ -1381,7 +1382,7 @@ export const MonitoringSetoranSabak: React.FC<MonitoringSetoranSabakProps> = ({ 
                           ? Math.round((halaqah.alreadyDepositedCount / halaqah.students.length) * 100) 
                           : 0;
 
-                        const halTotalSetorans = halaqah.students.reduce((sum, s) => sum + (sabakInSelectedWeekByStudent[s.id] || []).length, 0);
+                        const halTotalSetorans = halaqah.students.reduce((sum, s) => sum + (sabaqInSelectedWeekByStudent[s.id] || []).length, 0);
                         const halAvgSetoran = halaqah.students.length > 0 ? (halTotalSetorans / halaqah.students.length) : 0;
                         const halIntensityPct = halaqah.students.length > 0 ? Math.min(100, Math.round((halTotalSetorans / (halaqah.students.length * 5)) * 100)) : 0;
 
@@ -1462,9 +1463,9 @@ export const MonitoringSetoranSabak: React.FC<MonitoringSetoranSabakProps> = ({ 
                                       return (
                                         <>
                                           {paginatedStudents.map((student, idx) => {
-                                            const weeklySetorans = sabakInSelectedWeekByStudent[student.id] || [];
+                                            const weeklySetorans = sabaqInSelectedWeekByStudent[student.id] || [];
                                             const isDepositedThisWeek = weeklySetorans.length > 0;
-                                            const latest = latestSabakByStudent[student.id];
+                                            const latest = latestSabaqByStudent[student.id];
 
                                             return (
                                               <tr key={student.id} className="hover:bg-gray-50/50 transition-colors">
@@ -1612,7 +1613,7 @@ export const MonitoringSetoranSabak: React.FC<MonitoringSetoranSabakProps> = ({ 
             {/* Modal Header */}
             <div className="px-6 py-5 bg-emerald-800 text-white flex justify-between items-center shrink-0">
               <div>
-                <h3 className="text-lg font-black tracking-tight uppercase">Riwayat Setoran Sabaq</h3>
+                <h3 className="text-lg font-black tracking-tight uppercase">Riwayat Setoran Sabaq Pekanan</h3>
                 <p className="text-xs text-emerald-200 font-bold uppercase tracking-wider">{historyStudent.name} • {historyStudent.className}</p>
               </div>
               <button 
@@ -1632,73 +1633,136 @@ export const MonitoringSetoranSabak: React.FC<MonitoringSetoranSabakProps> = ({ 
                   <span className="bg-emerald-100 px-2.5 py-1 rounded-lg uppercase">{historyStudent.currentProgress || 'Belum Ada'}</span>
                 </div>
                 <div className="text-xs font-bold text-teal-900">
-                  <span className="text-gray-400 font-medium mr-1 uppercase">Total Setoran Sabaq:</span>
-                  <span className="bg-teal-100 px-2.5 py-1 rounded-lg uppercase text-teal-800">{historyRecords.length} Catatan</span>
+                  <span className="text-gray-400 font-medium mr-1 uppercase">Total Pekan Recorded:</span>
+                  <span className="bg-teal-100 px-2.5 py-1 rounded-lg uppercase text-teal-800">{historyRecords.length} Pekan</span>
                 </div>
               </div>
 
               {historyRecords.length > 0 ? (
-                <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-gray-50 border-b border-gray-100 text-[10px] font-black tracking-widest text-gray-400 uppercase">
-                        <th className="px-5 py-3 w-10 text-center">No</th>
-                        <th className="px-5 py-3">Tanggal</th>
-                        <th className="px-5 py-3">Surah</th>
-                        <th className="px-5 py-3 text-center">Ayat</th>
-                        <th className="px-5 py-3 text-center">Status</th>
-                        <th className="px-5 py-3">Catatan</th>
-                        <th className="px-5 py-3">Guru Penginput</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50 text-xs">
-                      {historyRecords.map((rec, idx) => (
-                        <tr key={rec.id} className="hover:bg-gray-50/30 transition-colors">
-                          <td className="px-5 py-3.5 text-center font-bold text-gray-400">{idx + 1}</td>
-                          <td className="px-5 py-3.5 font-bold text-gray-700">
-                            {new Date(rec.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}
-                          </td>
-                          <td className="px-5 py-3.5 font-black text-emerald-700 uppercase">
-                            {rec.noNewMemorization ? (
-                              <span className="text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-xs font-bold">
+                <div className="space-y-3">
+                  {historyRecords.map((rec, idx) => {
+                    const isCompleted = rec.status === 'Tuntas';
+                    const isNoNew = rec.noNewMemorization;
+                    const target = rec.targetBaris || historyStudent.targetBaris || 10;
+                    const achieved = rec.jumlahBaris || 0;
+                    const pct = Math.min(100, Math.round((achieved / target) * 100));
+
+                    const formattedDate = new Date(rec.tanggal).toLocaleDateString('id-ID', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric'
+                    });
+
+                    const allDays = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum'];
+
+                    return (
+                      <div 
+                        key={rec.id || idx}
+                        className="bg-white border border-gray-100 hover:border-emerald-200 rounded-2xl p-4 shadow-xs space-y-3"
+                      >
+                        {/* Card Header: Week & Status */}
+                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 pb-2.5">
+                          <div className="flex items-center gap-2">
+                            <span className="flex items-center gap-1.5 text-xs font-black text-gray-800 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+                              <Calendar size={13} className="text-emerald-700" />
+                              Pekan: {formattedDate}
+                            </span>
+
+                            {isNoNew ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
                                 🟢 {rec.memorizationReason || "Murajaah"}
                               </span>
                             ) : (
-                              rec.surahSampai && rec.surahSampai !== rec.surah ? `${rec.surah} - ${rec.surahSampai}` : rec.surah
-                            )}
-                          </td>
-                          <td className="px-5 py-3.5 text-center font-bold">
-                            {rec.noNewMemorization ? (
-                              <span className="text-gray-400">-</span>
-                            ) : (
-                              <span className="bg-gray-100 px-2.5 py-1 rounded-lg text-gray-700">
-                                {rec.ayatDari} - {rec.ayatSampai}
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                                isCompleted 
+                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                                  : 'bg-amber-50 text-amber-700 border border-amber-200'
+                              }`}>
+                                {isCompleted ? <Check size={12} className="stroke-[3]" /> : <AlertCircle size={12} className="stroke-[3]" />}
+                                {rec.status}
                               </span>
                             )}
-                          </td>
-                          <td className="px-5 py-3.5 text-center">
-                            <span className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider ${
-                              rec.status === 'Tuntas' 
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
-                                : 'bg-amber-50 text-amber-700 border border-amber-100'
-                            }`}>
-                              {rec.status}
+                          </div>
+
+                          <span className="text-[11px] font-bold text-gray-400 uppercase">
+                            Guru: {rec.guruNama || 'Guru'}
+                          </span>
+                        </div>
+
+                        {/* Card Body: Surah/Ayat & Baris Target */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+                          <div className="md:col-span-2 space-y-1">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Pencapaian Surah & Ayat</p>
+                            {isNoNew ? (
+                              <p className="text-sm font-semibold text-gray-500 italic">
+                                Tidak ada penambahan hafalan pekan ini ({rec.memorizationReason || 'Murajaah'})
+                              </p>
+                            ) : (
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="font-extrabold text-gray-900 text-sm">
+                                  {rec.surah}
+                                  {rec.surahSampai && rec.surahSampai !== rec.surah ? ` — ${rec.surahSampai}` : ''}
+                                </span>
+                                <span className="text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-100 px-2 py-0.5 rounded-md">
+                                  Ayat {rec.ayatDari} - {rec.ayatSampai}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5 space-y-1">
+                            <div className="flex justify-between items-center text-xs font-bold">
+                              <span className="text-gray-500">Capaian Baris:</span>
+                              <span className={pct >= 100 ? 'text-emerald-700' : 'text-amber-700'}>
+                                {achieved} / {target} Baris ({pct}%)
+                              </span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                              <div 
+                                className={`h-full transition-all duration-300 ${pct >= 100 ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Hari Setor & Notes */}
+                        <div className="pt-1 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs border-t border-slate-100">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase">Hari Setor:</span>
+                            <div className="flex gap-1">
+                              {allDays.map((day) => {
+                                const active = rec.hariSetor?.includes(day);
+                                return (
+                                  <span
+                                    key={day}
+                                    className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                                      active
+                                        ? 'bg-emerald-600 text-white font-black'
+                                        : 'bg-gray-100 text-gray-400'
+                                    }`}
+                                  >
+                                    {day}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {rec.catatan && (
+                            <span className="italic max-w-[280px] truncate text-gray-600" title={rec.catatan}>
+                              💬 "{rec.catatan}"
                             </span>
-                          </td>
-                          <td className="px-5 py-3.5 text-gray-500 italic max-w-[200px] truncate" title={rec.catatan}>
-                            {rec.catatan || '-'}
-                          </td>
-                          <td className="px-5 py-3.5 text-gray-600 font-medium uppercase">
-                            {rec.guruNama || 'Guru'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                          )}
+                        </div>
+
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="py-16 text-center text-gray-400 italic font-bold uppercase tracking-wider">
-                  Belum ada riwayat setoran sabaq untuk siswa ini
+                  Belum ada riwayat setoran sabaq pekanan untuk siswa ini
                 </div>
               )}
             </div>

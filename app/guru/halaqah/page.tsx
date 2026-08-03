@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Student, Report, SetoranSabak } from '../../../types';
+import { Student, Report, SetoranSabaq } from '../../../types';
 import { 
   getStudentsByTeacher, 
   getReportsByTeacher, 
-  subscribeToAllSetoranSabak 
+  subscribeToAllSetoranSabaq 
 } from '../../../services/firestoreService';
 import { QURAN_MAPPING } from '../../../services/quranMapping';
 import { QURAN_FULL_MAP } from '../../../services/tahfizh/quranFullData';
@@ -21,7 +21,7 @@ import {
   Users
 } from 'lucide-react';
 import { getStoredUser } from '../../../services/simpleAuth';
-import { SetoranSabakModal } from '../../../components/SetoranSabakModal';
+import { SetoranSabaqModal } from '../../../components/SetoranSabaqModal';
 import { SabaqInputCard } from '../../../components/SabaqInputCard';
 
 interface GuruHalaqahPageProps {
@@ -147,7 +147,7 @@ const getDefaultWeek = (weeks: WeekOption[]): WeekOption | null => {
   return weeks[0];
 };
 
-const getDefaultWeekWithData = (weeks: WeekOption[], records: SetoranSabak[]): WeekOption | null => {
+const getDefaultWeekWithData = (weeks: WeekOption[], records: SetoranSabaq[]): WeekOption | null => {
   if (weeks.length === 0) return null;
 
   if (records && records.length > 0) {
@@ -178,7 +178,7 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
   const [selectedWeek, setSelectedWeek] = useState<WeekOption | null>(null);
   const isUserSelectedWeek = useRef(false);
   const [tanggal, setTanggal] = useState<string>(() => new Date().toISOString().split('T')[0]);
-  const [allSetoranHistory, setAllSetoranHistory] = useState<SetoranSabak[]>([]);
+  const [allSetoranHistory, setAllSetoranHistory] = useState<SetoranSabaq[]>([]);
   const [activeCardIndex, setActiveCardIndex] = useState<number>(0);
 
   // Modal State
@@ -193,9 +193,9 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
     setCurrentUser(getStoredUser());
   }, []);
 
-  // Subscribe to all Setoran Sabak history in real-time
+  // Subscribe to all Setoran Sabaq history in real-time
   useEffect(() => {
-    const unsubscribe = subscribeToAllSetoranSabak((data) => {
+    const unsubscribe = subscribeToAllSetoranSabaq((data) => {
       setAllSetoranHistory(data);
     });
     return () => unsubscribe();
@@ -471,7 +471,7 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
   };
 
   // Helper to find existing setoran for student on current week/date
-  const getExistingSetoranThisWeek = (studentId: string): SetoranSabak | null => {
+  const getExistingSetoranThisWeek = (studentId: string): SetoranSabaq | null => {
     if (currentWeek) {
       const match = allSetoranHistory.find(s => 
         s.siswaId === studentId && 
@@ -483,7 +483,7 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
   };
 
   // Helper to find latest setoran from previous week
-  const getLatestSetoranFromPrevWeek = (studentId: string): SetoranSabak | null => {
+  const getLatestSetoranFromPrevWeek = (studentId: string): SetoranSabaq | null => {
     if (!studentId) return null;
     const prevs = allSetoranHistory.filter(s => {
       if (!s || s.siswaId !== studentId) return false;
@@ -784,9 +784,9 @@ export default function GuruHalaqahPage({ teacherId = '1' }: GuruHalaqahPageProp
 
       )}
 
-      {/* SETORAN SABAK MODAL FOR INDIVIDUAL DETAIL VIEW */}
+      {/* SETORAN SABAQ MODAL FOR INDIVIDUAL DETAIL VIEW */}
       {selectedStudent && (
-        <SetoranSabakModal
+        <SetoranSabaqModal
           isOpen={isModalOpen}
           onClose={() => {
             setIsModalOpen(false);
