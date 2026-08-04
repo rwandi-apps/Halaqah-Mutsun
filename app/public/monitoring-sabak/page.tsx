@@ -1,5 +1,5 @@
 import React from 'react';
-import { MonitoringSetoranSabak } from '../../coordinator/reports/MonitoringSetoranSabak';
+import { MonitoringSetoranSabaq } from '../../coordinator/reports/MonitoringSetoranSabaq';
 import { BookOpen, ShieldCheck } from 'lucide-react';
 
 export default function PublicMonitoringSabakPage() {
@@ -27,7 +27,7 @@ export default function PublicMonitoringSabakPage() {
 
       {/* Main Content Area */}
       <main className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
-        <MonitoringSetoranSabak isPublic={true} />
+        <MonitoringSetoranSabaq isPublic={true} />
       </main>
 
       <footer className="text-center py-6 text-xs text-gray-400 border-t border-gray-200 bg-white mt-12">

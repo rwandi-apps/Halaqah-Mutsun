@@ -97,7 +97,7 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout, children }) => {
 
         {/* Sidebar - Dynamic based on Role & Preview State */}
         <div className={`
-          fixed inset-y-0 left-0 z-30 w-64 transform transition-transform duration-200 ease-in-out lg:static lg:translate-x-0
+          fixed inset-y-0 left-0 z-30 w-64 transform transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 print:hidden
           ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}>
           {isYayasan && !previewTeacher ? (
@@ -110,9 +110,9 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout, children }) => {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden print:overflow-visible">
           {/* Header */}
-          <header className="bg-white border-b border-gray-200 h-20 flex items-center justify-between px-4 lg:px-8 shrink-0">
+          <header className="bg-white border-b border-gray-200 h-20 flex items-center justify-between px-4 lg:px-8 shrink-0 print:hidden">
             <div className="flex items-center gap-4">
               <button 
                 onClick={() => setSidebarOpen(!isSidebarOpen)}

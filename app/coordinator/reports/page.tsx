@@ -3,7 +3,8 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { Report, User, Student } from '../../../types';
 import { getAllTeachers, subscribeToReportsByTeacher, isHalaqahTeacher, subscribeToAllStudents, subscribeToAllReports } from '../../../services/firestoreService';
 import { SDQQuranEngine } from '../../../services/tahfizh/engine';
-import { Search, Loader2, AlertCircle, CheckCircle2, Filter, Calendar, Users, BookOpen, Heart, Star, AlertTriangle, XCircle, CheckCircle, ChevronRight, Eye } from 'lucide-react';
+import { Search, Loader2, AlertCircle, CheckCircle2, Filter, Calendar, Users, BookOpen, Heart, Star, AlertTriangle, XCircle, CheckCircle, ChevronRight, Eye, Download, Printer, FileSpreadsheet } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { MonitoringSetoranSabaq } from './MonitoringSetoranSabaq';
 
 const getCurrentAcademicYear = (): string => {
@@ -258,6 +259,110 @@ export default function CoordinatorReportsPage() {
       }
     }
   }, [selectedTeacherId, halaqahSummaries, allStudents, allReports, filterType, filterPeriod, filterYear, searchTerm]);
+
+  // Export & Download handlers
+  const handleDownloadExcel = () => {
+    if (tableRows.length === 0) return;
+
+    const selectedTeacher = teachers.find(t => t.id === selectedTeacherId);
+    const teacherName = selectedTeacher ? (selectedTeacher.nickname || selectedTeacher.name) : 'Semua Halaqah';
+
+    const sheetData: (string | number)[][] = [
+      ["LAPORAN HALAQAH TAHFIZH & TILAWAH SDQ"],
+      [`Musyrif / Musyriqah: ${teacherName}`],
+      [`Tipe Laporan: ${filterType} | Periode: ${filterPeriod} ${filterYear}`],
+      [`Tanggal Unduh: ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`],
+      [],
+      [
+        "NO",
+        "NAMA SISWA",
+        "JML HAFALAN",
+        "TILAWAH KLASIKAL",
+        "TILAWAH INDIVIDUAL",
+        "TILAWAH HASIL",
+        "TAHFIZH KLASIKAL",
+        "TAHFIZH INDIVIDUAL",
+        "TAHFIZH HASIL",
+        "HADIR (%)",
+        "ADAB (/10)",
+        "KETERANGAN",
+        "CATATAN"
+      ]
+    ];
+
+    tableRows.forEach((row, idx) => {
+      if (row.isFilled && row.report) {
+        const rep = row.report;
+        const tilawahRes = getStoredOrCalculatedResult(rep, 'tilawah');
+        const tahfizhRes = getStoredOrCalculatedResult(rep, 'tahfizh');
+        
+        const pageMatch = tahfizhRes.match(/(\d+)\s*Hal/);
+        const h = pageMatch ? parseInt(pageMatch[1]) : 0;
+        const statusText = tahfizhRes === '-' ? '-' : (h >= 2 ? 'TERCAPAI' : 'BELUM TERCAPAI');
+
+        sheetData.push([
+          idx + 1,
+          rep.studentName || row.studentName || '',
+          formatTotalHafalan(rep.totalHafalan),
+          formatRangeDisplay(rep.tilawah?.classical),
+          formatRangeDisplay(rep.tilawah?.individual),
+          tilawahRes,
+          formatRangeDisplay(rep.tahfizh?.classical),
+          formatRangeDisplay(rep.tahfizh?.individual),
+          tahfizhRes,
+          `${rep.attendance || 0}%`,
+          `${rep.behaviorScore || 0}/10`,
+          statusText,
+          rep.notes || '-'
+        ]);
+      } else {
+        sheetData.push([
+          idx + 1,
+          row.studentName || '',
+          formatTotalHafalan(row.totalHafalan),
+          '-',
+          '-',
+          '-',
+          '-',
+          '-',
+          '-',
+          '-',
+          '-',
+          'BELUM DIISI',
+          'Laporan belum dimasukkan guru'
+        ]);
+      }
+    });
+
+    const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
+
+    worksheet['!cols'] = [
+      { wch: 6 },   // NO
+      { wch: 28 },  // NAMA
+      { wch: 16 },  // JML HAFALAN
+      { wch: 20 },  // TIL KLASIKAL
+      { wch: 20 },  // TIL INDIV
+      { wch: 20 },  // TIL HASIL
+      { wch: 20 },  // TAHF KLASIKAL
+      { wch: 20 },  // TAHF INDIV
+      { wch: 20 },  // TAHF HASIL
+      { wch: 12 },  // HADIR
+      { wch: 12 },  // ADAB
+      { wch: 18 },  // KET
+      { wch: 35 }   // CATATAN
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Halaqah");
+
+    const cleanTeacherFilename = teacherName.replace(/[^a-zA-Z0-9]/g, '_');
+    const fileName = `Laporan_Halaqah_${cleanTeacherFilename}_${filterType.replace(/\s+/g, '_')}_${filterPeriod}_${filterYear.replace('/', '-')}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+  };
+
+  const handlePrintReport = () => {
+    window.print();
+  };
 
   return (
     <div className="space-y-6 max-full mx-auto pb-12 px-2 animate-in fade-in duration-500">
@@ -553,33 +658,79 @@ export default function CoordinatorReportsPage() {
           </div>
 
           {/* TABLE */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden print:shadow-none print:border-none">
+            {/* DOWNLOAD & ACTION TOOLBAR */}
+            <div className="p-4 bg-slate-50 border-b border-gray-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 print:hidden">
+              <div>
+                <h3 className="text-sm font-black text-gray-900 uppercase tracking-tight flex items-center gap-2">
+                  <FileSpreadsheet size={18} className="text-emerald-600" />
+                  <span>Daftar Laporan: {selectedTeacherId ? (teachers.find(t => t.id === selectedTeacherId)?.nickname || teachers.find(t => t.id === selectedTeacherId)?.name) : 'Semua Halaqah'}</span>
+                </h3>
+                <p className="text-xs text-gray-500 font-medium mt-0.5">
+                  {filterType} • Periode {filterPeriod} {filterYear} • Total {tableRows.length} Siswa
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2.5 self-stretch sm:self-auto">
+                <button
+                  onClick={handleDownloadExcel}
+                  disabled={tableRows.length === 0}
+                  className="flex-1 sm:flex-initial px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 text-white rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer"
+                  title="Unduh laporan dalam format Excel (.xlsx)"
+                >
+                  <Download size={15} />
+                  <span>Download Excel</span>
+                </button>
+
+                <button
+                  onClick={handlePrintReport}
+                  disabled={tableRows.length === 0}
+                  className="flex-1 sm:flex-initial px-4 py-2 bg-sky-600 hover:bg-sky-700 disabled:bg-gray-300 text-white rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer"
+                  title="Cetak atau simpan sebagai dokumen PDF"
+                >
+                  <Printer size={15} />
+                  <span>Cetak / Save PDF</span>
+                </button>
+              </div>
+            </div>
+
+            {/* PRINT-ONLY HEADER */}
+            <div className="hidden print:block mb-6 text-center border-b-2 border-gray-800 pb-4">
+              <h1 className="text-xl font-black uppercase text-gray-900 tracking-wide">SEKOLAH DASAR QURAN (SDQ)</h1>
+              <h2 className="text-sm font-extrabold uppercase text-gray-700 mt-1">LAPORAN MONITORING HALAQAH TAHFIZH & TILAWAH</h2>
+              <div className="flex justify-between items-center text-xs font-bold text-gray-800 mt-3 px-2 border-t border-gray-200 pt-2">
+                <span>Musyrif/ah: <strong>{selectedTeacherId ? (teachers.find(t => t.id === selectedTeacherId)?.name) : 'Semua Halaqah'}</strong></span>
+                <span>Laporan: <strong>{filterType} ({filterPeriod} {filterYear})</strong></span>
+                <span>Tanggal Cetak: <strong>{new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</strong></span>
+              </div>
+            </div>
+
             {!selectedTeacherId && !searchTerm && (
-              <div className="p-3 bg-blue-50/80 border-b border-blue-100 text-blue-800 text-xs font-semibold flex items-center justify-between px-6">
+              <div className="p-3 bg-blue-50/80 border-b border-blue-100 text-blue-800 text-xs font-semibold flex items-center justify-between px-6 print:hidden">
                 <span>💡 Menampilkan daftar laporan yang telah diisi. Pilih guru di atas atau klik kartu halaqah untuk melihat siswa yang belum diisi.</span>
               </div>
             )}
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse whitespace-nowrap">
                 <thead>
-                  <tr className="bg-primary-900 text-white text-[9px] uppercase font-black tracking-wider text-center">
+                  <tr className="bg-primary-900 text-white text-[9px] uppercase font-black tracking-wider text-center print:bg-gray-800">
                     <th rowSpan={2} className="px-3 py-4 border-r border-white/10 w-10">NO</th>
                     <th rowSpan={2} className="px-3 py-4 border-r border-white/10 text-left">NAMA SISWA</th>
                     <th rowSpan={2} className="px-3 py-4 border-r border-white/10">JML HAFALAN</th>
-                    <th colSpan={3} className="px-3 py-2 border-r border-white/10 bg-indigo-800">TILAWAH</th>
-                    <th colSpan={3} className="px-3 py-2 border-r border-white/10 bg-violet-800">TAHFIZH</th>
+                    <th colSpan={3} className="px-3 py-2 border-r border-white/10 bg-indigo-800 print:bg-gray-700">TILAWAH</th>
+                    <th colSpan={3} className="px-3 py-2 border-r border-white/10 bg-violet-800 print:bg-gray-700">TAHFIZH</th>
                     <th rowSpan={2} className="px-3 py-4 border-r border-white/10">HADIR</th>
                     <th rowSpan={2} className="px-3 py-4 border-r border-white/10">ADAB</th>
                     <th rowSpan={2} className="px-3 py-4 border-r border-white/10">KET</th>
                     <th rowSpan={2} className="px-3 py-4">CATATAN</th>
                   </tr>
-                  <tr className="bg-primary-900 text-white text-[8px] uppercase font-black tracking-wider text-center border-t border-white/10">
-                    <th className="px-2 py-2 border-r border-white/10 bg-indigo-700/50">KLASIKAL</th>
-                    <th className="px-2 py-2 border-r border-white/10 bg-indigo-700/50">INDIV</th>
-                    <th className="px-2 py-2 border-r border-white/10 bg-indigo-700">HASIL</th>
-                    <th className="px-2 py-2 border-r border-white/10 bg-violet-700/50">KLASIKAL</th>
-                    <th className="px-2 py-2 border-r border-white/10 bg-violet-700/50">INDIV</th>
-                    <th className="px-2 py-2 border-r border-white/10 bg-violet-700">HASIL</th>
+                  <tr className="bg-primary-900 text-white text-[8px] uppercase font-black tracking-wider text-center border-t border-white/10 print:bg-gray-800">
+                    <th className="px-2 py-2 border-r border-white/10 bg-indigo-700/50 print:bg-gray-600">KLASIKAL</th>
+                    <th className="px-2 py-2 border-r border-white/10 bg-indigo-700/50 print:bg-gray-600">INDIV</th>
+                    <th className="px-2 py-2 border-r border-white/10 bg-indigo-700 print:bg-gray-700">HASIL</th>
+                    <th className="px-2 py-2 border-r border-white/10 bg-violet-700/50 print:bg-gray-600">KLASIKAL</th>
+                    <th className="px-2 py-2 border-r border-white/10 bg-violet-700/50 print:bg-gray-600">INDIV</th>
+                    <th className="px-2 py-2 border-r border-white/10 bg-violet-700 print:bg-gray-700">HASIL</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 text-[10px]">
@@ -640,6 +791,18 @@ export default function CoordinatorReportsPage() {
                   )}
                 </tbody>
               </table>
+            </div>
+
+            {/* PRINT-ONLY SIGNATURE BLOCK */}
+            <div className="hidden print:flex justify-between items-end mt-12 px-8 pt-6 pb-4 text-xs text-gray-800">
+              <div className="text-center space-y-12">
+                <p className="font-semibold">Mengetahui,<br /><strong>Koordinator Tahfizh</strong></p>
+                <p className="font-bold underline">( _____________________ )</p>
+              </div>
+              <div className="text-center space-y-12">
+                <p className="font-semibold">Musyrif / Musyriqah Halaqah,</p>
+                <p className="font-bold underline">( {selectedTeacherId ? (teachers.find(t => t.id === selectedTeacherId)?.name || '_____________________') : '_____________________'} )</p>
+              </div>
             </div>
           </div>
         </>
