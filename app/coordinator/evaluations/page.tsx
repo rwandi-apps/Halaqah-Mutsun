@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { User, Report, HalaqahEvaluation } from '../../../types';
-import { getAllTeachers, subscribeToReportsByTeacher, saveHalaqahEvaluation, getHalaqahEvaluation, isHalaqahTeacher } from '../../../services/firestoreService';
+import { getAllTeachers, subscribeToReportsByTeacher, saveHalaqahEvaluation, getHalaqahEvaluation, isHalaqahTeacher, getStudentsByTeacher } from '../../../services/firestoreService';
 import { generateEvaluasiAI } from '../../../services/geminiService';
 import { Button } from '../../../components/Button';
 import { Sparkles, Save, User as UserIcon, Calendar, ClipboardList, AlertCircle, MessageSquarePlus, Filter, Loader2, Database } from 'lucide-react';
@@ -97,17 +97,32 @@ export default function CoordinatorEvaluationsPage() {
   };
 
   const handleGenerateAI = async () => {
-    if (filteredReports.length === 0) {
-      alert(`Tidak ada data laporan siswa untuk dianalisis pada periode ${selectedPeriod}.`);
+    if (!selectedTeacherId) {
+      alert("Pilih Guru / Halaqah terlebih dahulu.");
       return;
     }
 
     setIsGenerating(true);
     try {
-      // DATA FLOW: Mengambil attendance & behaviorScore dari log laporan bulanan untuk context AI
-      const contextData = filteredReports.map((r, i) => 
-        `${i+1}. Nama: ${r.studentName}, Sabaq: ${r.tahfizh.individual}, Hadir: ${r.attendance}%, Adab: ${r.behaviorScore}/10, Catatan Guru: ${r.notes || 'Nihil'}`
-      ).join('\n');
+      let contextData = "";
+
+      if (filteredReports.length > 0) {
+        contextData = filteredReports.map((r, i) => 
+          `${i+1}. Nama: ${r.studentName}, Sabaq: ${r.tahfizh.individual}, Hadir: ${r.attendance}%, Adab: ${r.behaviorScore}/10, Catatan Guru: ${r.notes || 'Nihil'}`
+        ).join('\n');
+      } else {
+        // Fallback: Mengambil data siswa langsung dari Firestore jika laporan bulanan belum dibuat
+        const students = await getStudentsByTeacher(selectedTeacherId);
+        if (students.length === 0) {
+          alert(`Tidak ada data siswa maupun laporan untuk guru yang dipilih pada periode ${selectedPeriod}.`);
+          setIsGenerating(false);
+          return;
+        }
+        contextData = students.map((s, i) => {
+          const totalJuz = s.totalHafalan ? `${s.totalHafalan.juz} Juz ${s.totalHafalan.pages} Hal` : '0 Juz';
+          return `${i+1}. Nama: ${s.name}, Kelas: ${s.className}, Total Hafalan: ${totalJuz}, Posisi/Sabaq: ${s.currentProgress || 'Belum ada'}, Adab: ${s.behaviorScore || 8}/10, Kehadiran: ${s.attendance || 100}%`;
+        }).join('\n');
+      }
 
       const result = await generateEvaluasiAI(reportType, selectedPeriod, contextData);
 
@@ -121,7 +136,7 @@ export default function CoordinatorEvaluationsPage() {
       
     } catch (error: any) {
       console.error("AI generation fail:", error);
-      alert("Gagal memproses AI: " + error.message);
+      alert("Gagal memproses AI: " + (error.message || "Pastikan koneksi internet dan API key terkonfigurasi dengan benar."));
     } finally {
       setIsGenerating(false);
     }
@@ -276,8 +291,9 @@ export default function CoordinatorEvaluationsPage() {
               </div>
               <button 
                 onClick={handleGenerateAI} 
-                disabled={isGenerating || filteredReports.length === 0} 
-                className="flex items-center gap-2 px-8 py-4 bg-primary-600 hover:bg-primary-700 text-white rounded-2xl text-[10px] font-black tracking-[0.2em] uppercase transition-all disabled:opacity-30 active:scale-95 shadow-lg shadow-primary-500/30"
+                disabled={isGenerating || !selectedTeacherId} 
+                className="flex items-center gap-2 px-8 py-4 bg-primary-600 hover:bg-primary-700 text-white rounded-2xl text-[10px] font-black tracking-[0.2em] uppercase transition-all disabled:opacity-30 active:scale-95 shadow-lg shadow-primary-500/30 cursor-pointer disabled:cursor-not-allowed"
+                title={!selectedTeacherId ? "Pilih Guru terlebih dahulu" : "Mulai Analisis AI"}
               >
                 {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
                 {isGenerating ? "Menganalisis..." : "Generate AI"}

@@ -260,7 +260,7 @@ export const SetoranSabaqModal: React.FC<SetoranSabaqModalProps> = ({
     setEditingId(item.id || null);
     setTanggal(item.tanggal);
     
-    const isMulti = Boolean(item.isMultiSurah || (item.surahSampai && item.surahSampai !== item.surah));
+    const isMulti = Boolean(item.surahSampai && item.surahSampai !== item.surah);
     setIsMultiSurah(isMulti);
     setSelectedSurah(item.surah || 'Al-Fatihah');
     setSurahSampai(item.surahSampai || item.surah || 'Al-Fatihah');
