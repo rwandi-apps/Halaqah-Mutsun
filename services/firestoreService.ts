@@ -937,13 +937,12 @@ export const updateSetoranSabaq = async (id: string, data: Partial<SetoranSabaq>
 
 export const deleteSetoranSabaq = async (id: string): Promise<void> => {
   if (!db) throw new Error("Firestore not initialized");
-  try {
-    const docRef = doc(db, 'setoran_sabaq', id);
-    await deleteDoc(docRef);
-  } catch (err) {
-    const docRefOld = doc(db, 'setoran_sabak', id);
-    await deleteDoc(docRefOld);
-  }
+  const docRef = doc(db, 'setoran_sabaq', id);
+  const docRefOld = doc(db, 'setoran_sabak', id);
+  await Promise.allSettled([
+    deleteDoc(docRef),
+    deleteDoc(docRefOld)
+  ]);
 };
 
 export const subscribeToAllStudents = (onUpdate: (students: Student[]) => void): Unsubscribe => {
