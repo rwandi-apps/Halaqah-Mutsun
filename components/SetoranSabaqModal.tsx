@@ -86,7 +86,7 @@ export const SetoranSabaqModal: React.FC<SetoranSabaqModalProps> = ({
 
   const [ayatDari, setAyatDari] = useState<number>(1);
   const [ayatSampai, setAyatSampai] = useState<number>(1);
-  const [jumlahBaris, setJumlahBaris] = useState<number>(student.targetBaris || 10);
+  const [jumlahBaris, setJumlahBaris] = useState<number>(0);
   const [hariSetor, setHariSetor] = useState<string[]>(['Sen', 'Sel', 'Rab', 'Kam', 'Jum']);
   const [targetBaris, setTargetBaris] = useState<number>(student.targetBaris || 10);
   const [catatan, setCatatan] = useState<string>('');
@@ -142,7 +142,7 @@ export const SetoranSabaqModal: React.FC<SetoranSabaqModalProps> = ({
     setSelectedSurah(getInitialSurah(student));
     setAyatDari(1);
     setAyatSampai(1);
-    setJumlahBaris(student.targetBaris || 10);
+    setJumlahBaris(0);
     setHariSetor(['Sen', 'Sel', 'Rab', 'Kam', 'Jum']);
     setTargetBaris(student.targetBaris || 10);
     setCatatan('');
@@ -155,7 +155,7 @@ export const SetoranSabaqModal: React.FC<SetoranSabaqModalProps> = ({
     setSelectedSurah(item.surah);
     setAyatDari(item.ayatDari);
     setAyatSampai(item.ayatSampai);
-    setJumlahBaris(item.jumlahBaris || 10);
+    setJumlahBaris(item.jumlahBaris !== undefined ? item.jumlahBaris : 0);
     setHariSetor(item.hariSetor || ['Sen', 'Sel', 'Rab', 'Kam', 'Jum']);
     setTargetBaris(item.targetBaris || student.targetBaris || 10);
     setCatatan(item.catatan || '');
@@ -468,7 +468,7 @@ export const SetoranSabaqModal: React.FC<SetoranSabaqModalProps> = ({
                       required
                       min={0}
                       value={jumlahBaris}
-                      onChange={(e) => setJumlahBaris(Number(e.target.value))}
+                      onChange={(e) => setJumlahBaris(e.target.value === '' ? 0 : Number(e.target.value))}
                       className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#0ea5e9] outline-none bg-white font-bold text-gray-900"
                     />
                     <span className="text-xs text-gray-500 font-semibold whitespace-nowrap">/ {targetBaris} Target Baris</span>
