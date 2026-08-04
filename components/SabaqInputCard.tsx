@@ -50,7 +50,7 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
   const [surahSampai, setSurahSampai] = useState<string>('Al-Fatihah');
   const [ayatDari, setAyatDari] = useState<number>(1);
   const [ayatSampai, setAyatSampai] = useState<number>(1);
-  const [jumlahBaris, setJumlahBaris] = useState<number>(10);
+  const [jumlahBaris, setJumlahBaris] = useState<number>(0);
   const [selectedHari, setSelectedHari] = useState<string[]>([]);
   const [catatan, setCatatan] = useState<string>('');
 
@@ -97,7 +97,7 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
         if (existingSetoranThisWeek.jumlahBaris !== undefined) {
           setJumlahBaris(existingSetoranThisWeek.jumlahBaris);
         } else {
-          setJumlahBaris(10);
+          setJumlahBaris(0);
         }
         setSelectedHari(existingSetoranThisWeek.hariSetor || []);
       }
@@ -149,7 +149,7 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
       setIsMultiSurah(false);
       setAyatDari(nextStartAyat);
       setAyatSampai(defaultEndAyat);
-      setJumlahBaris(latestSetoranFromPrevWeek.jumlahBaris || 10);
+      setJumlahBaris(0);
       setSelectedHari([]);
       setCatatan('');
       setIsSaved(false);
@@ -173,14 +173,14 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
           setIsMultiSurah(false);
           setAyatDari(nextAy);
           setAyatSampai(endAy);
-          setJumlahBaris(10);
+          setJumlahBaris(0);
         } else {
           setSurah('Al-Fatihah');
           setSurahSampai('Al-Fatihah');
           setIsMultiSurah(false);
           setAyatDari(1);
           setAyatSampai(7);
-          setJumlahBaris(10);
+          setJumlahBaris(0);
         }
       } else {
         setSurah('Al-Fatihah');
@@ -188,7 +188,7 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
         setIsMultiSurah(false);
         setAyatDari(1);
         setAyatSampai(7);
-        setJumlahBaris(10);
+        setJumlahBaris(0);
       }
       setSelectedHari([]);
       setCatatan('');
@@ -205,7 +205,7 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
       setIsMultiSurah(false);
       setAyatDari(1);
       setAyatSampai(7);
-      setJumlahBaris(10);
+      setJumlahBaris(0);
       setSelectedHari([]);
       setCatatan('');
       setIsSaved(false);
@@ -543,7 +543,7 @@ export const SabaqInputCard = forwardRef<HTMLDivElement, SabaqInputCardProps>(({
                     setJumlahBaris(0);
                     setSelectedHari([]);
                   } else {
-                    setJumlahBaris(10);
+                    setJumlahBaris(0);
                   }
                 }}
                 className="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500 cursor-pointer"
